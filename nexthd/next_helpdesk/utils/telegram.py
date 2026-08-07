@@ -349,24 +349,31 @@ def link_telegram_account(user: str, telegram_username: str, chat_id: str):
 	"""
 	Proses linking akun Telegram ke User NextHD.
 	Dipanggil dari webhook bot saat user kirim /start + kode verifikasi.
+	Jika User Profile belum ada, akan dibuat otomatis.
 	"""
 	try:
-		# Verify the code (this is a simple implementation, can be enhanced)
-		# In production, generate and store verification codes in User Profile
-		profile = frappe.get_doc("NextHD User Profile", {"user": user})
+		# Try to get existing profile
+		profile_name = frappe.db.get_value("NextHD User Profile", {"user": user}, "name")
 		
-		if profile.telegram_chat_id:
-			# Already linked
-			return False
-		
+		if profile_name:
+			profile = frappe.get_doc("NextHD User Profile", profile_name)
+			if profile.telegram_chat_id:
+				# Already linked
+				return False
+		else:
+			# Create new profile if not exists
+			profile = frappe.new_doc("NextHD User Profile")
+			profile.user = user
+
 		# Link the account
 		profile.telegram_username = telegram_username
 		profile.telegram_chat_id = chat_id
-		profile.save()
-		
+		profile.save(ignore_permissions=True)
+		frappe.db.commit()
+
 		return True
 	except Exception as e:
-		frappe.log_error(f"Error linking Telegram account: {str(e)}")
+		frappe.log_error(f"Error linking Telegram account for {user}: {str(e)}")
 		return False
 
 
