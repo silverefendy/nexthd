@@ -9,7 +9,7 @@ kerangka struktur + spesifikasi tiap komponen.
 keseluruhan sebelum mulai coding, karena ini sumber kebenaran untuk semua
 keputusan desain (arsitektur, workflow, permission, dst).
 
-Folder `nexthd/nexthd/nexthd/` berisi README.md di tiap sub-folder doctype
+Folder `nexthd/next_helpdesk/doctype/` berisi README.md di tiap sub-folder doctype
 yang merangkum field spesifik — gunakan ini sebagai referensi cepat saat
 membuat tiap Doctype, tapi tetap cross-check ke NEXTHD_SPEC.md untuk konteks
 lengkap (workflow, relasi antar-doctype, dst).
@@ -40,14 +40,14 @@ comment di kode — tidak wajib dipertahankan.
    sudah ada bawaan Frappe/Helpdesk pattern — cek dulu, buat baru jika belum ada)
 
 ### Tahap 2 — User Tanpa Email
-1. Implementasikan `nexthd/nexthd/nexthd/utils/email_helper.py`
+1. Implementasikan `nexthd/next_helpdesk/utils/email_helper.py`
    (lihat TODO di dalam file)
 2. Buat Doctype `NextHD User Profile`
 3. Daftarkan hook di `hooks.py`:
    ```python
    doc_events = {
        "User": {
-           "before_insert": "nexthd.nexthd.utils.email_helper.before_insert_user_hook"
+           "before_insert": "nexthd.next_helpdesk.utils.email_helper.before_insert_user_hook"
        }
    }
    ```
@@ -74,7 +74,7 @@ Implementasikan matrix permission sesuai NEXTHD_SPEC.md bagian 7,
 via Role Permission Manager atau fixture.
 
 ### Tahap 6 — Telegram Integration
-1. Implementasikan `nexthd/nexthd/nexthd/utils/telegram.py`
+1. Implementasikan `nexthd/next_helpdesk/utils/telegram.py`
    (lihat TODO di dalam file — semua fungsi masih `raise NotImplementedError`)
 2. Buat webhook endpoint di `api/` untuk terima update dari Telegram Bot API
 3. Daftarkan `doc_events` di hooks.py untuk trigger tiap fungsi notify_*
