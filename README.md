@@ -1,40 +1,55 @@
-### Next Helpdesk
+# NextHD — Frappe Helpdesk
 
-Frappe Custom Helpdesk
+Custom helpdesk module untuk Frappe Framework, dibangun untuk kebutuhan IT support internal pabrik.
 
-### Installation
+## Fitur Utama
 
-You can install this app using the [bench](https://github.com/frappe/bench) CLI:
+- Manajemen tiket insiden dan permintaan layanan
+- Workflow approval untuk Change Request
+- Manajemen Problem dan Known Error (ITIL-lite)
+- Notifikasi real-time via Telegram Bot
+- SLA monitoring otomatis (warning 30 menit sebelum breach)
+- Multi-tim dengan assignment agent
+
+## Prasyarat
+
+- Frappe Framework v14 atau v15
+- Python 3.10+
+- Redis (untuk queue)
+- MariaDB 10.6+
+
+## Instalasi
 
 ```bash
-cd $PATH_TO_YOUR_BENCH
-bench get-app $URL_OF_THIS_REPO --branch main
-bench install-app nexthd
+bench get-app nexthd https://github.com/silverefendy/nexthd
+bench --site your-site install-app nexthd
+bench --site your-site migrate
 ```
 
-### Contributing
+## Setup Telegram Bot
 
-This app uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
+1. Buat bot baru via [@BotFather](https://t.me/BotFather), catat token-nya
+2. Di Frappe desk, buka **NextHD Settings**
+3. Isi field **Telegram Bot Token** dengan token dari BotFather
+4. Centang **Enable Telegram Notification**
+5. Set webhook URL ke: `https://your-domain/api/method/nexthd.next_helpdesk.api.telegram_webhook.handle_webhook` 
+6. Setiap user yang ingin menerima notifikasi harus mengirim `/start` ke bot, lalu ikuti instruksi verifikasi
 
-```bash
-cd apps/nexthd
-pre-commit install
-```
+## Setup SLA Policy
 
-Pre-commit is configured to use the following tools for checking and formatting your code:
+Setelah install, buat SLA Policy untuk setiap level prioritas:
 
-- ruff
-- eslint
-- prettier
-- pyupgrade
-### CI
+1. Buka **NextHD SLA Policy** → New
+2. Buat 4 record: Kritis, Tinggi, Sedang, Rendah
+3. Isi `response_time_minutes` dan `resolution_time_minutes` sesuai SOP
+4. Setiap SLA Policy harus terhubung ke **NextHD Business Hours**
 
-This app can use GitHub Actions for CI. The following workflows are configured:
+## Dokumentasi
 
-- CI: Installs this app and runs unit tests on every push to `develop` branch.
-- Linters: Runs [Frappe Semgrep Rules](https://github.com/frappe/semgrep-rules) and [pip-audit](https://pypi.org/project/pip-audit/) on every pull request.
+Lihat folder `docs/` untuk detail teknis:
+- `docs/NEXTHD_SPEC.md` — Spesifikasi lengkap fitur
+- `docs/BUGFIX_SUMMARY.md` — Riwayat bugfix
 
+## Lisensi
 
-### License
-
-mit
+MIT
