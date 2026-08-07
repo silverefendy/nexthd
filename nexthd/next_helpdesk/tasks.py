@@ -7,7 +7,7 @@ Referensi: NEXTHD_SPEC.md bagian 8
 
 import frappe
 from datetime import datetime, timedelta
-from frappe.utils import now
+from frappe.utils import now_datetime
 
 
 def check_sla_breach_warnings():
@@ -24,7 +24,7 @@ def check_sla_breach_warnings():
 	"""
 	try:
 		# Get current time
-		now_time = now()
+		now_time = now_datetime()
 		
 		# Check for tickets with SLA resolution deadline in the next 30 minutes
 		thirty_minutes_from_now = now_time + timedelta(minutes=30)
@@ -35,11 +35,14 @@ def check_sla_breach_warnings():
 		# - Status is not Selesai or Ditutup
 		# - Haven't been warned in the last hour (to avoid duplicate warnings)
 		
-		tickets = frappe.db.get_all("NextHD Ticket", {
-			"status": ["in", ["Baru", "Sedang Dikerjakan", "Menunggu User"]],
-			"sla_resolution_by": ["<=", thirty_minutes_from_now],
-			"sla_resolution_by": [">", now_time]
-		}, pluck="name")
+		tickets = frappe.db.get_all("NextHD Ticket",
+			filters=[
+				["status", "in", ["Baru", "Sedang Dikerjakan", "Menunggu User"]],
+				["sla_resolution_by", "<=", thirty_minutes_from_now],
+				["sla_resolution_by", ">", now_time]
+			],
+			pluck="name"
+		)
 		
 		for ticket_name in tickets:
 			# Check if we've already warned about this ticket recently
@@ -60,15 +63,18 @@ def check_sla_response_breach():
 	Runs every 5 minutes to check for tickets within 15 minutes of response SLA deadline.
 	"""
 	try:
-		now_time = now()
+		now_time = now_datetime()
 		fifteen_minutes_from_now = now_time + timedelta(minutes=15)
 		
 		# Query tickets with response SLA approaching
-		tickets = frappe.db.get_all("NextHD Ticket", {
-			"status": "Baru",
-			"sla_response_by": ["<=", fifteen_minutes_from_now],
-			"sla_response_by": [">", now_time]
-		}, pluck="name")
+		tickets = frappe.db.get_all("NextHD Ticket",
+			filters=[
+				["status", "=", "Baru"],
+				["sla_response_by", "<=", fifteen_minutes_from_now],
+				["sla_response_by", ">", now_time]
+			],
+			pluck="name"
+		)
 		
 		for ticket_name in tickets:
 			# Send warning for response SLA

@@ -1,0 +1,215 @@
+{
+ "creation": "2026-08-07 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Workflow",
+ "document_type": "NextHD Change Request",
+ "is_active": 1,
+ "modified": "2026-08-07 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Next Helpdesk",
+ "name": "NextHD Change Request",
+ "owner": "Administrator",
+ "send_email_alert": 0,
+ "states": [
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "0",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Draft",
+   "update_field": "status"
+  },
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "0",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Diajukan",
+   "update_field": "status"
+  },
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "0",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Direview",
+   "update_field": "status"
+  },
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "0",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Disetujui",
+   "update_field": "status"
+  },
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "0",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Ditolak",
+   "update_field": "status"
+  },
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "0",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Implementasi",
+   "update_field": "status"
+  },
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "0",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Selesai",
+   "update_field": "status"
+  },
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "1",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Ditutup",
+   "update_field": "status"
+  }
+ ],
+ "transitions": [
+  {
+   "action": "Ajukan",
+   "allowed": "Agent",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Draft",
+   "transition": "Diajukan"
+  },
+  {
+   "action": "Review",
+   "allowed": "Agent Manager",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Diajukan",
+   "transition": "Direview"
+  },
+  {
+   "action": "Review",
+   "allowed": "IT Manager",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Diajukan",
+   "transition": "Direview"
+  },
+  {
+   "action": "Setujui",
+   "allowed": "Agent Manager",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Direview",
+   "transition": "Disetujui"
+  },
+  {
+   "action": "Setujui",
+   "allowed": "IT Manager",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Direview",
+   "transition": "Disetujui"
+  },
+  {
+   "action": "Tolak",
+   "allowed": "Agent Manager",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Direview",
+   "transition": "Ditolak"
+  },
+  {
+   "action": "Tolak",
+   "allowed": "IT Manager",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Direview",
+   "transition": "Ditolak"
+  },
+  {
+   "action": "Ajukan Ulang",
+   "allowed": "Agent",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Ditolak",
+   "transition": "Draft"
+  },
+  {
+   "action": "Mulai Implementasi",
+   "allowed": "Agent",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Disetujui",
+   "transition": "Implementasi"
+  },
+  {
+   "action": "Selesaikan Implementasi",
+   "allowed": "Agent",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Implementasi",
+   "transition": "Selesai"
+  },
+  {
+   "action": "Tutup",
+   "allowed": "Agent",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Selesai",
+   "transition": "Ditutup"
+  }
+ ]
+}

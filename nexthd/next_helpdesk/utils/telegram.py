@@ -40,7 +40,7 @@ def send_telegram_message(chat_id: str, message: str):
 	}
 
 	try:
-		response = frappe.requests.post(url, json=payload, timeout=10)
+		response = requests.post(url, json=payload, timeout=10)
 		response.raise_for_status()
 	except Exception as e:
 		frappe.log_error(f"Failed to send Telegram message to {chat_id}: {str(e)}")
@@ -55,7 +55,7 @@ def notify_ticket_created(ticket_name: str):
 		return
 
 	frappe.enqueue(
-		"_send_ticket_created_notification",
+		"nexthd.next_helpdesk.utils.telegram._send_ticket_created_notification",
 		queue="short",
 		ticket_name=ticket_name
 	)
@@ -106,7 +106,7 @@ def notify_ticket_assigned(ticket_name: str, agent_user: str):
 		return
 
 	frappe.enqueue(
-		"_send_ticket_assigned_notification",
+		"nexthd.next_helpdesk.utils.telegram._send_ticket_assigned_notification",
 		queue="short",
 		ticket_name=ticket_name,
 		agent_user=agent_user
@@ -170,7 +170,7 @@ def notify_new_reply(doc, method):
 		return
 	
 	frappe.enqueue(
-		"_send_new_reply_notification",
+		"nexthd.next_helpdesk.utils.telegram._send_new_reply_notification",
 		queue="short",
 		ticket_name=doc.reference_name
 	)
@@ -217,7 +217,7 @@ def notify_ticket_resolved(ticket_name: str):
 		return
 
 	frappe.enqueue(
-		"_send_ticket_resolved_notification",
+		"nexthd.next_helpdesk.utils.telegram._send_ticket_resolved_notification",
 		queue="short",
 		ticket_name=ticket_name
 	)
@@ -250,7 +250,7 @@ def notify_sla_breach_warning(ticket_name: str):
 		return
 
 	frappe.enqueue(
-		"_send_sla_breach_warning_notification",
+		"nexthd.next_helpdesk.utils.telegram._send_sla_breach_warning_notification",
 		queue="short",
 		ticket_name=ticket_name
 	)
@@ -310,7 +310,7 @@ def notify_change_request_approval_needed(doc, method):
 	old_doc = doc.get_doc_before_save()
 	if old_doc and old_doc.status != "Diajukan":
 		frappe.enqueue(
-			"_send_change_request_approval_notification",
+			"nexthd.next_helpdesk.utils.telegram._send_change_request_approval_notification",
 			queue="short",
 			change_request_name=doc.name
 		)
@@ -343,7 +343,7 @@ def _send_change_request_approval_notification(change_request_name: str):
 		frappe.log_error(f"Error in change request approval notification: {str(e)}")
 
 
-def link_telegram_account(user: str, telegram_username: str, verification_code: str):
+def link_telegram_account(user: str, telegram_username: str, chat_id: str):
 	"""
 	Proses linking akun Telegram ke User NextHD.
 	Dipanggil dari webhook bot saat user kirim /start + kode verifikasi.
@@ -359,7 +359,7 @@ def link_telegram_account(user: str, telegram_username: str, verification_code: 
 		
 		# Link the account
 		profile.telegram_username = telegram_username
-		profile.telegram_chat_id = verification_code  # In production, this should be the actual chat_id
+		profile.telegram_chat_id = chat_id
 		profile.save()
 		
 		return True

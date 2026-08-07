@@ -1,0 +1,142 @@
+{
+ "creation": "2026-08-07 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Workflow",
+ "document_type": "NextHD Ticket",
+ "is_active": 1,
+ "modified": "2026-08-07 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Next Helpdesk",
+ "name": "NextHD Ticket",
+ "owner": "Administrator",
+ "send_email_alert": 0,
+ "states": [
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "0",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Baru",
+   "update_field": "status"
+  },
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "0",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Sedang Dikerjakan",
+   "update_field": "status"
+  },
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "0",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Menunggu User",
+   "update_field": "status"
+  },
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "0",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Selesai",
+   "update_field": "status"
+  },
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "1",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Ditutup",
+   "update_field": "status"
+  }
+ ],
+ "transitions": [
+  {
+   "action": "Mulai Kerjakan",
+   "allowed": "Agent",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Baru",
+   "transition": "Sedang Dikerjakan"
+  },
+  {
+   "action": "Tunggu User",
+   "allowed": "Agent",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Sedang Dikerjakan",
+   "transition": "Menunggu User"
+  },
+  {
+   "action": "Lanjut Kerjakan",
+   "allowed": "Agent",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Menunggu User",
+   "transition": "Sedang Dikerjakan"
+  },
+  {
+   "action": "Selesaikan",
+   "allowed": "Agent",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Sedang Dikerjakan",
+   "transition": "Selesai"
+  },
+  {
+   "action": "Selesaikan",
+   "allowed": "Agent",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Menunggu User",
+   "transition": "Selesai"
+  },
+  {
+   "action": "Konfirmasi Selesai",
+   "allowed": "Requester",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Selesai",
+   "transition": "Ditutup"
+  },
+  {
+   "action": "Buka Kembali",
+   "allowed": "Requester",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Selesai",
+   "transition": "Baru"
+  }
+ ]
+}

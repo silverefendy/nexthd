@@ -164,6 +164,27 @@ scheduler_events = {
 	}
 }
 
+# Fixtures
+# --------
+
+fixtures = [
+	{"dt": "Workflow", "filters": [["name", "in", [
+		"NextHD Ticket",
+		"NextHD Problem",
+		"NextHD Change Request"
+	]]]},
+	{"dt": "Workflow State", "filters": [["workflow", "in", [
+		"NextHD Ticket",
+		"NextHD Problem",
+		"NextHD Change Request"
+	]]]},
+	{"dt": "Workflow Transition", "filters": [["parent", "in", [
+		"NextHD Ticket",
+		"NextHD Problem",
+		"NextHD Change Request"
+	]]]}
+]
+
 # Testing
 # -------
 

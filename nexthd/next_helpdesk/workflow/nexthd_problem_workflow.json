@@ -1,0 +1,132 @@
+{
+ "creation": "2026-08-07 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Workflow",
+ "document_type": "NextHD Problem",
+ "is_active": 1,
+ "modified": "2026-08-07 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Next Helpdesk",
+ "name": "NextHD Problem",
+ "owner": "Administrator",
+ "send_email_alert": 0,
+ "states": [
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "0",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Terbuka",
+   "update_field": "status"
+  },
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "0",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Investigasi",
+   "update_field": "status"
+  },
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "0",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Known Error",
+   "update_field": "status"
+  },
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "0",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Selesai",
+   "update_field": "status"
+  },
+  {
+   "allow_edit": 1,
+   "creation": "2026-08-07 00:00:00.000000",
+   "doc_status": "1",
+   "is_optional": 0,
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Ditutup",
+   "update_field": "status"
+  }
+ ],
+ "transitions": [
+  {
+   "action": "Mulai Investigasi",
+   "allowed": "Agent",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Terbuka",
+   "transition": "Investigasi"
+  },
+  {
+   "action": "Selesaikan Langsung",
+   "allowed": "Agent",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Terbuka",
+   "transition": "Selesai"
+  },
+  {
+   "action": "Set sebagai Known Error",
+   "allowed": "Agent",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Investigasi",
+   "transition": "Known Error"
+  },
+  {
+   "action": "Selesaikan",
+   "allowed": "Agent",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Investigasi",
+   "transition": "Selesai"
+  },
+  {
+   "action": "Selesaikan",
+   "allowed": "Agent",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Known Error",
+   "transition": "Selesai"
+  },
+  {
+   "action": "Tutup",
+   "allowed": "Agent",
+   "creation": "2026-08-07 00:00:00.000000",
+   "modified": "2026-08-07 00:00:00.000000",
+   "modified_by": "Administrator",
+   "owner": "Administrator",
+   "state": "Selesai",
+   "transition": "Ditutup"
+  }
+ ]
+}
