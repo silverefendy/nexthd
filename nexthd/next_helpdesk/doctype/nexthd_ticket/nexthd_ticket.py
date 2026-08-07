@@ -14,7 +14,7 @@ class NextHDTicket(Document):
 			self.calculate_sla()
 
 	def validate_status_transition(self):
-		"""Validate that status transition is allowed"""
+		"""Validate that status transition is allowed according to workflow"""
 		if not self.status:
 			return
 		
@@ -22,9 +22,51 @@ class NextHDTicket(Document):
 		if self.docstatus == 0 and not self.is_new():
 			old_doc = self.get_doc_before_save()
 			if old_doc and old_doc.status != self.status:
-				# Add workflow validation logic here
-				# This will be enhanced with workflow implementation
-				pass
+				self._check_workflow_permission(old_doc.status, self.status)
+
+	def _check_workflow_permission(self, old_status, new_status):
+		"""
+		Validate status transition based on workflow rules.
+		
+		Workflow: Baru → Sedang Dikerjakan → [Menunggu User ⇄ Sedang Dikerjakan] → Selesai → Ditutup
+		- Agent: Baru → Sedang Dikerjakan, → Menunggu User, → Selesai
+		- Requester: Selesai → Ditutup (konfirmasi) ATAU Selesai → Baru (buka kembali)
+		- Agent Manager/IT Manager: Full override
+		"""
+		user = frappe.session.user
+		user_roles = frappe.get_roles(user)
+		
+		# Agent Manager and IT Manager can override all transitions
+		if "Agent Manager" in user_roles or "IT Manager" in user_roles:
+			return
+		
+		# Define allowed transitions
+		allowed_transitions = {
+			"Baru": ["Sedang Dikerjakan"],
+			"Sedang Dikerjakan": ["Menunggu User", "Selesai"],
+			"Menunggu User": ["Sedang Dikerjakan", "Selesai"],
+			"Selesai": ["Ditutup", "Baru"],
+			"Ditutup": []
+		}
+		
+		# Check if transition is allowed
+		if new_status not in allowed_transitions.get(old_status, []):
+			# Special handling for Requester role
+			if "Requester" in user_roles or "Agent" not in user_roles:
+				# Requester can only: Selesai → Ditutup OR Selesai → Baru
+				if old_status == "Selesai" and new_status in ["Ditutup", "Baru"]:
+					return
+				else:
+					frappe.throw(
+						f"Anda tidak memiliki izin untuk mengubah status dari '{old_status}' ke '{new_status}'. "
+						f"Sebagai Requester, Anda hanya dapat menutup atau membuka kembali tiket yang sudah selesai."
+					)
+			else:
+				# Agent role
+				frappe.throw(
+					f"Transisi status dari '{old_status}' ke '{new_status}' tidak diizinkan. "
+					f"Silakan hubungi Agent Manager untuk perubahan ini."
+				)
 
 	def validate_assigned_user(self):
 		"""Validate assigned user if set"""
