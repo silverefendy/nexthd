@@ -185,6 +185,10 @@ fixtures = [
 	]]]}
 ]
 
+# Workspace
+# ---------
+workspace_json = "nexthd/next_helpdesk/workspace"
+
 # Testing
 # -------
 

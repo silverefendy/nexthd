@@ -1,0 +1,71 @@
+{
+    "charts": [],
+    "content": "[{\"id\":\"section-1\",\"type\":\"section\",\"data\":{\"col\":12}},{\"id\":\"shortcut-1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD Ticket\",\"col\":3}},{\"id\":\"shortcut-2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD Problem\",\"col\":3}},{\"id\":\"shortcut-3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD Change Request\",\"col\":3}},{\"id\":\"shortcut-4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD Settings\",\"col\":3}}]",
+    "creation": "2026-08-08 00:00:00.000000",
+    "doctype": "Workspace",
+    "for_user": "",
+    "hide_custom": 0,
+    "icon": "settings",
+    "is_hidden": 0,
+    "label": "Next Helpdesk",
+    "modified": "2026-08-08 00:00:00.000000",
+    "modified_by": "Administrator",
+    "module": "Next Helpdesk",
+    "name": "Next Helpdesk",
+    "owner": "Administrator",
+    "parent_page": "",
+    "public": 1,
+    "restrict_to_domain": "",
+    "roles": [],
+    "sequence_id": 1.0,
+    "shortcuts": [
+        {
+            "color": "Red",
+            "doc_view": "List",
+            "icon": "ticket",
+            "label": "Tiket",
+            "link_to": "NextHD Ticket",
+            "type": "DocType"
+        },
+        {
+            "color": "Orange",
+            "doc_view": "List",
+            "icon": "bug",
+            "label": "Problem",
+            "link_to": "NextHD Problem",
+            "type": "DocType"
+        },
+        {
+            "color": "Blue",
+            "doc_view": "List",
+            "icon": "tool",
+            "label": "Change Request",
+            "link_to": "NextHD Change Request",
+            "type": "DocType"
+        },
+        {
+            "color": "Gray",
+            "doc_view": "List",
+            "icon": "list",
+            "label": "SLA Policy",
+            "link_to": "NextHD SLA Policy",
+            "type": "DocType"
+        },
+        {
+            "color": "Gray",
+            "doc_view": "List",
+            "icon": "users",
+            "label": "Tim",
+            "link_to": "NextHD Team",
+            "type": "DocType"
+        },
+        {
+            "color": "Gray",
+            "doc_view": "Form",
+            "icon": "settings",
+            "label": "Pengaturan",
+            "link_to": "NextHD Settings",
+            "type": "DocType"
+        }
+    ]
+}
