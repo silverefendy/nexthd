@@ -13,46 +13,33 @@ from frappe.utils import now_datetime
 def check_sla_breach_warnings():
 	"""
 	Scheduled job to check for tickets approaching SLA breach.
-	Runs every 15 minutes to check for tickets within 30 minutes of SLA deadline.
-	
-	This should be registered in hooks.py under scheduler_events:
-		scheduler_events = {
-			"cron": {
-				"*/15 * * * *": ["nexthd.next_helpdesk.tasks.check_sla_breach_warnings"]
-			}
-		}
+	Runs every 15 minutes. Sends warning only once per ticket (throttled by sla_warning_sent flag).
 	"""
 	try:
-		# Get current time
 		now_time = now_datetime()
-		
-		# Check for tickets with SLA resolution deadline in the next 30 minutes
 		thirty_minutes_from_now = now_time + timedelta(minutes=30)
-		
-		# Query tickets that:
-		# - Have sla_resolution_by set
-		# - sla_resolution_by is within 30 minutes from now
-		# - Status is not Selesai or Ditutup
-		# - Haven't been warned in the last hour (to avoid duplicate warnings)
-		
+
 		tickets = frappe.db.get_all("NextHD Ticket",
 			filters=[
 				["status", "in", ["Baru", "Sedang Dikerjakan", "Menunggu User"]],
 				["sla_resolution_by", "<=", thirty_minutes_from_now],
-				["sla_resolution_by", ">", now_time]
+				["sla_resolution_by", ">", now_time],
+				["sla_warning_sent", "=", 0]
 			],
 			pluck="name"
 		)
-		
+
 		for ticket_name in tickets:
-			# Check if we've already warned about this ticket recently
-			# Use a simple flag or check the last notification time
-			# For now, we'll send the notification
 			from nexthd.next_helpdesk.utils.telegram import notify_sla_breach_warning
 			notify_sla_breach_warning(ticket_name)
-		
-		frappe.logger.info(f"SLA breach warning check completed. Checked {len(tickets)} tickets.")
-	
+			# Mark as warned so we don't spam
+			frappe.db.set_value("NextHD Ticket", ticket_name, "sla_warning_sent", 1)
+
+		if tickets:
+			frappe.db.commit()
+
+		frappe.logger().info(f"SLA breach warning check completed. Warned {len(tickets)} tickets.")
+
 	except Exception as e:
 		frappe.log_error(f"Error in SLA breach warning check: {str(e)}")
 

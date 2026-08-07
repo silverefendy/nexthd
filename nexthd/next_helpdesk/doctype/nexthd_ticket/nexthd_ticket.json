@@ -20,6 +20,7 @@
   "team",
   "sla_response_by",
   "sla_resolution_by",
+  "sla_warning_sent",
   "resolved_on",
   "closed_on",
   "related_problem",
@@ -105,6 +106,13 @@
    "read_only": 1
   },
   {
+   "default": "0",
+   "fieldname": "sla_warning_sent",
+   "fieldtype": "Check",
+   "label": "SLA Warning Sent",
+   "read_only": 1
+  },
+  {
    "fieldname": "resolved_on",
    "fieldtype": "Datetime",
    "label": "Resolved On",
@@ -130,7 +138,7 @@
  ],
  "idx_unique": [],
  "links": [],
- "modified": "2026-08-07 00:00:00.000000",
+ "modified": "2026-08-08 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Next Helpdesk",
  "name": "NextHD Ticket",
