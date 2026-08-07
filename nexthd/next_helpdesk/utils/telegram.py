@@ -46,10 +46,10 @@ def send_telegram_message(chat_id: str, message: str):
 		frappe.log_error(f"Failed to send Telegram message to {chat_id}: {str(e)}")
 
 
-def notify_ticket_created(ticket_name: str):
+def notify_ticket_created(doc, method):
 	"""
-	Trigger saat NextHD Ticket baru dibuat -> notifikasi ke Team/Agent terkait.
-	Dikirim secara async via frappe.enqueue.
+	Hook dipanggil oleh Frappe saat NextHD Ticket baru di-insert.
+	Signature (doc, method) adalah standar Frappe doc_events hook.
 	"""
 	if not is_telegram_enabled():
 		return
@@ -57,7 +57,7 @@ def notify_ticket_created(ticket_name: str):
 	frappe.enqueue(
 		"nexthd.next_helpdesk.utils.telegram._send_ticket_created_notification",
 		queue="short",
-		ticket_name=ticket_name
+		ticket_name=doc.name
 	)
 
 
@@ -65,13 +65,14 @@ def _send_ticket_created_notification(ticket_name: str):
 	"""Internal function to send ticket created notification"""
 	try:
 		ticket = frappe.get_doc("NextHD Ticket", ticket_name)
-		
+		notified_users = set()
+
 		# Notify team members if team is assigned
 		if ticket.team:
 			team = frappe.get_doc("NextHD Team", ticket.team)
 			for member in team.members:
 				chat_id = get_user_chat_id(member.user)
-				if chat_id:
+				if chat_id and member.user not in notified_users:
 					message = (
 						f"🎫 <b>Tiket Baru</b>\n"
 						f"No: {ticket_name}\n"
@@ -81,13 +82,14 @@ def _send_ticket_created_notification(ticket_name: str):
 						f"Kategori: {ticket.category or 'N/A'}"
 					)
 					send_telegram_message(chat_id, message)
-		
-		# Notify assigned agent if assigned
-		if ticket.assigned_to:
+					notified_users.add(member.user)
+
+		# Notify assigned agent if assigned (skip if already notified as team member)
+		if ticket.assigned_to and ticket.assigned_to not in notified_users:
 			chat_id = get_user_chat_id(ticket.assigned_to)
 			if chat_id:
 				message = (
-					f"🎫 <b>Tiket Baru Ditugaskan</b>\n"
+					f"🎫 <b>Tiket Baru Ditugaskan ke Anda</b>\n"
 					f"No: {ticket_name}\n"
 					f"Subjek: {ticket.subject}\n"
 					f"Prioritas: {ticket.priority}"
