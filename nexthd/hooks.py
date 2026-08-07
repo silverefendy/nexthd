@@ -86,7 +86,7 @@ app_license = "mit"
 # ------------
 
 # before_install = "nexthd.install.before_install"
-# after_install = "nexthd.install.after_install"
+after_install = "nexthd.install.after_install"
 
 # Uninstallation
 # ------------
