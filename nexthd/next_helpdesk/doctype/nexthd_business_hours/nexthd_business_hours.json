@@ -1,0 +1,55 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "field:day",
+ "creation": "2026-08-07 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "day",
+  "start_time",
+  "end_time",
+  "is_working_day"
+ ],
+ "fields": [
+  {
+   "fieldname": "day",
+   "fieldtype": "Select",
+   "label": "Day",
+   "options": "Senin\nSelasa\nRabu\nKamis\nJumat\nSabtu\nMinggu",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "start_time",
+   "fieldtype": "Time",
+   "label": "Start Time"
+  },
+  {
+   "fieldname": "end_time",
+   "fieldtype": "Time",
+   "label": "End Time"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_working_day",
+   "fieldtype": "Check",
+   "label": "Is Working Day"
+  }
+ ],
+ "idx_unique": [],
+ "links": [],
+ "modified": "2026-08-07 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Next Helpdesk",
+ "name": "NextHD Business Hours",
+ "naming_rule": "By Field Name",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "day"
+}

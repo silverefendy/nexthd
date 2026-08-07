@@ -1,0 +1,49 @@
+{
+ "actions": [],
+ "creation": "2026-08-07 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "telegram_bot_token",
+  "telegram_bot_username",
+  "default_language",
+  "enable_telegram_notification"
+ ],
+ "fields": [
+  {
+   "fieldname": "telegram_bot_token",
+   "fieldtype": "Password",
+   "label": "Telegram Bot Token"
+  },
+  {
+   "fieldname": "telegram_bot_username",
+   "fieldtype": "Data",
+   "label": "Telegram Bot Username"
+  },
+  {
+   "default": "ID",
+   "fieldname": "default_language",
+   "fieldtype": "Select",
+   "label": "Default Language",
+   "options": "ID\nEN"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_telegram_notification",
+   "fieldtype": "Check",
+   "label": "Enable Telegram Notification"
+  }
+ ],
+ "idx_unique": [],
+ "is_single": 1,
+ "links": [],
+ "modified": "2026-08-07 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Next Helpdesk",
+ "name": "NextHD Settings",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

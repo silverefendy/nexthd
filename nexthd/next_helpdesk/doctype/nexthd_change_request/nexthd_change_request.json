@@ -1,0 +1,87 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-08-07 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "title",
+  "status",
+  "change_type",
+  "risk_level",
+  "related_problem",
+  "implementation_plan",
+  "rollback_plan"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "CHG-2026-####"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nDiajukan\nDireview\nDisetujui\nDitolak\nImplementasi\nSelesai\nDitutup",
+   "reqd": 1
+  },
+  {
+   "default": "Normal",
+   "fieldname": "change_type",
+   "fieldtype": "Select",
+   "label": "Change Type",
+   "options": "Standard\nNormal\nEmergency",
+   "reqd": 1
+  },
+  {
+   "default": "Sedang",
+   "fieldname": "risk_level",
+   "fieldtype": "Select",
+   "label": "Risk Level",
+   "options": "Rendah\nSedang\nTinggi",
+   "reqd": 1
+  },
+  {
+   "fieldname": "related_problem",
+   "fieldtype": "Link",
+   "label": "Related Problem",
+   "options": "NextHD Problem"
+  },
+  {
+   "fieldname": "implementation_plan",
+   "fieldtype": "Text Editor",
+   "label": "Implementation Plan"
+  },
+  {
+   "fieldname": "rollback_plan",
+   "fieldtype": "Text Editor",
+   "label": "Rollback Plan"
+  }
+ ],
+ "idx_unique": [],
+ "links": [],
+ "modified": "2026-08-07 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Next Helpdesk",
+ "name": "NextHD Change Request",
+ "naming_rule": "By Series",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title"
+}

@@ -138,34 +138,31 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"User": {
+		"before_insert": "nexthd.next_helpdesk.utils.email_helper.before_insert_user_hook"
+	},
+	"NextHD Ticket": {
+		"on_insert": "nexthd.next_helpdesk.utils.telegram.notify_ticket_created",
+		"on_update": "nexthd.next_helpdesk.utils.telegram.notify_ticket_updated"
+	},
+	"Comment": {
+		"after_insert": "nexthd.next_helpdesk.utils.telegram.notify_new_reply"
+	},
+	"NextHD Change Request": {
+		"on_update": "nexthd.next_helpdesk.utils.telegram.notify_change_request_approval_needed"
+	}
+}
 
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"nexthd.tasks.all"
-# 	],
-# 	"daily": [
-# 		"nexthd.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"nexthd.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"nexthd.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"nexthd.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"cron": {
+		"*/15 * * * *": ["nexthd.next_helpdesk.tasks.check_sla_breach_warnings"],
+		"*/5 * * * *": ["nexthd.next_helpdesk.tasks.check_sla_response_breach"]
+	}
+}
 
 # Testing
 # -------
