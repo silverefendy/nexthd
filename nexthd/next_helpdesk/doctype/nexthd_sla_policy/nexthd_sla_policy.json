@@ -54,5 +54,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "priority"
+ "title_field": "priority",
+ "route": "nexthd-sla-policy"
 }

@@ -160,5 +160,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "asset_name"
+ "title_field": "asset_name",
+ "route": "nexthd-asset"
 }

@@ -2,28 +2,28 @@
  "actions": [],
  "allow_import": 1,
  "allow_rename": 1,
- "autoname": "field:category_name",
+ "autoname": "field:team_name",
  "creation": "2026-08-07 00:00:00.000000",
  "default_view": "List",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "category_name",
-  "parent_category"
+  "team_name",
+  "members"
  ],
  "fields": [
   {
-   "fieldname": "category_name",
+   "fieldname": "team_name",
    "fieldtype": "Data",
-   "label": "Category Name",
+   "label": "Team Name",
    "reqd": 1,
    "unique": 1
   },
   {
-   "fieldname": "parent_category",
-   "fieldtype": "Link",
-   "label": "Parent Category",
-   "options": "NextHD Category"
+   "fieldname": "members",
+   "fieldtype": "Table",
+   "label": "Members",
+   "options": "NextHD Team Member"
   }
  ],
  "idx_unique": [],
@@ -31,13 +31,13 @@
  "modified": "2026-08-07 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Next Helpdesk",
- "name": "NextHD Category",
+ "name": "NextHD Team",
  "naming_rule": "By Field Name",
  "owner": "Administrator",
  "permissions": [],
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "category_name",
- "route": "nexthd-category"
+ "subdoctype_layout": "Members",
+ "title_field": "team_name"
 }

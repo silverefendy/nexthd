@@ -164,5 +164,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "title"
+ "title_field": "title",
+ "route": "nexthd-change-request"
 }

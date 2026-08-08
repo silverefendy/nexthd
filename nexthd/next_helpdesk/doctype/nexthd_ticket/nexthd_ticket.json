@@ -251,5 +251,6 @@
    "title": "Ditutup"
   }
  ],
- "title_field": "subject"
+ "title_field": "subject",
+ "route": "nexthd-ticket"
 }
