@@ -11,15 +11,14 @@ app_license = "mit"
 # required_apps = []
 
 # Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "nexthd",
-# 		"logo": "/assets/nexthd/logo.png",
-# 		"title": "Next Helpdesk",
-# 		"route": "/nexthd",
-# 		"has_permission": "nexthd.api.permission.has_app_permission"
-# 	}
-# ]
+add_to_apps_screen = [
+    {
+        "name": "nexthd",
+        "logo": "/assets/nexthd/logo.png",
+        "title": "NextHD",
+        "route": "/desk/nexthd",
+    }
+]
 
 # Includes in <head>
 # ------------------
