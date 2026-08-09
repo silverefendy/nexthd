@@ -14,7 +14,7 @@ app_license = "mit"
 add_to_apps_screen = [
     {
         "name": "nexthd",
-        "logo": "/assets/nexthd/logo.png",
+        "logo": "/assets/nexthd/logo.svg",
         "title": "NextHD",
         "route": "/desk/nexthd",
     }
