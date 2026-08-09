@@ -172,16 +172,25 @@ fixtures = [
 		"NextHD Problem",
 		"NextHD Change Request"
 	]]]},
-	{"dt": "Workflow State", "filters": [["workflow", "in", [
-		"NextHD Ticket",
-		"NextHD Problem",
-		"NextHD Change Request"
+	{"dt": "Workflow State", "filters": [["name", "in", [
+		"NextHD Ticket Open",
+		"NextHD Ticket In Progress",
+		"NextHD Ticket Resolved",
+		"NextHD Ticket Closed",
+		"NextHD Problem Open",
+		"NextHD Problem In Progress",
+		"NextHD Problem Resolved",
+		"NextHD Change Request Draft",
+		"NextHD Change Request Approved",
+		"NextHD Change Request Rejected"
 	]]]},
 	{"dt": "Workflow Transition", "filters": [["parent", "in", [
 		"NextHD Ticket",
 		"NextHD Problem",
 		"NextHD Change Request"
-	]]]}
+	]]]},
+	{"dt": "Desktop Icon", "filters": [["app", "=", "nexthd"]]},
+	{"dt": "Workspace Sidebar", "filters": [["name", "=", "NextHD"]]}
 ]
 
 # Workspace
