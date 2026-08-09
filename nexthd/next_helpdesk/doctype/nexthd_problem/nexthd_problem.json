@@ -11,7 +11,16 @@
   "naming_series",
   "title",
   "status",
+  "col_info2",
+  "priority",
+  "category",
+  "section_detail",
   "root_cause",
+  "workaround",
+  "col_detail2",
+  "known_error",
+  "change_request",
+  "section_tickets",
   "related_tickets"
  ],
  "fields": [
@@ -36,9 +45,57 @@
    "reqd": 1
   },
   {
+   "fieldname": "col_info2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Kritis\nTinggi\nSedang\nRendah"
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Link",
+   "label": "Category",
+   "options": "NextHD Category"
+  },
+  {
+   "fieldname": "section_detail",
+   "fieldtype": "Section Break",
+   "label": "Detail & Relasi"
+  },
+  {
    "fieldname": "root_cause",
    "fieldtype": "Text Editor",
    "label": "Root Cause"
+  },
+  {
+   "fieldname": "workaround",
+   "fieldtype": "Text Editor",
+   "label": "Workaround"
+  },
+  {
+   "fieldname": "col_detail2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "known_error",
+   "fieldtype": "Link",
+   "label": "Known Error",
+   "options": "NextHD Known Error",
+   "depends_on": "eval:doc.status == 'Known Error'"
+  },
+  {
+   "fieldname": "change_request",
+   "fieldtype": "Link",
+   "label": "Change Request",
+   "options": "NextHD Change Request"
+  },
+  {
+   "fieldname": "section_tickets",
+   "fieldtype": "Section Break",
+   "label": "Tiket Terkait"
   },
   {
    "fieldname": "related_tickets",
@@ -49,7 +106,7 @@
  ],
  "idx_unique": [],
  "links": [],
- "modified": "2026-08-07 00:00:00.000000",
+ "modified": "2026-08-09 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Next Helpdesk",
  "name": "NextHD Problem",

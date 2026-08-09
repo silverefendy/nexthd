@@ -12,17 +12,27 @@
   "ticket_type",
   "subject",
   "description",
+  "col_info1",
   "status",
   "priority",
+  "col_info2",
   "category",
+  "service_catalog",
+  "section_assign",
   "requested_by",
   "assigned_to",
+  "col_assign2",
   "team",
+  "affected_asset",
+  "section_sla",
   "sla_response_by",
   "sla_resolution_by",
+  "col_sla2",
   "sla_warning_sent",
   "resolved_on",
+  "col_sla3",
   "closed_on",
+  "section_relation",
   "related_problem",
   "attachments"
  ],
@@ -53,6 +63,10 @@
    "label": "Description"
   },
   {
+   "fieldname": "col_info1",
+   "fieldtype": "Column Break"
+  },
+  {
    "default": "Baru",
    "fieldname": "status",
    "fieldtype": "Select",
@@ -69,10 +83,26 @@
    "reqd": 1
   },
   {
+   "fieldname": "col_info2",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "category",
    "fieldtype": "Link",
    "label": "Category",
    "options": "NextHD Category"
+  },
+  {
+   "fieldname": "service_catalog",
+   "fieldtype": "Link",
+   "label": "Service Catalog",
+   "options": "NextHD Service Catalog",
+   "depends_on": "eval:doc.ticket_type == 'Permintaan Layanan'"
+  },
+  {
+   "fieldname": "section_assign",
+   "fieldtype": "Section Break",
+   "label": "Penugasan"
   },
   {
    "fieldname": "requested_by",
@@ -88,10 +118,25 @@
    "options": "User"
   },
   {
+   "fieldname": "col_assign2",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "team",
    "fieldtype": "Link",
    "label": "Team",
    "options": "NextHD Team"
+  },
+  {
+   "fieldname": "affected_asset",
+   "fieldtype": "Link",
+   "label": "Affected Asset",
+   "options": "NextHD Asset"
+  },
+  {
+   "fieldname": "section_sla",
+   "fieldtype": "Section Break",
+   "label": "SLA"
   },
   {
    "fieldname": "sla_response_by",
@@ -104,6 +149,10 @@
    "fieldtype": "Datetime",
    "label": "SLA Resolution By",
    "read_only": 1
+  },
+  {
+   "fieldname": "col_sla2",
+   "fieldtype": "Column Break"
   },
   {
    "default": "0",
@@ -119,10 +168,19 @@
    "read_only": 1
   },
   {
+   "fieldname": "col_sla3",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "closed_on",
    "fieldtype": "Datetime",
    "label": "Closed On",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_relation",
+   "fieldtype": "Section Break",
+   "label": "Relasi"
   },
   {
    "fieldname": "related_problem",
@@ -138,7 +196,7 @@
  ],
  "idx_unique": [],
  "links": [],
- "modified": "2026-08-08 00:00:00.000000",
+ "modified": "2026-08-09 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Next Helpdesk",
  "name": "NextHD Ticket",
@@ -230,26 +288,11 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [
-  {
-   "color": "Red",
-   "title": "Baru"
-  },
-  {
-   "color": "Blue",
-   "title": "Sedang Dikerjakan"
-  },
-  {
-   "color": "Yellow",
-   "title": "Menunggu User"
-  },
-  {
-   "color": "Green",
-   "title": "Selesai"
-  },
-  {
-   "color": "Gray",
-   "title": "Ditutup"
-  }
+  {"color": "Red", "title": "Baru"},
+  {"color": "Blue", "title": "Sedang Dikerjakan"},
+  {"color": "Yellow", "title": "Menunggu User"},
+  {"color": "Green", "title": "Selesai"},
+  {"color": "Gray", "title": "Ditutup"}
  ],
  "title_field": "subject",
  "route": "nexthd-ticket"
