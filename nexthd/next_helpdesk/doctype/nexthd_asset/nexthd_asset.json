@@ -15,7 +15,36 @@
   "assigned_to",
   "status",
   "purchase_date",
-  "warranty_until"
+  "warranty_until",
+  "section_pc",
+  "brand",
+  "model",
+  "serial_number",
+  "col_pc1",
+  "cpu",
+  "ram",
+  "col_pc2",
+  "storage",
+  "os",
+  "peripheral_notes",
+  "section_network",
+  "net_brand",
+  "net_model",
+  "net_serial_number",
+  "col_net1",
+  "ip_address",
+  "mac_address",
+  "col_net2",
+  "device_role",
+  "net_notes",
+  "section_printer",
+  "printer_brand",
+  "printer_model",
+  "printer_serial_number",
+  "printer_type",
+  "printer_notes",
+  "section_lainnya",
+  "other_description"
  ],
  "fields": [
   {
@@ -65,11 +94,190 @@
    "fieldname": "warranty_until",
    "fieldtype": "Date",
    "label": "Warranty Until"
+  },
+  {
+   "fieldname": "section_pc",
+   "fieldtype": "Section Break",
+   "label": "Spesifikasi Hardware",
+   "depends_on": "eval:in_list(['Laptop','PC','Server'], doc.asset_type)",
+   "collapsible": 0
+  },
+  {
+   "fieldname": "brand",
+   "fieldtype": "Data",
+   "label": "Brand",
+   "depends_on": "eval:in_list(['Laptop','PC','Server'], doc.asset_type)"
+  },
+  {
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "label": "Model",
+   "depends_on": "eval:in_list(['Laptop','PC','Server'], doc.asset_type)"
+  },
+  {
+   "fieldname": "serial_number",
+   "fieldtype": "Data",
+   "label": "Serial Number",
+   "depends_on": "eval:in_list(['Laptop','PC','Server'], doc.asset_type)"
+  },
+  {
+   "fieldname": "col_pc1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cpu",
+   "fieldtype": "Data",
+   "label": "CPU",
+   "depends_on": "eval:in_list(['Laptop','PC','Server'], doc.asset_type)",
+   "placeholder": "e.g. Intel Core i5-12400"
+  },
+  {
+   "fieldname": "ram",
+   "fieldtype": "Data",
+   "label": "RAM",
+   "depends_on": "eval:in_list(['Laptop','PC','Server'], doc.asset_type)",
+   "placeholder": "e.g. 16GB DDR4"
+  },
+  {
+   "fieldname": "col_pc2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "storage",
+   "fieldtype": "Data",
+   "label": "Storage",
+   "depends_on": "eval:in_list(['Laptop','PC','Server'], doc.asset_type)",
+   "placeholder": "e.g. 512GB SSD + 1TB HDD"
+  },
+  {
+   "fieldname": "os",
+   "fieldtype": "Select",
+   "label": "Operating System",
+   "depends_on": "eval:in_list(['Laptop','PC','Server'], doc.asset_type)",
+   "options": "\nWindows 10\nWindows 11\nWindows Server 2019\nWindows Server 2022\nUbuntu\nDebian\nCentOS\nLainnya"
+  },
+  {
+   "fieldname": "peripheral_notes",
+   "fieldtype": "Small Text",
+   "label": "Peripheral / Catatan",
+   "depends_on": "eval:in_list(['Laptop','PC','Server'], doc.asset_type)",
+   "placeholder": "e.g. Monitor 24inch, Keyboard, Mouse, UPS"
+  },
+  {
+   "fieldname": "section_network",
+   "fieldtype": "Section Break",
+   "label": "Spesifikasi Network Device",
+   "depends_on": "eval:doc.asset_type == 'Network Device'",
+   "collapsible": 0
+  },
+  {
+   "fieldname": "net_brand",
+   "fieldtype": "Data",
+   "label": "Brand",
+   "depends_on": "eval:doc.asset_type == 'Network Device'"
+  },
+  {
+   "fieldname": "net_model",
+   "fieldtype": "Data",
+   "label": "Model",
+   "depends_on": "eval:doc.asset_type == 'Network Device'"
+  },
+  {
+   "fieldname": "net_serial_number",
+   "fieldtype": "Data",
+   "label": "Serial Number",
+   "depends_on": "eval:doc.asset_type == 'Network Device'"
+  },
+  {
+   "fieldname": "col_net1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "label": "IP Address",
+   "depends_on": "eval:doc.asset_type == 'Network Device'",
+   "placeholder": "e.g. 192.168.1.1"
+  },
+  {
+   "fieldname": "mac_address",
+   "fieldtype": "Data",
+   "label": "MAC Address",
+   "depends_on": "eval:doc.asset_type == 'Network Device'",
+   "placeholder": "e.g. AA:BB:CC:DD:EE:FF"
+  },
+  {
+   "fieldname": "col_net2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "device_role",
+   "fieldtype": "Select",
+   "label": "Device Role",
+   "depends_on": "eval:doc.asset_type == 'Network Device'",
+   "options": "\nSwitch\nRouter\nAccess Point\nFirewall\nModem\nNAS\nLainnya"
+  },
+  {
+   "fieldname": "net_notes",
+   "fieldtype": "Small Text",
+   "label": "Catatan",
+   "depends_on": "eval:doc.asset_type == 'Network Device'"
+  },
+  {
+   "fieldname": "section_printer",
+   "fieldtype": "Section Break",
+   "label": "Spesifikasi Printer",
+   "depends_on": "eval:doc.asset_type == 'Printer'",
+   "collapsible": 0
+  },
+  {
+   "fieldname": "printer_brand",
+   "fieldtype": "Data",
+   "label": "Brand",
+   "depends_on": "eval:doc.asset_type == 'Printer'"
+  },
+  {
+   "fieldname": "printer_model",
+   "fieldtype": "Data",
+   "label": "Model",
+   "depends_on": "eval:doc.asset_type == 'Printer'"
+  },
+  {
+   "fieldname": "printer_serial_number",
+   "fieldtype": "Data",
+   "label": "Serial Number",
+   "depends_on": "eval:doc.asset_type == 'Printer'"
+  },
+  {
+   "fieldname": "printer_type",
+   "fieldtype": "Select",
+   "label": "Printer Type",
+   "depends_on": "eval:doc.asset_type == 'Printer'",
+   "options": "\nInkjet\nLaser\nDot Matrix\nThermal\nLainnya"
+  },
+  {
+   "fieldname": "printer_notes",
+   "fieldtype": "Small Text",
+   "label": "Catatan",
+   "depends_on": "eval:doc.asset_type == 'Printer'"
+  },
+  {
+   "fieldname": "section_lainnya",
+   "fieldtype": "Section Break",
+   "label": "Keterangan",
+   "depends_on": "eval:doc.asset_type == 'Lainnya'",
+   "collapsible": 0
+  },
+  {
+   "fieldname": "other_description",
+   "fieldtype": "Text Editor",
+   "label": "Deskripsi",
+   "depends_on": "eval:doc.asset_type == 'Lainnya'"
   }
  ],
  "idx_unique": [],
  "links": [],
- "modified": "2026-08-07 00:00:00.000000",
+ "modified": "2026-08-09 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Next Helpdesk",
  "name": "NextHD Asset",
