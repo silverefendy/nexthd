@@ -16,7 +16,138 @@
  "label": "NextHD",
  "link_to": null,
  "link_type": null,
- "links": [],
+ "links": [
+  {
+   "label": "NextHD Ticket",
+   "link_to": "NextHD Ticket",
+   "link_type": "DocType",
+   "type": "Link",
+   "hidden": 0,
+   "is_query_report": 0,
+   "onboard": 1,
+   "link_count": 0
+  },
+  {
+   "label": "NextHD Problem",
+   "link_to": "NextHD Problem",
+   "link_type": "DocType",
+   "type": "Link",
+   "hidden": 0,
+   "is_query_report": 0,
+   "onboard": 1,
+   "link_count": 0
+  },
+  {
+   "label": "NextHD Change Request",
+   "link_to": "NextHD Change Request",
+   "link_type": "DocType",
+   "type": "Link",
+   "hidden": 0,
+   "is_query_report": 0,
+   "onboard": 1,
+   "link_count": 0
+  },
+  {
+   "label": "NextHD Problem",
+   "link_to": "NextHD Problem",
+   "link_type": "DocType",
+   "type": "Link",
+   "hidden": 0,
+   "is_query_report": 0,
+   "onboard": 0,
+   "link_count": 0
+  },
+  {
+   "label": "NextHD Known Error",
+   "link_to": "NextHD Known Error",
+   "link_type": "DocType",
+   "type": "Link",
+   "hidden": 0,
+   "is_query_report": 0,
+   "onboard": 0,
+   "link_count": 0
+  },
+  {
+   "label": "NextHD Asset",
+   "link_to": "NextHD Asset",
+   "link_type": "DocType",
+   "type": "Link",
+   "hidden": 0,
+   "is_query_report": 0,
+   "onboard": 0,
+   "link_count": 0
+  },
+  {
+   "label": "NextHD Team",
+   "link_to": "NextHD Team",
+   "link_type": "DocType",
+   "type": "Link",
+   "hidden": 0,
+   "is_query_report": 0,
+   "onboard": 0,
+   "link_count": 0
+  },
+  {
+   "label": "NextHD Category",
+   "link_to": "NextHD Category",
+   "link_type": "DocType",
+   "type": "Link",
+   "hidden": 0,
+   "is_query_report": 0,
+   "onboard": 0,
+   "link_count": 0
+  },
+  {
+   "label": "NextHD SLA Policy",
+   "link_to": "NextHD SLA Policy",
+   "link_type": "DocType",
+   "type": "Link",
+   "hidden": 0,
+   "is_query_report": 0,
+   "onboard": 0,
+   "link_count": 0
+  },
+  {
+   "label": "NextHD Business Hours",
+   "link_to": "NextHD Business Hours",
+   "link_type": "DocType",
+   "type": "Link",
+   "hidden": 0,
+   "is_query_report": 0,
+   "onboard": 0,
+   "link_count": 0
+  },
+  {
+   "label": "NextHD Service Catalog",
+   "link_to": "NextHD Service Catalog",
+   "link_type": "DocType",
+   "type": "Link",
+   "hidden": 0,
+   "is_query_report": 0,
+   "onboard": 0,
+   "link_count": 0
+  },
+  {
+   "label": "NextHD User Profile",
+   "link_to": "NextHD User Profile",
+   "link_type": "DocType",
+   "type": "Link",
+   "hidden": 0,
+   "is_query_report": 0,
+   "onboard": 0,
+   "link_count": 0
+  },
+  {
+   "label": "NextHD Settings",
+   "link_to": "NextHD Settings",
+   "link_type": "DocType",
+   "type": "Link",
+   "hidden": 0,
+   "is_query_report": 0,
+   "onboard": 0,
+   "link_count": 0
+  }
+ ],
  "modified": "2026-08-08 14:44:26.969080",
  "modified_by": "Administrator",
  "module": "Next Helpdesk",
