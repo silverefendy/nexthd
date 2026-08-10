@@ -13,10 +13,10 @@ Custom helpdesk module untuk Frappe Framework, dibangun untuk kebutuhan IT suppo
 
 ## Prasyarat
 
-- Frappe Framework v14 atau v15
-- Python 3.10+
+- Frappe Framework v16
+- Python 3.14
 - Redis (untuk queue)
-- MariaDB 10.6+
+- MariaDB 10.11+
 
 ## Instalasi
 
@@ -32,7 +32,7 @@ bench --site your-site migrate
 2. Di Frappe desk, buka **NextHD Settings**
 3. Isi field **Telegram Bot Token** dengan token dari BotFather
 4. Centang **Enable Telegram Notification**
-5. Set webhook URL ke: `https://your-domain/api/method/nexthd.next_helpdesk.api.telegram_webhook.handle_webhook` 
+5. Set webhook URL ke: `https://your-domain/api/method/nexthd.next_helpdesk.api.telegram_webhook.telegram_webhook`
 6. Setiap user yang ingin menerima notifikasi harus mengirim `/start` ke bot, lalu ikuti instruksi verifikasi
 
 ## Setup SLA Policy
@@ -46,9 +46,9 @@ Setelah install, buat SLA Policy untuk setiap level prioritas:
 
 ## Dokumentasi
 
-Lihat folder `docs/` untuk detail teknis:
-- `docs/NEXTHD_SPEC.md` — Spesifikasi lengkap fitur
-- `docs/BUGFIX_SUMMARY.md` — Riwayat bugfix
+Semua dokumentasi teknis (arsitektur, doctype, permission, workflow, riwayat bugfix, schema tabel, instalasi) sudah digabung ke satu file:
+
+- [`docs/SUMMARY.md`](docs/SUMMARY.md) — Master documentation
 
 ## Lisensi
 
