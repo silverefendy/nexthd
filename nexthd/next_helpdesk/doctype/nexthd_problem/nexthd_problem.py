@@ -61,3 +61,49 @@ class NextHDProblem(Document):
 		"""Handle updates to problem"""
 		# Telegram notification hooks will be added in Tahap 6
 		pass
+
+
+@frappe.whitelist()
+def create_known_error(problem_name):
+	"""
+	Membuat NextHD Known Error baru dari NextHD Problem, dan mengubah
+	status Problem menjadi "Known Error".
+
+	Args:
+		problem_name (str): nama/ID record NextHD Problem
+
+	Returns:
+		str: nama record NextHD Known Error yang baru dibuat
+
+	Raises:
+		frappe.ValidationError: jika root_cause kosong atau status
+			Problem bukan "Investigasi"
+	"""
+	# 1. Ambil doc Problem
+	problem = frappe.get_doc("NextHD Problem", problem_name)
+
+	# 2. Validasi root_cause tidak kosong (strip HTML/whitespace)
+	if not problem.root_cause or not problem.root_cause.strip():
+		frappe.throw(frappe._("Akar masalah harus diisi sebelum membuat Known Error"))
+
+	# 3. Validasi status Problem == "Investigasi"
+	if problem.status != "Investigasi":
+		frappe.throw(frappe._("Problem harus berstatus Investigasi untuk dikonversi ke Known Error"))
+
+	# 4. Buat record NextHD Known Error baru
+	known_error = frappe.get_doc({
+		"doctype": "NextHD Known Error",
+		"title": problem.title,
+		"symptom": problem.root_cause,
+		"workaround": problem.workaround,
+		"related_problem": problem.name
+	})
+	known_error.insert()
+
+	# 5. Update Problem
+	problem.known_error = known_error.name
+	problem.status = "Known Error"
+	problem.save()
+
+	# 6. Return nama Known Error baru
+	return known_error.name
