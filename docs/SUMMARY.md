@@ -2,7 +2,7 @@
 
 > **Satu file untuk semua konteks.** Gabungan dari `README.md`, `NEXTHD_SPEC.md`, `CLAUDE_REVIEW_LOG.md`, `BUGFIX_SUMMARY.md`, dan `SESSION_NOTES.md`.
 >
-> **Last updated:** 2026-08-11 18:15 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
+> **Last updated:** 2026-08-11 23:50 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
 
 ---
 
@@ -23,7 +23,8 @@
 13. [Schema Tabel Penting](#13-schema-tabel-penting)
 14. [Bahasa Indonesia — Label Referensi](#14-bahasa-indonesia--label-referensi)
 15. [Instalasi & Setup Awal](#15-instalasi--setup-awal)
-16. [Referensi](#16-referensi)
+16. [Pembagian Kerja: Claude vs Devin vs Efendy](#16-pembagian-kerja-claude-vs-devin-vs-efendy)
+17. [Referensi](#17-referensi)
 
 ---
 
@@ -70,6 +71,7 @@
 | Akun operasional | `support@ciptamebel.co.id` |
 | Akun admin | `Administrator` — email: `admin@example.com` |
 | Pemakai saat ini | Hanya IT (satu orang) sebagai Administrator |
+| VM lama `cml-helpdesk` (100.64.0.13) | ✅ **Sudah didecommission dari VPS** (dikonfirmasi 2026-08-11) |
 
 ### Diagram Infrastruktur
 
@@ -271,6 +273,10 @@ business_hours        → Link: NextHD Business Hours
 > karena production bukan developer_mode. `doc.save()` akan throw `CannotCreateStandardDoctypeError`.
 > **Selalu pakai SQL INSERT langsung ke `tabDocPerm`.**
 
+> **Role assignment ke user individual** (misal `support@ciptamebel.co.id`) TIDAK perlu SQL —
+> cukup lewat UI: buka **User** → section **Roles** → centang role → Save.
+> Ini beda dengan permission doctype di atas (yang memang wajib SQL).
+
 ---
 
 ## 6. Sistem User Tanpa Email
@@ -346,6 +352,10 @@ Sistem ini hanya untuk karyawan internal. Frappe mewajibkan field email, tapi em
 2. `frappe.enqueue("_send_ticket_created_notification")` → wajib full path: `"nexthd.next_helpdesk.utils.telegram._send_ticket_created_notification"` (berlaku untuk 6 fungsi)
 3. Parameter `link_telegram_account(user, telegram_username, verification_code)` → renamed ke `chat_id`
 
+### Catatan i18n (belum dikerjakan, prioritas rendah)
+
+`i18n` = internationalization. Pesan Telegram di atas saat ini **hardcoded Bahasa Indonesia** di `telegram.py`. Untuk mendukung multi-bahasa (field `preferred_language` di NextHD User Profile sudah ada tapi belum dipakai), perlu dibungkus `frappe._("...")` + file terjemahan `en.csv`. Bukan aplikasi terpisah, ini konsep standar Frappe untuk translation.
+
 ---
 
 ## 8. Workflow (State Machine)
@@ -380,6 +390,19 @@ Draft → Diajukan → Direview → [Disetujui/Ditolak] → Implementasi → Sel
                               Ditolak → Draft (bisa resubmit)
 ```
 
+### Alur End-to-End (Ticket → Problem → Change Request)
+
+```
+Ticket (berulang/insiden besar)
+   └─ dikaitkan via field `related_problem` → Problem dibuat
+        └─ Problem investigasi, root cause ditemukan
+             └─ jika perlu fix permanen → Change Request dibuat via field `change_request`
+                  └─ Change Request disetujui → Implementasi → Selesai
+                       └─ Problem ditutup → Ticket-ticket terkait bisa ditutup
+```
+
+Ujung siklus normal = **Ticket Ditutup**. Untuk kasus berulang, siklus penuh berakhir di **Change Request Selesai/Ditutup** yang memperbaiki akar masalah.
+
 ### Fixture Workflow (di repo)
 
 File JSON di `nexthd/next_helpdesk/workflow/`:
@@ -403,6 +426,11 @@ fixtures = [
 ```
 
 > ⚠️ `Workflow State` TIDAK perlu di fixtures — tidak punya kolom `workflow`, sifatnya global.
+
+> ⚠️ **Fixture JSON = definisi saja, TIDAK otomatis aktif.** Wajib dicek manual:
+> 1. `Workflow.is_active = 1` untuk ketiga workflow
+> 2. Field `workflow_state` muncul di form (otomatis ditambah Frappe saat workflow aktif)
+> 3. Role per transition harus sudah di-assign ke user terkait (lihat §5), kalau belum tombol transisi tidak akan muncul
 
 ---
 
@@ -446,6 +474,11 @@ Tanpa hook ini, nexthd tidak muncul sama sekali di desktop meski ada di `tabDesk
 
 **Logo WAJIB ADA** di `/home/it/frappe/apps/nexthd/nexthd/public/logo.svg`. Tanpa file logo, hook tidak terbaca.
 
+> 🔴 **BUG AKTIF (dikonfirmasi 2026-08-11):** Klik icon NextHD dari `/desk/desktop` malah membuka
+> `/desk/nexthd-ticket` (list view Ticket), BUKAN `/desk/nexthd` (workspace dashboard).
+> Kemungkinan `link_to` di `tabDesktop Icon` salah target atau ke-override. Perlu dicek ulang
+> value `link_type`/`link_to` aktual di DB vs yang seharusnya di atas.
+
 ### B. `/desk/nexthd` — Workspace Page
 
 Dikontrol oleh **`tabWorkspace`** dan file `nexthd/next_helpdesk/workspace/nexthd/nexthd.json`.
@@ -457,6 +490,12 @@ Dikontrol oleh **`tabWorkspace`** dan file `nexthd/next_helpdesk/workspace/nexth
 **Number Cards di workspace:**
 - Buat dulu di `tabNumber Card` (via SQL)
 - Isi `number_card_name` di `tabWorkspace Number Card` (kolom kunci: `number_card_name`, bukan `card_name`)
+
+> 🔴 **BUG AKTIF (dikonfirmasi 2026-08-11):** Section "Statistik Tiket" muncul di `/desk/nexthd`
+> tapi ke-6 number card di dalamnya TIDAK render (kosong). Kemungkinan penyebab: record di
+> `tabNumber Card` belum ada / `tabWorkspace Number Card.number_card_name` tidak match nama
+> aktual di `tabNumber Card` / `filters_json` salah format. Perlu `SELECT * FROM tabNumber Card`
+> dan `SELECT * FROM tabWorkspace Number Card WHERE parent='NextHD'` untuk diagnosa.
 
 ### C. Sidebar Kiri — `tabWorkspace Sidebar`
 
@@ -481,7 +520,7 @@ Sections:
   [Operasional]
     Shortcuts: New Ticket, All Tickets, NextHD Problem, NextHD Change Request
 
-  [Statistik Tiket]
+  [Statistik Tiket]                    ⚠️ Cards tidak render — lihat §9.B
     Number Cards (6):
       Tiket Baru              → COUNT NextHD Ticket WHERE status = Baru
       Tiket Sedang Dikerjakan → COUNT WHERE status = Sedang Dikerjakan
@@ -538,6 +577,7 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 | MariaDB subquery | Versi lama tidak support `LIMIT` di subquery `IN` |
 | JSON content workspace | Generate via `json.dumps()` Python, BUKAN string literal manual |
 | `Workflow State` | Tidak punya kolom `workflow` — jangan filter berdasarkan itu |
+| Role assignment ke user | Via UI (User → Roles), TIDAK perlu SQL — beda dengan permission doctype |
 
 ---
 
@@ -583,29 +623,35 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 
 ---
 
-### ⚠️ BELUM DIVERIFIKASI (cek di awal sesi berikutnya)
+### ✅ TERVERIFIKASI — 2026-08-11 (via screenshot user)
 
-| # | Item | Yang Perlu Dicek |
+| # | Item | Hasil |
 |---|---|---|
-| 1 | Number cards "Statistik Tiket" | Buka `/desk/nexthd` → apakah angka muncul di cards |
-| 2 | Desktop icon tidak buka tab baru | Klik ikon NextHD di `/desk/desktop` |
-| 3 | NextHD Ticket form baru | Buka New Ticket → cek field `affected_asset` dan `service_catalog` muncul |
-| 4 | NextHD Problem form baru | Buka Problem → cek field `workaround`, `known_error`, `change_request` muncul |
+| 3 | NextHD Ticket form — `affected_asset` & `service_catalog` | ✅ OK — `service_catalog` tersembunyi karena `depends_on` (ticket_type ≠ Permintaan Layanan), behavior sesuai desain |
+| 4 | NextHD Problem form — `workaround`, `known_error`, `change_request` | ✅ OK — `known_error` tersembunyi karena `depends_on` (status ≠ Known Error), behavior sesuai desain |
+
+### 🔴 BUG AKTIF — ditemukan 2026-08-11, perlu fix (Claude, server produksi)
+
+| # | Item | Masalah | Detail diagnosa |
+|---|---|---|---|
+| 1 | Number cards "Statistik Tiket" | Tidak render di `/desk/nexthd` | Lihat §9.B — cek `tabNumber Card` & `tabWorkspace Number Card` |
+| 2 | Desktop icon routing | Klik icon → salah ke `/desk/nexthd-ticket`, seharusnya `/desk/nexthd` | Lihat §9.A — cek `link_type`/`link_to` aktual di `tabDesktop Icon` |
 
 ---
 
 ### 🔴 BELUM DIKERJAKAN
 
-| # | Fitur | Keterangan |
-|---|---|---|
-| 1 | Problem → spawn Known Error button | Butuh Python controller + JS client script |
-| 2 | SLA Policy enforcement | Scheduler ada tapi logika Python belum diverifikasi end-to-end |
-| 3 | Custom reports | Per kategori, prioritas, bulan — butuh Query Report Python |
-| 4 | User portal Requester | Submit tiket sendiri via portal |
-| 5 | Workflow verification | 3 Workflow di fixtures belum diverifikasi state machine-nya |
-| 6 | Decommission VM cml-helpdesk lama | Tailscale IP `100.64.0.13` + cleanup nginx/Headscale di CML-VPS |
-| 7 | Role assignment ke user spesifik | `support@ciptamebel.co.id` belum punya role IT Manager/Agent |
-| 8 | Pesan notifikasi Telegram i18n | Hardcoded di `telegram.py`, belum pakai `frappe._()` |
+| # | Fitur | Keterangan | PIC |
+|---|---|---|---|
+| 1 | Problem → spawn Known Error button | Butuh Python controller + JS client script | Devin (spec disiapkan Claude) |
+| 2 | SLA Policy enforcement | Scheduler ada tapi logika Python belum diverifikasi end-to-end | Claude (verifikasi) |
+| 3 | Custom reports | Per kategori, prioritas, bulan — butuh Query Report Python. Export PDF/Excel/CSV sudah bawaan Frappe (tidak perlu dibangun); export ke Word (.docx) TIDAK built-in, perlu dibangun terpisah kalau dibutuhkan | Devin |
+| 4 | User portal Requester | Via Frappe Web Form. Perlu keputusan dulu: requester punya akun atau tidak, bisa lihat status tiket sendiri atau cuma submit | Efendy (keputusan) → Devin (implementasi) |
+| 5 | Workflow verification | 3 Workflow di fixtures belum diverifikasi state machine-nya — cek `is_active`, role assignment, test manual | Claude |
+| 6 | ~~Decommission VM cml-helpdesk lama~~ | ✅ **SELESAI** — dikonfirmasi sudah dihapus dari VPS (2026-08-11) | — |
+| 7 | Role assignment ke user spesifik | `support@ciptamebel.co.id` belum punya role IT Manager/Agent — via UI (User → Roles), bukan SQL | Efendy |
+| 8 | Pesan notifikasi Telegram i18n | Hardcoded di `telegram.py`, belum pakai `frappe._()`. Prioritas rendah, ditunda | Devin (nanti) |
+| 9 | SLA Policy — angka response/resolution time | Belum ditentukan SOP-nya (butuh keputusan Efendy dulu, bukan sekadar teknis) | Efendy (keputusan) → Claude (buat record) |
 
 ---
 
@@ -732,8 +778,19 @@ bench --site desk.ciptamebel.co.id migrate
 
 1. Buka **NextHD Business Hours** → New → isi jam kerja Senin–Sabtu
 2. Buka **NextHD SLA Policy** → New → buat 4 record: Kritis, Tinggi, Sedang, Rendah
-3. Isi `response_time_minutes` dan `resolution_time_minutes` sesuai SOP
+3. Isi `response_time_minutes` dan `resolution_time_minutes` sesuai SOP (**belum ditentukan**, lihat §12 item 9)
 4. Hubungkan setiap SLA Policy ke Business Hours yang sudah dibuat
+
+### Alur Deploy setelah Devin selesai kerja
+
+```bash
+# Di server produksi, setelah PR Devin di-merge ke main:
+cd /home/it/frappe/apps/nexthd
+git pull origin main
+cd /home/it/frappe
+bench --site desk.ciptamebel.co.id migrate
+bench restart   # kalau ada perubahan hooks.py / backend logic
+```
 
 ### Urutan Baca untuk Devin (Handover)
 
@@ -746,7 +803,17 @@ bench --site desk.ciptamebel.co.id migrate
 
 ---
 
-## 16. Referensi
+## 16. Pembagian Kerja: Claude vs Devin vs Efendy
+
+| Siapa | Kapan dipakai |
+|---|---|
+| **Efendy** | Verifikasi manual UI, keputusan SOP/bisnis (SLA, portal requester), akses infra langsung (SSH, DNS, decommission VM), role assignment individual |
+| **Claude** | Kerja di server produksi (SQL, console script, fixtures export), debugging bug produksi, verifikasi teknis (workflow, SLA scheduler), tulis spec/prompt untuk Devin |
+| **Devin** | Implementasi fitur baru di repo (kode Python/JS baru) via PR — tidak punya akses server produksi, hasil kerjanya wajib di-pull manual + `bench migrate` setelah merge |
+
+---
+
+## 17. Referensi
 
 - Frappe v16 migration guide: https://github.com/frappe/frappe/wiki/Migrating-to-version-16
 - Apps page hook docs: https://docs.frappe.io/framework/user/en/apps-page
@@ -756,4 +823,4 @@ bench --site desk.ciptamebel.co.id migrate
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-11 18:15 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-11 23:50 WIB.*
