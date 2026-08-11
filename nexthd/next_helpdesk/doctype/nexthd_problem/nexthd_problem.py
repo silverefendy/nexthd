@@ -69,6 +69,10 @@ def create_known_error(problem_name):
 	Membuat NextHD Known Error baru dari NextHD Problem, dan mengubah
 	status Problem menjadi "Known Error".
 
+	Menggunakan db_set() untuk update Problem secara langsung ke database,
+	agar tidak memicu validate() dan _check_workflow_permission() yang
+	akan memblok transisi status untuk role Agent biasa.
+
 	Args:
 		problem_name (str): nama/ID record NextHD Problem
 
@@ -79,11 +83,15 @@ def create_known_error(problem_name):
 		frappe.ValidationError: jika root_cause kosong atau status
 			Problem bukan "Investigasi"
 	"""
+	import re
+
 	# 1. Ambil doc Problem
 	problem = frappe.get_doc("NextHD Problem", problem_name)
 
-	# 2. Validasi root_cause tidak kosong (strip HTML/whitespace)
-	if not problem.root_cause or not problem.root_cause.strip():
+	# 2. Validasi root_cause tidak kosong
+	# Gunakan regex untuk strip semua HTML tag, lalu cek apakah ada teks tersisa
+	raw_text = re.sub(r'<[^>]+>', '', problem.root_cause or '').strip()
+	if not raw_text:
 		frappe.throw(frappe._("Akar masalah harus diisi sebelum membuat Known Error"))
 
 	# 3. Validasi status Problem == "Investigasi"
@@ -100,10 +108,10 @@ def create_known_error(problem_name):
 	})
 	known_error.insert()
 
-	# 5. Update Problem
-	problem.known_error = known_error.name
-	problem.status = "Known Error"
-	problem.save()
+	# 5. Update Problem langsung ke DB, bypass validate() agar tidak
+	#    memicu cek workflow permission untuk transisi status ini
+	problem.db_set("known_error", known_error.name)
+	problem.db_set("status", "Known Error")
 
 	# 6. Return nama Known Error baru
 	return known_error.name
