@@ -10,9 +10,11 @@
  "name": "NextHD Change Request",
  "owner": "Administrator",
  "send_email_alert": 0,
+ "workflow_name": "NextHD Change Request",
+ "workflow_state_field": "status",
  "states": [
   {
-   "allow_edit": "",
+   "allow_edit": "All",
    "creation": "2026-08-07 00:00:00.000000",
    "doc_status": "0",
    "is_optional": 0,
@@ -23,7 +25,7 @@
    "update_field": "status"
   },
   {
-   "allow_edit": "",
+   "allow_edit": "All",
    "creation": "2026-08-07 00:00:00.000000",
    "doc_status": "0",
    "is_optional": 0,
@@ -34,7 +36,7 @@
    "update_field": "status"
   },
   {
-   "allow_edit": "",
+   "allow_edit": "All",
    "creation": "2026-08-07 00:00:00.000000",
    "doc_status": "0",
    "is_optional": 0,
@@ -45,7 +47,7 @@
    "update_field": "status"
   },
   {
-   "allow_edit": "",
+   "allow_edit": "All",
    "creation": "2026-08-07 00:00:00.000000",
    "doc_status": "0",
    "is_optional": 0,
@@ -56,7 +58,7 @@
    "update_field": "status"
   },
   {
-   "allow_edit": "",
+   "allow_edit": "All",
    "creation": "2026-08-07 00:00:00.000000",
    "doc_status": "0",
    "is_optional": 0,
@@ -67,7 +69,7 @@
    "update_field": "status"
   },
   {
-   "allow_edit": "",
+   "allow_edit": "All",
    "creation": "2026-08-07 00:00:00.000000",
    "doc_status": "0",
    "is_optional": 0,
@@ -78,7 +80,7 @@
    "update_field": "status"
   },
   {
-   "allow_edit": "",
+   "allow_edit": "All",
    "creation": "2026-08-07 00:00:00.000000",
    "doc_status": "0",
    "is_optional": 0,
@@ -89,7 +91,7 @@
    "update_field": "status"
   },
   {
-   "allow_edit": "",
+   "allow_edit": "All",
    "creation": "2026-08-07 00:00:00.000000",
    "doc_status": "1",
    "is_optional": 0,
@@ -109,7 +111,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Draft",
-   "transition": "Diajukan"
+   "next_state": "Diajukan"
   },
   {
    "action": "Review",
@@ -119,7 +121,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Diajukan",
-   "transition": "Direview"
+   "next_state": "Direview"
   },
   {
    "action": "Review",
@@ -129,7 +131,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Diajukan",
-   "transition": "Direview"
+   "next_state": "Direview"
   },
   {
    "action": "Setujui",
@@ -139,7 +141,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Direview",
-   "transition": "Disetujui"
+   "next_state": "Disetujui"
   },
   {
    "action": "Setujui",
@@ -149,7 +151,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Direview",
-   "transition": "Disetujui"
+   "next_state": "Disetujui"
   },
   {
    "action": "Tolak",
@@ -159,7 +161,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Direview",
-   "transition": "Ditolak"
+   "next_state": "Ditolak"
   },
   {
    "action": "Tolak",
@@ -169,7 +171,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Direview",
-   "transition": "Ditolak"
+   "next_state": "Ditolak"
   },
   {
    "action": "Ajukan Ulang",
@@ -179,7 +181,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Ditolak",
-   "transition": "Draft"
+   "next_state": "Draft"
   },
   {
    "action": "Mulai Implementasi",
@@ -189,7 +191,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Disetujui",
-   "transition": "Implementasi"
+   "next_state": "Implementasi"
   },
   {
    "action": "Selesaikan Implementasi",
@@ -199,7 +201,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Implementasi",
-   "transition": "Selesai"
+   "next_state": "Selesai"
   },
   {
    "action": "Tutup",
@@ -209,7 +211,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Selesai",
-   "transition": "Ditutup"
+   "next_state": "Ditutup"
   }
  ]
 }
