@@ -8,9 +8,17 @@ frappe.ui.form.on('NextHD Problem', {
 		const allowed_roles = ['Agent', 'Agent Manager', 'IT Manager'];
 		const has_allowed_role = allowed_roles.some(role => user_roles.includes(role));
 
-		// Check if status is "Investigasi" and root_cause is not empty
+		// Check if status is "Investigasi"
 		const is_investigasi = frm.doc.status === 'Investigasi';
-		const has_root_cause = frm.doc.root_cause && frm.doc.root_cause.trim() !== '';
+
+		// root_cause adalah Text Editor (HTML), gunakan DOMParser untuk
+		// mendeteksi apakah konten benar-benar kosong (bukan hanya <p></p>)
+		function has_text_content(html) {
+			if (!html) return false;
+			const doc = new DOMParser().parseFromString(html, 'text/html');
+			return (doc.body.textContent || '').trim().length > 0;
+		}
+		const has_root_cause = has_text_content(frm.doc.root_cause);
 
 		// Show button only if all conditions are met
 		if (has_allowed_role && is_investigasi && has_root_cause) {
@@ -34,7 +42,7 @@ frappe.ui.form.on('NextHD Problem', {
 						}
 					},
 					error: function(err) {
-						frappe.msgprint(__('Gagal membuat Known Error: ') + err.message);
+						frappe.msgprint(__('Gagal membuat Known Error: ') + (err.message || err));
 					}
 				});
 			}, __('Actions'));
