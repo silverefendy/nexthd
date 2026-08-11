@@ -2,7 +2,7 @@
 
 > **Satu file untuk semua konteks.** Gabungan dari `README.md`, `NEXTHD_SPEC.md`, `CLAUDE_REVIEW_LOG.md`, `BUGFIX_SUMMARY.md`, dan `SESSION_NOTES.md`.
 >
-> **Last updated:** 2026-08-11 17:40 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
+> **Last updated:** 2026-08-11 18:10 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
 
 ---
 
@@ -196,6 +196,13 @@ known_error           → Link: NextHD Known Error (depends_on: status = Known E
 change_request        → Link: NextHD Change Request
 related_tickets       → Table: NextHD Problem Ticket
 ```
+
+> **Cara resmi mencapai status `Known Error`:** WAJIB lewat tombol custom **"Convert to
+> Known Error"** di grup Actions (muncul saat status = `Investigasi` & `root_cause` terisi),
+> BUKAN lewat tombol workflow. Tombol ini otomatis membuat record NextHD Known Error +
+> mengisi field `known_error` di atas. Transisi workflow polos `Investigasi → Known Error`
+> sudah **dihapus** (2026-08-11) supaya tidak ada jalur yang meninggalkan `known_error`
+> kosong. Detail lengkap di §8.
 
 ### Detail Field: NextHD Asset (dengan field dinamis)
 
@@ -392,10 +399,17 @@ Baru → Sedang Dikerjakan → [Menunggu User ⇄ Sedang Dikerjakan] → Selesai
 ### Workflow 2: NextHD Problem
 
 ```
-Terbuka → Investigasi → Known Error → Selesai → Ditutup
-               ↓
-          Selesai (langsung, jika root cause ditemukan)
+Terbuka → Investigasi ──[tombol custom "Convert to Known Error"]──▶ Known Error → Selesai → Ditutup
+   │                                                                                  ▲
+   └──Selesaikan Langsung──────────────────────────────────────────────────────────┘
+                    Investigasi ──Selesaikan──▶ Selesai (juga tersedia langsung)
 ```
+
+> ⚠️ Transisi workflow polos `Investigasi → Known Error` (action lama: "Set sebagai Known
+> Error") **sudah dihapus** dari `tabWorkflow Transition` (2026-08-11). Satu-satunya jalan
+> ke status `Known Error` sekarang adalah tombol custom **"Convert to Known Error"** di
+> `nexthd_problem.js`, yang membuat record Known Error + mengisi relasi sekaligus. Lihat
+> detail root cause & alasan di bagian riwayat bug bawah halaman ini.
 
 ### Workflow 3: NextHD Change Request
 
@@ -453,7 +467,14 @@ fixtures = [
 > `apply_workflow()` berhasil set status ke state tujuan, Frappe akan menjalankan update
 > tambahan itu — dan kalau `Update Value` kosong (`None`), status akan tertimpa jadi
 > `None`, lalu `validate_workflow()` fallback ke state pertama di daftar. Ini penyebab
-> bug #5 di riwayat bug session 2026-08-11 (lihat §12).
+> bug #5 di riwayat bug session 2026-08-11 (lihat §12). **Berlaku untuk ketiga workflow**
+> (Ticket, Problem, Change Request) — semuanya sempat kena pola yang sama.
+
+> ⚠️ **Dua jalur ke state yang sama = risiko field relasi kosong.** Kalau ada state yang
+> "seharusnya" selalu diiringi pembuatan record lain (seperti Problem → Known Error), JANGAN
+> biarkan ada transisi workflow polos yang mengubah status tanpa membuat record itu. Hapus
+> transisi polosnya, biarkan hanya tombol custom (`frappe.call()` ke method whitelisted)
+> yang bisa mencapai state tersebut. Lihat contoh kasus NextHD Problem di bawah.
 
 ### ✅ RESOLVED (2026-08-11) — Riwayat Bug Import Workflow (7 lapis)
 
@@ -495,8 +516,7 @@ baru saja berhasil jadi `Investigasi`/`Known Error`/dst langsung tertimpa `None`
 `validate_workflow()` melihat state kosong dan fallback ke state pertama di daftar
 (`Terbuka`), sehingga error transisi muncul seolah-olah menuju `Terbuka`.
 
-**Fix:** Kosongkan `Update Field`/`Update Value` di kelima Workflow State NextHD Problem
-via `bench console`:
+**Fix (NextHD Problem, lalu diulang untuk Ticket & Change Request — lihat entri berikutnya):**
 ```python
 wf = frappe.get_doc("Workflow", "NextHD Problem")
 for state in wf.states:
@@ -510,15 +530,96 @@ Kemudian export fixture dan push ke repo:
 bench --site desk.ciptamebel.co.id export-fixtures
 ```
 
-**Diverifikasi via `apply_workflow()` di console:**
+**Diverifikasi via `apply_workflow()` di console (NextHD Problem):**
 - `Terbuka → Mulai Investigasi → Investigasi` ✅
-- `Investigasi → Set sebagai Known Error → Known Error` ✅
+- `Investigasi → Set sebagai Known Error → Known Error` ✅ (transisi ini kemudian dihapus, lihat entri di bawah)
+
+### ✅ RESOLVED (2026-08-11) — Bug `update_field` yang Sama di NextHD Ticket & NextHD Change Request
+
+Setelah fix di atas dikonfirmasi berhasil untuk NextHD Problem, dicek juga
+`nexthd/fixtures/workflow.json` untuk kedua workflow lain — ternyata **sama-sama kena**:
+
+- **NextHD Ticket:** kelima state (`Baru`, `Sedang Dikerjakan`, `Menunggu User`, `Selesai`,
+  `Ditutup`) semua punya `update_field: "status"` + `update_value: null`.
+- **NextHD Change Request:** kedelapan state (`Draft`, `Diajukan`, `Direview`, `Disetujui`,
+  `Ditolak`, `Implementasi`, `Selesai`, `Ditutup`) semua punya konfigurasi yang sama.
+
+Efendy mengonfirmasi NextHD Ticket memang menunjukkan error yang sama persis saat dites di
+UI. NextHD Change Request belum sempat dites manual sebelum fix diterapkan (root cause
+sudah pasti sama berdasarkan isi fixture, jadi diperbaiki preventif tanpa menunggu bug
+muncul di UI).
+
+**Fix diterapkan untuk kedua workflow sekaligus:**
+```python
+for wf_name in ["NextHD Ticket", "NextHD Change Request"]:
+    wf = frappe.get_doc("Workflow", wf_name)
+    for state in wf.states:
+        state.update_field = None
+        state.update_value = None
+    wf.save()
+    print(f"Fixed: {wf_name}")
+
+frappe.db.commit()
+```
+Diikuti `export-fixtures`, commit, push ke `main`.
+
+**Catatan tambahan (bukan bug, tidak urgent):** ditemukan beberapa `transitions` di
+NextHD Change Request yang ter-duplikasi (contoh: action `"Review"` dari state `Diajukan`
+muncul dua kali untuk role `Agent Manager` dan sekali lagi persis sama untuk `IT Manager`
+tercampur — kemungkinan sisa export ganda). Tidak menyebabkan error, tapi berpotensi
+dibereskan di sesi berikutnya untuk kerapian data.
+
+### ✅ RESOLVED (2026-08-11) — Hapus Transisi Workflow Redundan `Investigasi → Known Error` (NextHD Problem)
+
+Setelah fix `update_field` di atas berhasil, transisi `"Set sebagai Known Error"` di
+NextHD Problem bisa dipakai lagi — tapi ditemukan bahwa transisi ini **redundan dan
+berbahaya secara UX** karena ada fitur custom yang sudah lebih lengkap:
+
+**Sudah ada di kode** (`nexthd_problem.py` fungsi `create_known_error()` + tombol
+"Convert to Known Error" di `nexthd_problem.js`, grup Actions): saat diklik, otomatis
+membuat record **NextHD Known Error** baru (mapping `root_cause` → `symptom`), mengisi
+`related_problem`, lalu `db_set()` field `known_error` di Problem DAN status jadi
+`Known Error` sekaligus. Tombol ini muncul kalau role user termasuk
+`Agent`/`Agent Manager`/`IT Manager`, status Problem = `Investigasi`, dan `root_cause`
+sudah terisi.
+
+**Masalahnya:** kalau user memakai transisi workflow polos `"Set sebagai Known Error"`
+(bukan tombol custom), status Problem berubah jadi `Known Error` tapi **field `known_error`
+tetap kosong** — tidak ada record Known Error yang dibuat sama sekali. User harus sadar
+untuk membuat record itu manual belakangan, yang mudah terlewat.
+
+**Fix:** Hapus transisi `state="Investigasi", action="Set sebagai Known Error"` dari
+`Workflow.transitions` NextHD Problem, supaya satu-satunya jalan ke status `Known Error`
+adalah tombol custom yang sudah lengkap dengan relasinya.
+```python
+wf = frappe.get_doc("Workflow", "NextHD Problem")
+wf.transitions = [
+    t for t in wf.transitions
+    if not (t.state == "Investigasi" and t.action == "Set sebagai Known Error")
+]
+wf.save()
+frappe.db.commit()
+```
+Diikuti `export-fixtures`, commit, push. **Diverifikasi:** `apply_workflow(doc, "Set
+sebagai Known Error")` di console sekarang melempar `WorkflowTransitionError: Not a valid
+Workflow Action` — transisi memang sudah tidak ada.
+
+**Sisa transitions NextHD Problem sekarang (5, dari sebelumnya 6):**
+```
+Terbuka -> Mulai Investigasi -> Investigasi
+Terbuka -> Selesaikan Langsung -> Selesai
+Investigasi -> Selesaikan -> Selesai
+Known Error -> Selesaikan -> Selesai
+Selesai -> Tutup -> Ditutup
+```
 
 **Belum diverifikasi:** jalur `Known Error → Selesaikan → Selesai → Tutup → Ditutup`
-(state `Ditutup` punya `doc_status = 1`/Submitted, beda dari state lain yang `doc_status = 0`
-— perlu dites terpisah karena bisa memicu mekanisme `doc.submit()`), jalur pendek
-`Terbuka → Selesaikan Langsung → Selesai`, dan belum dicek apakah `NextHD Ticket` /
-`NextHD Change Request` punya konfigurasi `Update Field` serupa yang berisiko sama.
+via klik tombol asli di UI (state `Ditutup` punya `doc_status = 1`/Submitted, beda dari
+state lain yang `doc_status = 0` — perlu dites terpisah karena bisa memicu mekanisme
+`doc.submit()`); jalur pendek `Terbuka → Selesaikan Langsung → Selesai` sudah dikonfirmasi
+Efendy berhasil di UI, begitu juga `Known Error → langsung Selesai`. Transisi NextHD Ticket
+dan Change Request juga belum ditest end-to-end penuh via UI (baru dites/dipastikan fix
+config-nya, belum semua jalur dicoba klik manual).
 
 ---
 
@@ -675,6 +776,8 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 | `Workflow State` (fixtures) | Tidak punya kolom `workflow` — jangan filter berdasarkan itu. Ini master global, TIDAK masuk fixtures per-app |
 | Role assignment ke user | Via UI (User → Roles), TIDAK perlu SQL — beda dengan permission doctype |
 | **Workflow State → `Update Field`** | Jangan isi sama dengan `workflow_state_field` (biasanya `status`) kecuali `Update Value` juga diisi benar — kalau kosong, status akan tertimpa `None` setelah transisi berhasil. Lihat §8 |
+| **`bench console` beda sesi = beda state Python** | Import/variable dari sesi console sebelumnya TIDAK terbawa ke sesi baru — kalau keluar (`exit`) lalu buka `bench console` lagi, harus `from frappe.model.workflow import apply_workflow` ulang, dsb |
+| **Dua jalur ke satu state yang butuh side-effect** | Kalau satu state seharusnya selalu diiringi pembuatan record lain, hapus transisi workflow polos yang bisa mencapai state itu tanpa lewat tombol/method custom. Lihat kasus Problem → Known Error di §8 |
 
 ---
 
@@ -736,6 +839,8 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 | 3 | Workflow kosong di database | 0 Workflow padahal fixture JSON ada di repo | 7 lapis bug (fixtures export sebelum data ada, `allow_edit` invalid, master `Workflow State`/`Workflow Action Master` belum ada, field wajib `workflow_name`/`workflow_state_field` hilang, key `next_state` salah nama). Detail lengkap di §8 |
 | 4 | Dokumentasi field NextHD Known Error salah | §4 sempat tulis field `root_cause`, `problem`, `status` — semua tidak ada di doctype asli | Dikoreksi ke field asli: `symptom`, `related_problem`, tanpa `status` — lihat §4 |
 | 5 | `WorkflowPermissionError: ... from Investigasi to Terbuka` saat klik tombol transisi NextHD Problem | Semua Workflow State punya `Update Field = status` + `Update Value = None`, redundan dengan `workflow_state_field`. Setelah `apply_workflow()` sukses set status ke state tujuan, Frappe timpa lagi jadi `None`, lalu `validate_workflow()` fallback ke state pertama (`Terbuka`) | Kosongkan `update_field`/`update_value` di semua state via `bench console`, export fixture (`nexthd/fixtures/workflow.json`), commit & push. Diverifikasi via `apply_workflow()`: `Terbuka→Investigasi` dan `Investigasi→Known Error` sukses. Detail lengkap di §8 |
+| 6 | Bug `update_field` yang sama ditemukan juga di NextHD Ticket & NextHD Change Request | Kelima state Ticket dan kedelapan state Change Request sama-sama punya `update_field: "status"` + `update_value: null`. Ticket dikonfirmasi error sama persis di UI oleh Efendy; Change Request diperbaiki preventif tanpa menunggu bug muncul | Fix sama diterapkan ke kedua workflow sekaligus via loop `bench console`, export & push. Ditemukan juga transitions terduplikasi di Change Request (catatan, bukan bug, belum dibereskan) |
+| 7 | Transisi workflow `Investigasi → Known Error` (action "Set sebagai Known Error") di NextHD Problem redundan & berisiko meninggalkan field `known_error` kosong | Ada tombol custom "Convert to Known Error" (sudah ada sejak awal, ditemukan saat investigasi) yang lebih lengkap — bikin record Known Error + isi relasi. Transisi workflow polos cuma ubah status tanpa bikin record | Hapus transisi tersebut dari `Workflow.transitions`, export & push. Diverifikasi: `apply_workflow(doc, "Set sebagai Known Error")` sekarang gagal dengan `WorkflowTransitionError`, sesuai harapan. Detail di §8 |
 
 ---
 
@@ -743,16 +848,17 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 
 | # | Fitur | Keterangan | PIC |
 |---|---|---|---|
-| 1 | Problem → spawn Known Error button | Butuh Python controller + JS client script. Spec detail sudah disiapkan (field mapping `root_cause`→`symptom` sudah benar) | Devin (spec sudah siap dari Claude) |
+| 1 | ~~Problem → spawn Known Error button~~ | ✅ **Ternyata sudah ada** — ditemukan saat investigasi 2026-08-11 bahwa `create_known_error()` di `nexthd_problem.py` + tombol "Convert to Known Error" di `nexthd_problem.js` sudah lengkap terimplementasi sejak sesi sebelumnya. Catatan lama di baris ini keliru, sudah dikoreksi. Tidak perlu dikerjakan lagi | — (sudah selesai) |
 | 2 | SLA Policy enforcement | Scheduler ada tapi logika Python belum diverifikasi end-to-end | Claude (verifikasi) |
 | 3 | Custom reports | Per kategori, prioritas, bulan — butuh Query Report Python. Export PDF/Excel/CSV sudah bawaan Frappe (tidak perlu dibangun); export ke Word (.docx) **tidak diprioritaskan** (keputusan Efendy 2026-08-11) | Devin |
 | 4 | User portal Requester | Via Frappe Web Form. Perlu keputusan dulu: requester punya akun atau tidak, bisa lihat status tiket sendiri atau cuma submit | Efendy (keputusan) → Devin (implementasi) |
-| 5 | Workflow — testing end-to-end di UI | NextHD Problem: root cause `update_field` sudah difix & terverifikasi sebagian via console (`Terbuka→Investigasi→Known Error`). **Masih perlu:** test jalur `Known Error→Selesai→Ditutup` (state Ditutup punya `doc_status=1`/Submitted, berisiko beda perilaku), jalur pendek `Terbuka→Selesaikan Langsung→Selesai`, test klik tombol asli di UI form (bukan cuma via console), dan cek apakah `NextHD Ticket`/`NextHD Change Request` punya konfigurasi `update_field` bermasalah yang sama | Efendy (test) |
+| 5 | Workflow — testing end-to-end di UI | NextHD Problem, Ticket, Change Request: root cause `update_field` sudah difix di ketiganya. Transisi redundan `Investigasi→Known Error` di Problem sudah dihapus. **Sudah dikonfirmasi Efendy via UI:** `Terbuka→Selesaikan Langsung→Selesai` dan `Known Error→langsung Selesai` di NextHD Problem; NextHD Ticket sempat menunjukkan bug sama dan sudah difix. **Masih perlu:** test jalur `Selesai→Tutup→Ditutup` via klik tombol asli (state Ditutup punya `doc_status=1`/Submitted, berisiko beda perilaku), test end-to-end NextHD Change Request via UI (baru diperbaiki config-nya, belum pernah dicoba klik manual sama sekali) | Efendy (test) |
 | 6 | Role assignment ke user spesifik | `support@ciptamebel.co.id` belum punya role IT Manager/Agent — via UI (User → Roles), bukan SQL | Efendy |
 | 7 | Pesan notifikasi Telegram i18n | Hardcoded di `telegram.py`, belum pakai `frappe._()`. Prioritas rendah, ditunda | Devin (nanti) |
 | 8 | SLA Policy — angka response/resolution time | Belum ditentukan SOP-nya (butuh keputusan Efendy dulu, bukan sekadar teknis) | Efendy (keputusan) → Claude (buat record) |
 | 9 | Regression test `apply_workflow()` end-to-end | Belum ada test otomatis yang menjalankan seluruh jalur transisi workflow NextHD Problem/Ticket/Change Request — supaya kalau ada yang tidak sengaja isi `Update Field` lagi via UI, langsung ketahuan dari CI, bukan dari laporan bug user | Claude/Devin |
 | 10 | Hapus dokumen test workflow dari produksi | 3 dokumen test dibuat selama debugging sesi 2026-08-11 (`PRB-2026-####00003`, `00004`, `00006`) — perlu dihapus kalau bukan data asli | Efendy |
+| 11 | Bereskan transitions terduplikasi di NextHD Change Request | Beberapa action (`Review`, `Tolak`, `Setujui`, `Ajukan`) muncul dua kali dengan kombinasi role yang tumpang tindih (`Agent Manager` & `IT Manager`) — tidak error, tapi longgar. Ditemukan 2026-08-11 saat cek `update_field` | Claude (bisa dikerjakan kapan saja) |
 
 ---
 
@@ -924,4 +1030,4 @@ bench restart   # kalau ada perubahan hooks.py / backend logic
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-11 17:40 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-11 18:10 WIB.*
