@@ -72,7 +72,7 @@
    "fieldtype": "Select",
    "label": "Status",
    "options": "Baru\nSedang Dikerjakan\nMenunggu User\nSelesai\nDitutup",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "default": "Sedang",
@@ -288,11 +288,26 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [
-  {"color": "Red", "title": "Baru"},
-  {"color": "Blue", "title": "Sedang Dikerjakan"},
-  {"color": "Yellow", "title": "Menunggu User"},
-  {"color": "Green", "title": "Selesai"},
-  {"color": "Gray", "title": "Ditutup"}
+  {
+   "color": "Red",
+   "title": "Baru"
+  },
+  {
+   "color": "Blue",
+   "title": "Sedang Dikerjakan"
+  },
+  {
+   "color": "Yellow",
+   "title": "Menunggu User"
+  },
+  {
+   "color": "Green",
+   "title": "Selesai"
+  },
+  {
+   "color": "Gray",
+   "title": "Ditutup"
+  }
  ],
  "title_field": "subject",
  "route": "nexthd-ticket"

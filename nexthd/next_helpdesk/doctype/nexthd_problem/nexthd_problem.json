@@ -37,12 +37,11 @@
    "reqd": 1
   },
   {
-   "default": "Terbuka",
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
    "options": "Terbuka\nInvestigasi\nKnown Error\nSelesai\nDitutup",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fieldname": "col_info2",
