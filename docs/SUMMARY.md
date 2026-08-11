@@ -2,7 +2,7 @@
 
 > **Satu file untuk semua konteks.** Gabungan dari `README.md`, `NEXTHD_SPEC.md`, `CLAUDE_REVIEW_LOG.md`, `BUGFIX_SUMMARY.md`, dan `SESSION_NOTES.md`.
 >
-> **Last updated:** 2026-08-11 23:50 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
+> **Last updated:** 2026-08-11 17:05 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
 
 ---
 
@@ -236,6 +236,21 @@ implementation_plan   → Text Editor
 rollback_plan         → Text Editor
 ```
 
+### Detail Field: NextHD Known Error
+
+```
+naming_series         → KE-2026-####
+title                 → Data (required)
+symptom               → Text Editor   (BUKAN root_cause — nama field beda dari Problem)
+workaround            → Text Editor
+related_problem       → Link: NextHD Problem   (BUKAN "problem")
+```
+
+> ⚠️ **Tidak ada field `status`** di Known Error sama sekali — jangan asumsikan ada.
+> Kalau butuh spawn Known Error dari Problem, field `root_cause` di Problem harus
+> di-mapping ke `symptom` di Known Error (nama beda, isi sama). Diverifikasi langsung
+> dari `nexthd_known_error.json` pada 2026-08-11.
+
 ### Detail Field: NextHD User Profile
 
 ```
@@ -432,6 +447,31 @@ fixtures = [
 > 2. Field `workflow_state` muncul di form (otomatis ditambah Frappe saat workflow aktif)
 > 3. Role per transition harus sudah di-assign ke user terkait (lihat §5), kalau belum tombol transisi tidak akan muncul
 
+### ✅ RESOLVED (2026-08-11) — Riwayat Bug Import Workflow (7 lapis)
+
+Workflow sempat 0 di database meski file JSON ada di repo. Root cause utama: file
+`nexthd/fixtures/workflow.json` (yang benar-benar dibaca `bench migrate`) berisi array
+kosong `[]` — karena pernah di-`export-fixtures` SAAT database belum punya data Workflow
+sama sekali (export baca DARI database, bukan sebaliknya). File lengkap di
+`next_helpdesk/workflow/*.json` itu cuma referensi manual, tidak pernah otomatis kepakai.
+
+Setelah diimport manual, ketemu 7 bug field berlapis (semua sudah diperbaiki di source JSON):
+
+| # | Field | Masalah | Fix |
+|---|---|---|---|
+| 1 | `allow_edit` (child `states`) | Diisi `1` (integer) — field ini Link ke **Role**, dan **wajib diisi** (reqd=1) | Isi `"All"` (role bawaan, berlaku untuk semua user login) |
+| 2 | `state` (child `states`) | Link ke master doctype **Workflow State** — belum ada satupun record | Buat 14 record master (semua state unik di 3 workflow) |
+| 3 | `action` (child `transitions`) | Link ke master doctype **Workflow Action Master** — belum ada | Buat 16 record master (semua action unik) |
+| 4 | `workflow_name` | Field wajib terpisah dari `name`, tidak ada di JSON lama | Tambahkan, isi sama dengan `name` |
+| 5 | `workflow_state_field` | Field wajib (nama field target yang di-track, di kasus kita `status`), tidak ada di JSON lama | Tambahkan `"workflow_state_field": "status"` |
+| 6 | `next_state` vs `transition` | JSON lama pakai key `"transition"`, padahal Frappe expect `"next_state"` | Rename key |
+
+**Cara nemuin field wajib tanpa trial-error terus:** pakai `frappe.get_meta("Workflow")` lalu filter `f.reqd or f.fieldtype == "Link"` — langsung dapat semua field kritis dalam 1 query, dibanding nebak satu-satu dari traceback.
+
+**File `next_helpdesk/workflow/*.json` sudah diperbaiki permanen** di repo (commit 2026-08-11) — sekarang valid untuk import langsung tanpa perlu patch manual lagi kalau install ulang dari nol. Master data (`Workflow State`, `Workflow Action Master`) **tidak** masuk fixtures (bukan per-app data, ini master global Frappe) — kalau install di server baru, harus dibuat ulang manual (script tersedia, lihat riwayat commit atau minta Claude generate ulang).
+
+**Status akhir:** 3 Workflow live, `is_active=1`, transitions lengkap sesuai desain di atas (Ticket 7 transition, Problem 6 transition, Change Request 11 transition). Sudah diverifikasi lewat query `tabWorkflow` + `tabWorkflow Transition`.
+
 ---
 
 ## 9. Frappe v16 — Desktop & Workspace (KRITIS)
@@ -474,10 +514,10 @@ Tanpa hook ini, nexthd tidak muncul sama sekali di desktop meski ada di `tabDesk
 
 **Logo WAJIB ADA** di `/home/it/frappe/apps/nexthd/nexthd/public/logo.svg`. Tanpa file logo, hook tidak terbaca.
 
-> 🔴 **BUG AKTIF (dikonfirmasi 2026-08-11):** Klik icon NextHD dari `/desk/desktop` malah membuka
-> `/desk/nexthd-ticket` (list view Ticket), BUKAN `/desk/nexthd` (workspace dashboard).
-> Kemungkinan `link_to` di `tabDesktop Icon` salah target atau ke-override. Perlu dicek ulang
-> value `link_type`/`link_to` aktual di DB vs yang seharusnya di atas.
+> ✅ **FIXED (2026-08-11):** Sempat salah routing ke `/desk/nexthd-ticket`. Ternyata config DB
+> (`link_type`/`link_to`) sudah benar dari awal — murni masalah cache. Fix: `bench clear-cache`
+> + `bench clear-website-cache` + `bench build --app nexthd` + `bench restart` + hard refresh
+> browser. Dikonfirmasi beres via screenshot user.
 
 ### B. `/desk/nexthd` — Workspace Page
 
@@ -491,11 +531,13 @@ Dikontrol oleh **`tabWorkspace`** dan file `nexthd/next_helpdesk/workspace/nexth
 - Buat dulu di `tabNumber Card` (via SQL)
 - Isi `number_card_name` di `tabWorkspace Number Card` (kolom kunci: `number_card_name`, bukan `card_name`)
 
-> 🔴 **BUG AKTIF (dikonfirmasi 2026-08-11):** Section "Statistik Tiket" muncul di `/desk/nexthd`
-> tapi ke-6 number card di dalamnya TIDAK render (kosong). Kemungkinan penyebab: record di
-> `tabNumber Card` belum ada / `tabWorkspace Number Card.number_card_name` tidak match nama
-> aktual di `tabNumber Card` / `filters_json` salah format. Perlu `SELECT * FROM tabNumber Card`
-> dan `SELECT * FROM tabWorkspace Number Card WHERE parent='NextHD'` untuk diagnosa.
+> ✅ **FIXED (2026-08-11):** Root cause: block `content` JSON workspace pakai `"type": "card"`
+> dengan key `"card_name"` — SALAH. Frappe v16 butuh `"type": "number_card"` dengan key
+> `"number_card_name"` (harus persis sama nama Python-nya, bukan cuma `tabWorkspace Number Card`
+> child table). Type yang tidak dikenal di-skip diam-diam tanpa error, makanya sempat
+> membingungkan. Fix: baca `content` via `frappe.db.get_value`, rename tiap block `type` dan
+> key `data`, `frappe.db.set_value` balik. Dikonfirmasi beres via screenshot user — 6 card
+> tampil dengan nilai 0 (belum ada data ticket).
 
 ### C. Sidebar Kiri — `tabWorkspace Sidebar`
 
@@ -520,7 +562,7 @@ Sections:
   [Operasional]
     Shortcuts: New Ticket, All Tickets, NextHD Problem, NextHD Change Request
 
-  [Statistik Tiket]                    ⚠️ Cards tidak render — lihat §9.B
+  [Statistik Tiket]
     Number Cards (6):
       Tiket Baru              → COUNT NextHD Ticket WHERE status = Baru
       Tiket Sedang Dikerjakan → COUNT WHERE status = Sedang Dikerjakan
@@ -570,13 +612,19 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 | Aturan | Penjelasan |
 |---|---|
 | `continue`/`break` dalam loop di console | Error. Gunakan `if/else` sebagai gantinya |
-| `doc.save()` | Selalu gagal di production. Pakai SQL INSERT/UPDATE + `frappe.db.commit()` |
+| **Baris kosong di dalam blok manapun** (for/if/def) di script console | **Error/perilaku tidak terduga.** IPython nganggap baris kosong = akhir blok, sisa kode jalan di luar konteks loop/if. Hindari baris kosong di DALAM blok apapun — boleh ada baris kosong ANTAR blok top-level saja |
+| **Loop/logic kompleks di console** | **Selalu bungkus dalam 1 fungsi** (`def run(): ...` lalu panggil `run()` terpisah) — ini bikin IPython baca seluruh body sebagai 1 unit, jauh lebih aman daripada loop/if telanjang di top-level |
+| `doc.save()` | Selalu gagal di production. Pakai SQL INSERT/UPDATE + `frappe.db.commit()` — **kecuali** untuk `doc.insert()` pada custom DocType baru (misal Workflow, Workflow State) yang memang perlu lewat proses validasi Frappe |
+| **Field Link yang wajib diisi (`reqd=1`)** | **Cek dulu via `frappe.get_meta(doctype)`** sebelum insert data dari JSON manual/lama — filter `f.reqd or f.fieldtype == "Link"` untuk lihat semua field kritis sekaligus, jangan nebak-nebak dari traceback satu-satu |
+| **Field Link ke master doctype** (misal `Workflow State`, `Workflow Action Master`) | Master record harus **sudah ada duluan** sebelum insert dokumen yang mereferensikannya — LinkValidationError kalau belum |
 | Perubahan DB langsung | Export fixture → git commit → git push |
 | `bench migrate` | Bisa hapus Desktop Icon dan Workspace Sidebar yang tidak di fixtures |
 | Cek schema tabel | `DESCRIBE tabNama` dulu sebelum INSERT |
+| **Fixtures export sebelum data ada** | `bench export-fixtures` membaca DARI database — kalau dijalankan saat tabel masih kosong, fixture JSON yang dihasilkan JUGA kosong (`[]`) dan akan menimpa file manual yang lengkap. Selalu pastikan data ada di DB dulu sebelum export |
 | MariaDB subquery | Versi lama tidak support `LIMIT` di subquery `IN` |
 | JSON content workspace | Generate via `json.dumps()` Python, BUKAN string literal manual |
-| `Workflow State` | Tidak punya kolom `workflow` — jangan filter berdasarkan itu |
+| Workspace number card block | Type HARUS `"number_card"` (bukan `"card"`), key HARUS `"number_card_name"` (bukan `"card_name"`) — type yang salah di-skip diam-diam tanpa error |
+| `Workflow State` (fixtures) | Tidak punya kolom `workflow` — jangan filter berdasarkan itu. Ini master global, TIDAK masuk fixtures per-app |
 | Role assignment ke user | Via UI (User → Roles), TIDAK perlu SQL — beda dengan permission doctype |
 
 ---
@@ -630,12 +678,14 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 | 3 | NextHD Ticket form — `affected_asset` & `service_catalog` | ✅ OK — `service_catalog` tersembunyi karena `depends_on` (ticket_type ≠ Permintaan Layanan), behavior sesuai desain |
 | 4 | NextHD Problem form — `workaround`, `known_error`, `change_request` | ✅ OK — `known_error` tersembunyi karena `depends_on` (status ≠ Known Error), behavior sesuai desain |
 
-### 🔴 BUG AKTIF — ditemukan 2026-08-11, perlu fix (Claude, server produksi)
+### ✅ SELESAI — Bug Session 2026-08-11 (lanjutan)
 
-| # | Item | Masalah | Detail diagnosa |
+| # | Item | Masalah | Fix |
 |---|---|---|---|
-| 1 | Number cards "Statistik Tiket" | Tidak render di `/desk/nexthd` | Lihat §9.B — cek `tabNumber Card` & `tabWorkspace Number Card` |
-| 2 | Desktop icon routing | Klik icon → salah ke `/desk/nexthd-ticket`, seharusnya `/desk/nexthd` | Lihat §9.A — cek `link_type`/`link_to` aktual di `tabDesktop Icon` |
+| 1 | Number cards "Statistik Tiket" | Tidak render di `/desk/nexthd` | Block `content` JSON pakai `type: "card"` salah, seharusnya `"number_card"` + key `number_card_name`. Lihat §9.B untuk detail |
+| 2 | Desktop icon routing | Klik icon → sempat ke `/desk/nexthd-ticket`, seharusnya `/desk/nexthd` | Ternyata cuma cache — `clear-cache` + `build` + restart + hard refresh. Config DB sudah benar dari awal |
+| 3 | Workflow kosong di database | 0 Workflow padahal fixture JSON ada di repo | 7 lapis bug (fixtures export sebelum data ada, `allow_edit` invalid, master `Workflow State`/`Workflow Action Master` belum ada, field wajib `workflow_name`/`workflow_state_field` hilang, key `next_state` salah nama). Detail lengkap di §8 |
+| 4 | Dokumentasi field NextHD Known Error salah | §4 sempat tulis field `root_cause`, `problem`, `status` — semua tidak ada di doctype asli | Dikoreksi ke field asli: `symptom`, `related_problem`, tanpa `status` — lihat §4 |
 
 ---
 
@@ -643,15 +693,14 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 
 | # | Fitur | Keterangan | PIC |
 |---|---|---|---|
-| 1 | Problem → spawn Known Error button | Butuh Python controller + JS client script | Devin (spec disiapkan Claude) |
+| 1 | Problem → spawn Known Error button | Butuh Python controller + JS client script. Spec detail sudah disiapkan (field mapping `root_cause`→`symptom` sudah benar) | Devin (spec sudah siap dari Claude) |
 | 2 | SLA Policy enforcement | Scheduler ada tapi logika Python belum diverifikasi end-to-end | Claude (verifikasi) |
-| 3 | Custom reports | Per kategori, prioritas, bulan — butuh Query Report Python. Export PDF/Excel/CSV sudah bawaan Frappe (tidak perlu dibangun); export ke Word (.docx) TIDAK built-in, perlu dibangun terpisah kalau dibutuhkan | Devin |
+| 3 | Custom reports | Per kategori, prioritas, bulan — butuh Query Report Python. Export PDF/Excel/CSV sudah bawaan Frappe (tidak perlu dibangun); export ke Word (.docx) **tidak diprioritaskan** (keputusan Efendy 2026-08-11) | Devin |
 | 4 | User portal Requester | Via Frappe Web Form. Perlu keputusan dulu: requester punya akun atau tidak, bisa lihat status tiket sendiri atau cuma submit | Efendy (keputusan) → Devin (implementasi) |
-| 5 | Workflow verification | 3 Workflow di fixtures belum diverifikasi state machine-nya — cek `is_active`, role assignment, test manual | Claude |
-| 6 | ~~Decommission VM cml-helpdesk lama~~ | ✅ **SELESAI** — dikonfirmasi sudah dihapus dari VPS (2026-08-11) | — |
-| 7 | Role assignment ke user spesifik | `support@ciptamebel.co.id` belum punya role IT Manager/Agent — via UI (User → Roles), bukan SQL | Efendy |
-| 8 | Pesan notifikasi Telegram i18n | Hardcoded di `telegram.py`, belum pakai `frappe._()`. Prioritas rendah, ditunda | Devin (nanti) |
-| 9 | SLA Policy — angka response/resolution time | Belum ditentukan SOP-nya (butuh keputusan Efendy dulu, bukan sekadar teknis) | Efendy (keputusan) → Claude (buat record) |
+| 5 | Workflow — testing end-to-end di UI | Workflow sudah live di DB (3 workflow, transitions lengkap) tapi belum ditest manual klik tombol transisi di form asli | Efendy (test) |
+| 6 | Role assignment ke user spesifik | `support@ciptamebel.co.id` belum punya role IT Manager/Agent — via UI (User → Roles), bukan SQL | Efendy |
+| 7 | Pesan notifikasi Telegram i18n | Hardcoded di `telegram.py`, belum pakai `frappe._()`. Prioritas rendah, ditunda | Devin (nanti) |
+| 8 | SLA Policy — angka response/resolution time | Belum ditentukan SOP-nya (butuh keputusan Efendy dulu, bukan sekadar teknis) | Efendy (keputusan) → Claude (buat record) |
 
 ---
 
@@ -778,7 +827,7 @@ bench --site desk.ciptamebel.co.id migrate
 
 1. Buka **NextHD Business Hours** → New → isi jam kerja Senin–Sabtu
 2. Buka **NextHD SLA Policy** → New → buat 4 record: Kritis, Tinggi, Sedang, Rendah
-3. Isi `response_time_minutes` dan `resolution_time_minutes` sesuai SOP (**belum ditentukan**, lihat §12 item 9)
+3. Isi `response_time_minutes` dan `resolution_time_minutes` sesuai SOP (**belum ditentukan**, lihat §12 item 8)
 4. Hubungkan setiap SLA Policy ke Business Hours yang sudah dibuat
 
 ### Alur Deploy setelah Devin selesai kerja
@@ -823,4 +872,4 @@ bench restart   # kalau ada perubahan hooks.py / backend logic
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-11 23:50 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-11 17:05 WIB.*
