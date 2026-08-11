@@ -10,9 +10,11 @@
  "name": "NextHD Problem",
  "owner": "Administrator",
  "send_email_alert": 0,
+ "workflow_name": "NextHD Problem",
+ "workflow_state_field": "status",
  "states": [
   {
-   "allow_edit": "",
+   "allow_edit": "All",
    "creation": "2026-08-07 00:00:00.000000",
    "doc_status": "0",
    "is_optional": 0,
@@ -23,7 +25,7 @@
    "update_field": "status"
   },
   {
-   "allow_edit": "",
+   "allow_edit": "All",
    "creation": "2026-08-07 00:00:00.000000",
    "doc_status": "0",
    "is_optional": 0,
@@ -34,7 +36,7 @@
    "update_field": "status"
   },
   {
-   "allow_edit": "",
+   "allow_edit": "All",
    "creation": "2026-08-07 00:00:00.000000",
    "doc_status": "0",
    "is_optional": 0,
@@ -45,7 +47,7 @@
    "update_field": "status"
   },
   {
-   "allow_edit": "",
+   "allow_edit": "All",
    "creation": "2026-08-07 00:00:00.000000",
    "doc_status": "0",
    "is_optional": 0,
@@ -56,7 +58,7 @@
    "update_field": "status"
   },
   {
-   "allow_edit": "",
+   "allow_edit": "All",
    "creation": "2026-08-07 00:00:00.000000",
    "doc_status": "1",
    "is_optional": 0,
@@ -76,7 +78,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Terbuka",
-   "transition": "Investigasi"
+   "next_state": "Investigasi"
   },
   {
    "action": "Selesaikan Langsung",
@@ -86,7 +88,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Terbuka",
-   "transition": "Selesai"
+   "next_state": "Selesai"
   },
   {
    "action": "Set sebagai Known Error",
@@ -96,7 +98,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Investigasi",
-   "transition": "Known Error"
+   "next_state": "Known Error"
   },
   {
    "action": "Selesaikan",
@@ -106,7 +108,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Investigasi",
-   "transition": "Selesai"
+   "next_state": "Selesai"
   },
   {
    "action": "Selesaikan",
@@ -116,7 +118,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Known Error",
-   "transition": "Selesai"
+   "next_state": "Selesai"
   },
   {
    "action": "Tutup",
@@ -126,7 +128,7 @@
    "modified_by": "Administrator",
    "owner": "Administrator",
    "state": "Selesai",
-   "transition": "Ditutup"
+   "next_state": "Ditutup"
   }
  ]
 }
