@@ -1,0 +1,47 @@
+{
+ "add_total_row": 1,
+ "creation": "2026-08-13 00:00:00.000000",
+ "disable_prepared_report": 0,
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date",
+   "mandatory": 1,
+   "wildcard_filter": 0
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date",
+   "mandatory": 1,
+   "wildcard_filter": 0
+  }
+ ],
+ "idx": 0,
+ "is_standard": "Yes",
+ "json": "{}",
+ "letter_head": null,
+ "letterhead": null,
+ "modified": "2026-08-13 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Next Helpdesk",
+ "name": "Tiket per Prioritas",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "query": "SELECT\n\t`tabNextHD Ticket`.priority AS \"Prioritas:Select:150\",\n\tCOUNT(`tabNextHD Ticket`.name) AS \"Jumlah Tiket:Int:100\",\n\tROUND(AVG(CASE WHEN `tabNextHD Ticket`.resolved_on IS NOT NULL THEN TIMESTAMPDIFF(HOUR, `tabNextHD Ticket`.creation, `tabNextHD Ticket`.resolved_on) ELSE NULL END), 2) AS \"Rata-rata waktu resolusi (jam):Float:200\",\n\tSUM(CASE WHEN `tabNextHD Ticket`.resolved_on IS NOT NULL AND `tabNextHD Ticket`.sla_resolution_by IS NOT NULL AND `tabNextHD Ticket`.resolved_on > `tabNextHD Ticket`.sla_resolution_by THEN 1 ELSE 0 END) AS \"Jumlah breach SLA:Int:150\"\nFROM\n\t`tabNextHD Ticket`\nWHERE\n\t`tabNextHD Ticket`.creation >= %(from_date)s\n\tAND `tabNextHD Ticket`.creation <= %(to_date)s\nGROUP BY\n\t`tabNextHD Ticket`.priority\nORDER BY\n\tFIELD(`tabNextHD Ticket`.priority, 'Kritis', 'Tinggi', 'Sedang', 'Rendah')",
+ "ref_doctype": "NextHD Ticket",
+ "report_name": "Tiket per Prioritas",
+ "report_type": "Query Report",
+ "roles": [
+  {
+   "role": "IT Manager"
+  },
+  {
+   "role": "Agent Manager"
+  }
+ ]
+}
