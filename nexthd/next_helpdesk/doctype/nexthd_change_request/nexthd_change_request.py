@@ -76,3 +76,36 @@ class NextHDChangeRequest(Document):
 		"""Handle updates to change request"""
 		# Telegram notification hooks will be added in Tahap 6
 		pass
+
+
+@frappe.whitelist()
+def update_asset_status(change_request_name, asset_name, new_status):
+	user_roles = frappe.get_roles(frappe.session.user)
+	if not any(r in user_roles for r in ["Agent", "Agent Manager", "IT Manager"]):
+		frappe.throw(frappe._("Anda tidak memiliki izin untuk mengubah status Aset"))
+	
+	valid_statuses = ["Aktif", "Rusak", "Diperbaiki", "Dihapus"]
+	if new_status not in valid_statuses:
+		frappe.throw(frappe._("Status Aset tidak valid"))
+
+	asset = frappe.get_doc("NextHD Asset", asset_name)
+	old_status = asset.status
+	asset.db_set("status", new_status)
+
+	# Catat jejak di Change Request untuk audit
+	frappe.get_doc({
+		"doctype": "Comment",
+		"comment_type": "Info",
+		"reference_doctype": "NextHD Change Request",
+		"reference_name": change_request_name,
+		"content": frappe._(
+			"Status Aset {0} diubah dari {1} menjadi {2} melalui Change Request ini"
+		).format(asset_name, old_status, new_status)
+	}).insert(ignore_permissions=True)
+
+	return new_status
+
+
+@frappe.whitelist()
+def get_problem_status(problem_name):
+	return frappe.db.get_value("NextHD Problem", problem_name, "status")
