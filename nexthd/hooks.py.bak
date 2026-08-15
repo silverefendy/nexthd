@@ -167,32 +167,20 @@ scheduler_events = {
 # --------
 
 fixtures = [
-        {"dt": "Workflow", "filters": [["name", "in", [
-                "NextHD Ticket",
-                "NextHD Problem",
-                "NextHD Change Request"
-        ]]]},
-        {"dt": "Workflow Transition", "filters": [["parent", "in", [
-                "NextHD Ticket",
-                "NextHD Problem",
-                "NextHD Change Request"
-        ]]]},
-        {"dt": "Desktop Icon", "filters": [["app", "=", "nexthd"]]},
-        {"dt": "Workspace Sidebar", "filters": [["name", "=", "NextHD"]]},
-        {"dt": "Client Script", "filters": [["name", "in", [
-                "a258744559",
-                "cs_known_error_from_problem",
-                "cs_change_request_from_problem",
-                "cs_change_request_from_known_error"
-        ]]]},
-        {"dt": "Property Setter", "filters": [["doc_type", "like", "NextHD%"]]},
-        {"dt": "DocField", "filters": [["parent", "in", [
-                "NextHD Problem",
-                "NextHD Change Request",
-                "NextHD Asset",
-                "NextHD Known Error"
-        ]]]}
+	{"dt": "Workflow", "filters": [["name", "in", [
+		"NextHD Ticket",
+		"NextHD Problem",
+		"NextHD Change Request"
+	]]]},
+	{"dt": "Workflow Transition", "filters": [["parent", "in", [
+		"NextHD Ticket",
+		"NextHD Problem",
+		"NextHD Change Request"
+	]]]},
+	{"dt": "Desktop Icon", "filters": [["app", "=", "nexthd"]]},
+	{"dt": "Workspace Sidebar", "filters": [["name", "=", "NextHD"]]}
 ]
+
 # Workspace
 # ---------
 workspace_json = "nexthd/next_helpdesk/workspace"

@@ -1,0 +1,46 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "NextHD Ticket",
+  "enabled": 1,
+  "modified": "2026-08-13 16:16:29",
+  "module": null,
+  "name": "a258744559",
+  "script": "\nfrappe.ui.form.on('NextHD Ticket', {\n    refresh: function(frm) {\n        if (!frm.doc.related_problem && !frm.is_new()) {\n            frm.add_custom_button('Buat Problem dari Tiket', function() {\n                frappe.prompt([\n                    {fieldname: 'title', label: 'Judul Problem', fieldtype: 'Data', reqd: 1,\n                     default: frm.doc.subject},\n                    {fieldname: 'priority', label: 'Prioritas', fieldtype: 'Select',\n                     options: 'Kritis\\nTinggi\\nSedang\\nRendah', default: frm.doc.priority}\n                ], function(values) {\n                    frappe.call({\n                        method: 'frappe.client.insert',\n                        args: {\n                            doc: {\n                                doctype: 'NextHD Problem',\n                                title: values.title,\n                                priority: values.priority,\n                                category: frm.doc.category,\n                                status: 'Terbuka'\n                            }\n                        },\n                        callback: function(r) {\n                            if (r.message) {\n                                var problem_name = r.message.name;\n                                frappe.call({\n                                    method: 'frappe.client.set_value',\n                                    args: {\n                                        doctype: 'NextHD Ticket',\n                                        name: frm.doc.name,\n                                        fieldname: 'related_problem',\n                                        value: problem_name\n                                    },\n                                    callback: function() {\n                                        frappe.call({\n                                            method: 'frappe.client.insert',\n                                            args: {\n                                                doc: {\n                                                    doctype: 'NextHD Problem Ticket',\n                                                    parenttype: 'NextHD Problem',\n                                                    parent: problem_name,\n                                                    parentfield: 'related_tickets',\n                                                    ticket: frm.doc.name\n                                                }\n                                            },\n                                            callback: function() {\n                                                frappe.msgprint('Problem ' + problem_name + ' berhasil dibuat dan terhubung.');\n                                                frm.reload_doc();\n                                            }\n                                        });\n                                    }\n                                });\n                            }\n                        }\n                    });\n                }, 'Buat Problem Baru dari Tiket Ini');\n            });\n        }\n        if (frm.doc.related_problem) {\n            frm.add_custom_button('Lihat Problem: ' + frm.doc.related_problem, function() {\n                frappe.set_route('Form', 'NextHD Problem', frm.doc.related_problem);\n            });\n        }\n    }\n});\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "NextHD Problem",
+  "enabled": 1,
+  "modified": "2026-08-15 14:39:37.937655",
+  "module": null,
+  "name": "cs_known_error_from_problem",
+  "script": "\nfrappe.ui.form.on('NextHD Problem', {\n    refresh(frm) {\n        if (!frm.is_new() && !frm.doc.known_error) {\n            frm.add_custom_button('Buat Known Error dari Problem', function() {\n                let d = frappe.new_doc('NextHD Known Error');\n                d.title = frm.doc.title;\n                d.related_problem = frm.doc.name;\n                frappe.set_route('Form', 'NextHD Known Error', d.name);\n                frappe.after_ajax(function() {\n                    cur_frm.set_value('title', frm.doc.title);\n                    cur_frm.set_value('related_problem', frm.doc.name);\n                    cur_frm.save().then(() => {\n                        let ke_name = cur_frm.doc.name;\n                        frappe.call({\n                            method: 'frappe.client.set_value',\n                            args: {\n                                doctype: 'NextHD Problem',\n                                name: frm.doc.name,\n                                fieldname: 'known_error',\n                                value: ke_name\n                            },\n                            callback() {\n                                frappe.show_alert({message: 'Known Error berhasil dibuat dan ditautkan', indicator: 'green'});\n                                frm.reload_doc();\n                            }\n                        });\n                    });\n                });\n            });\n        }\n    }\n});\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "NextHD Problem",
+  "enabled": 1,
+  "modified": "2026-08-15 14:39:37.992542",
+  "module": null,
+  "name": "cs_change_request_from_problem",
+  "script": "\nfrappe.ui.form.on('NextHD Problem', {\n    refresh(frm) {\n        if (!frm.is_new() && !frm.doc.change_request) {\n            frm.add_custom_button('Buat Change Request dari Problem', function() {\n                frappe.new_doc('NextHD Change Request', {\n                    title: frm.doc.title,\n                    related_problem: frm.doc.name\n                }, function(new_doc) {\n                    new_doc.save().then(() => {\n                        let cr_name = new_doc.name;\n                        frappe.call({\n                            method: 'frappe.client.set_value',\n                            args: {\n                                doctype: 'NextHD Problem',\n                                name: frm.doc.name,\n                                fieldname: 'change_request',\n                                value: cr_name\n                            },\n                            callback() {\n                                frappe.show_alert({message: 'Change Request berhasil dibuat dan ditautkan', indicator: 'green'});\n                                frm.reload_doc();\n                                frappe.set_route('Form', 'NextHD Change Request', cr_name);\n                            }\n                        });\n                    });\n                });\n            });\n        }\n    }\n});\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "NextHD Known Error",
+  "enabled": 1,
+  "modified": "2026-08-15 14:39:37.998136",
+  "module": null,
+  "name": "cs_change_request_from_known_error",
+  "script": "\nfrappe.ui.form.on('NextHD Known Error', {\n    refresh(frm) {\n        if (!frm.is_new()) {\n            frm.add_custom_button('Buat Change Request dari Known Error', function() {\n                frappe.new_doc('NextHD Change Request', {\n                    title: frm.doc.title,\n                    related_problem: frm.doc.related_problem\n                }, function(new_doc) {\n                    new_doc.save().then(() => {\n                        frappe.show_alert({message: 'Change Request berhasil dibuat', indicator: 'green'});\n                        frappe.set_route('Form', 'NextHD Change Request', new_doc.name);\n                    });\n                });\n            });\n        }\n    }\n});\n",
+  "view": "Form"
+ }
+]

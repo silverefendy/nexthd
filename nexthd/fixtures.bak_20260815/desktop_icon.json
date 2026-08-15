@@ -1,0 +1,24 @@
+[
+ {
+  "app": "nexthd",
+  "bg_color": null,
+  "docstatus": 0,
+  "doctype": "Desktop Icon",
+  "hidden": 0,
+  "icon": null,
+  "icon_image": null,
+  "icon_type": "App",
+  "label": "NextHD",
+  "link": null,
+  "link_to": "NextHD",
+  "link_type": "Workspace Sidebar",
+  "logo_url": "/assets/nexthd/logo.svg",
+  "modified": "2026-08-09 07:24:30",
+  "name": "NextHD",
+  "parent_icon": null,
+  "restrict_removal": 0,
+  "roles": [],
+  "sidebar": null,
+  "standard": 0
+ }
+]

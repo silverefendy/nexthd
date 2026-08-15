@@ -83,6 +83,28 @@
   ],
   "transitions": [
    {
+    "action": "Konfirmasi Selesai",
+    "allow_self_approval": 1,
+    "allowed": "Requester",
+    "condition": null,
+    "next_state": "Ditutup",
+    "send_email_to_creator": 0,
+    "state": "Selesai",
+    "transition_tasks": null,
+    "workflow_builder_id": null
+   },
+   {
+    "action": "Buka Kembali",
+    "allow_self_approval": 1,
+    "allowed": "Requester",
+    "condition": null,
+    "next_state": "Baru",
+    "send_email_to_creator": 0,
+    "state": "Selesai",
+    "transition_tasks": null,
+    "workflow_builder_id": null
+   },
+   {
     "action": "Lanjut Kerjakan",
     "allow_self_approval": 1,
     "allowed": "Agent",
@@ -100,29 +122,7 @@
     "condition": null,
     "next_state": "Selesai",
     "send_email_to_creator": 0,
-    "state": "Sedang Dikerjakan",
-    "transition_tasks": null,
-    "workflow_builder_id": null
-   },
-   {
-    "action": "Tunggu User",
-    "allow_self_approval": 1,
-    "allowed": "Agent",
-    "condition": null,
-    "next_state": "Menunggu User",
-    "send_email_to_creator": 0,
-    "state": "Sedang Dikerjakan",
-    "transition_tasks": null,
-    "workflow_builder_id": null
-   },
-   {
-    "action": "Buka Kembali",
-    "allow_self_approval": 1,
-    "allowed": "Requester",
-    "condition": null,
-    "next_state": "Baru",
-    "send_email_to_creator": 0,
-    "state": "Selesai",
+    "state": "Menunggu User",
     "transition_tasks": null,
     "workflow_builder_id": null
    },
@@ -133,7 +133,7 @@
     "condition": null,
     "next_state": "Selesai",
     "send_email_to_creator": 0,
-    "state": "Menunggu User",
+    "state": "Sedang Dikerjakan",
     "transition_tasks": null,
     "workflow_builder_id": null
    },
@@ -149,13 +149,13 @@
     "workflow_builder_id": null
    },
    {
-    "action": "Konfirmasi Selesai",
+    "action": "Tunggu User",
     "allow_self_approval": 1,
-    "allowed": "Requester",
+    "allowed": "Agent",
     "condition": null,
-    "next_state": "Ditutup",
+    "next_state": "Menunggu User",
     "send_email_to_creator": 0,
-    "state": "Selesai",
+    "state": "Sedang Dikerjakan",
     "transition_tasks": null,
     "workflow_builder_id": null
    }
@@ -248,17 +248,6 @@
   ],
   "transitions": [
    {
-    "action": "Selesaikan",
-    "allow_self_approval": 1,
-    "allowed": "Agent",
-    "condition": null,
-    "next_state": "Selesai",
-    "send_email_to_creator": 0,
-    "state": "Investigasi",
-    "transition_tasks": null,
-    "workflow_builder_id": null
-   },
-   {
     "action": "Mulai Investigasi",
     "allow_self_approval": 1,
     "allowed": "Agent",
@@ -266,17 +255,6 @@
     "next_state": "Investigasi",
     "send_email_to_creator": 0,
     "state": "Terbuka",
-    "transition_tasks": null,
-    "workflow_builder_id": null
-   },
-   {
-    "action": "Selesaikan",
-    "allow_self_approval": 1,
-    "allowed": "Agent",
-    "condition": null,
-    "next_state": "Selesai",
-    "send_email_to_creator": 0,
-    "state": "Known Error",
     "transition_tasks": null,
     "workflow_builder_id": null
    },
@@ -292,6 +270,28 @@
     "workflow_builder_id": null
    },
    {
+    "action": "Selesaikan",
+    "allow_self_approval": 1,
+    "allowed": "Agent",
+    "condition": null,
+    "next_state": "Selesai",
+    "send_email_to_creator": 0,
+    "state": "Investigasi",
+    "transition_tasks": null,
+    "workflow_builder_id": null
+   },
+   {
+    "action": "Selesaikan",
+    "allow_self_approval": 1,
+    "allowed": "Agent",
+    "condition": null,
+    "next_state": "Selesai",
+    "send_email_to_creator": 0,
+    "state": "Known Error",
+    "transition_tasks": null,
+    "workflow_builder_id": null
+   },
+   {
     "action": "Tutup",
     "allow_self_approval": 1,
     "allowed": "Agent",
@@ -299,17 +299,6 @@
     "next_state": "Ditutup",
     "send_email_to_creator": 0,
     "state": "Selesai",
-    "transition_tasks": null,
-    "workflow_builder_id": null
-   },
-   {
-    "action": "Convert to Known Error",
-    "allow_self_approval": 1,
-    "allowed": "Agent",
-    "condition": null,
-    "next_state": "Known Error",
-    "send_email_to_creator": 0,
-    "state": "Investigasi",
     "transition_tasks": null,
     "workflow_builder_id": null
    }
@@ -444,17 +433,6 @@
   ],
   "transitions": [
    {
-    "action": "Tolak",
-    "allow_self_approval": 1,
-    "allowed": "Agent Manager",
-    "condition": null,
-    "next_state": "Ditolak",
-    "send_email_to_creator": 0,
-    "state": "Direview",
-    "transition_tasks": null,
-    "workflow_builder_id": null
-   },
-   {
     "action": "Review",
     "allow_self_approval": 1,
     "allowed": "Agent Manager",
@@ -473,6 +451,39 @@
     "next_state": "Selesai",
     "send_email_to_creator": 0,
     "state": "Implementasi",
+    "transition_tasks": null,
+    "workflow_builder_id": null
+   },
+   {
+    "action": "Ajukan Ulang",
+    "allow_self_approval": 1,
+    "allowed": "Agent",
+    "condition": null,
+    "next_state": "Draft",
+    "send_email_to_creator": 0,
+    "state": "Ditolak",
+    "transition_tasks": null,
+    "workflow_builder_id": null
+   },
+   {
+    "action": "Setujui",
+    "allow_self_approval": 1,
+    "allowed": "IT Manager",
+    "condition": null,
+    "next_state": "Disetujui",
+    "send_email_to_creator": 0,
+    "state": "Direview",
+    "transition_tasks": null,
+    "workflow_builder_id": null
+   },
+   {
+    "action": "Tolak",
+    "allow_self_approval": 1,
+    "allowed": "Agent Manager",
+    "condition": null,
+    "next_state": "Ditolak",
+    "send_email_to_creator": 0,
+    "state": "Direview",
     "transition_tasks": null,
     "workflow_builder_id": null
    },
@@ -506,28 +517,6 @@
     "next_state": "Ditutup",
     "send_email_to_creator": 0,
     "state": "Selesai",
-    "transition_tasks": null,
-    "workflow_builder_id": null
-   },
-   {
-    "action": "Setujui",
-    "allow_self_approval": 1,
-    "allowed": "IT Manager",
-    "condition": null,
-    "next_state": "Disetujui",
-    "send_email_to_creator": 0,
-    "state": "Direview",
-    "transition_tasks": null,
-    "workflow_builder_id": null
-   },
-   {
-    "action": "Ajukan Ulang",
-    "allow_self_approval": 1,
-    "allowed": "Agent",
-    "condition": null,
-    "next_state": "Draft",
-    "send_email_to_creator": 0,
-    "state": "Ditolak",
     "transition_tasks": null,
     "workflow_builder_id": null
    }
