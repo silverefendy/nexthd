@@ -157,3 +157,66 @@ Nama kolom beberapa tabel berbeda dari dokumentasi umum — selalu `DESCRIBE` du
 /home/it/frappe/apps/nexthd/nexthd/fixtures/workflow.json
 /home/it/frappe/apps/nexthd/nexthd/next_helpdesk/workspace/nexthd/nexthd.json
 ```
+---
+
+# UPDATE — 15 Agustus 2026
+
+## ✅ SELESAI & TERVERIFIKASI (Sesi 15 Agustus)
+
+### 1. Export Fixture Lengkap — Item Kritis Kemarin, Sekarang Tuntas
+**Status:** ✅ Selesai (15 Agustus 2026)
+
+Fixture yang sebelumnya tercatat sebagai "belum di-export" di open items 14 Agustus sekarang sudah lengkap:
+- `Client Script` (4 script: `a258744559`, `cs_known_error_from_problem`, `cs_change_request_from_problem`, `cs_change_request_from_known_error`)
+- `Property Setter` (filter: `doc_type LIKE 'NextHD%'`)
+- `DocField` (filter: parent Problem, Change Request, Asset, Known Error)
+
+Ditambahkan ke `hooks.py` bagian `fixtures`, sudah di-export dan commit (`27efc80` → `a9a4e65`).
+
+> ⚠️ Catatan filter: Property Setter **tidak punya kolom `app`** — filter yang benar pakai `doc_type LIKE`, bukan `app =`.
+
+### 2. Naming Series — Keputusan Diperbarui, TERMASUK Ticket
+**Status:** ✅ Selesai (15 Agustus 2026)
+**⚠️ MENGGANTIKAN keputusan 14 Agustus** yang menyatakan "NextHD Ticket naming: Tidak diubah"
+
+Ditemukan format tidak konsisten antar DocType:
+- Ticket & Problem & Asset: format lama/statis (`TKT-.YYYY.-.####`, `PRB-2026-####`, `AST-2026-####`) — tersimpan di **Property Setter**, override DocField
+- Change Request & Known Error: sudah `YY.MM` — tersimpan langsung di **DocField**, tanpa Property Setter
+
+Diseragamkan semua ke format `YY.MM` (reset bulanan):
+
+| DocType | Format Final | Contoh |
+|---|---|---|
+| NextHD Ticket | `TKT-.YY.MM.-.####.` | `TKT-2608-0001` |
+| NextHD Problem | `PRB-.YY.MM.-.####.` | `PRB-2608-0001` |
+| NextHD Asset | `AST-.YY.MM.-.####.` | `AST-2608-0001` |
+| NextHD Change Request | `CHG-.YY.MM.-.####.` | *(tidak berubah)* |
+| NextHD Known Error | `KE-.YY.MM.-.####.` | *(tidak berubah)* |
+
+Diupdate via `frappe.db.set_value()` pada Property Setter (Ticket/Problem/Asset), commit + clear_cache. **Sudah ditest manual** — dokumen baru menghasilkan nomor sesuai format baru (verifikasi via private/incognito window karena isu cache browser di bawah).
+
+**Dokumen lama tetap dibiarkan** apa adanya (konsisten dengan keputusan 14 Agustus).
+
+### 3. Bug Ditemukan: Dropdown Naming Series Menampilkan Cache Lama
+**Status:** ✅ Root cause ditemukan, bukan bug data
+
+Setelah update Property Setter, dropdown "Naming Series" di form masih menampilkan opsi format lama meski data di database sudah benar (diverifikasi tidak ada duplikat Property Setter). **Solusi: hard refresh / buka di private-incognito window.** Ini murni cache boot info browser, bukan masalah server.
+
+---
+
+## ❌ OPEN ITEMS (Update)
+
+### 1. ~~Export Fixture~~ — SELESAI, lihat di atas
+
+### 2. Desktop Icon Routing — Verifikasi Route History Cleanup
+**Masih menggantung dari sesi 13 Agustus**, belum diverifikasi ulang di sesi ini. Perlu cek apakah routing desktop icon tetap benar setelah cleanup Route History yang dilakukan sebelumnya.
+
+---
+
+## Keputusan Final (Update — Menggantikan Tabel 14 Agustus)
+
+| Keputusan | Detail |
+|---|---|
+| NextHD Ticket naming | **DIUBAH** ke `YY.MM` (15 Agustus) — *keputusan 14 Agustus dibatalkan* |
+| Format naming series semua DocType | Seragam `YY.MM` untuk Ticket, Problem, Asset, Change Request, Known Error |
+| File backup lokal (`fixtures.bak_*`, `*.bak`) | Jangan ikut di-commit — tambahkan ke `.gitignore` |
