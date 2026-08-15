@@ -38,6 +38,8 @@ Konfigurasi navigasi berikut sudah dikunci dan **tidak boleh diubah** kecuali ad
 3. `doc.save()` selalu gagal di production (non-developer mode) — semua perubahan DocType/DocField wajib pakai **SQL langsung + `frappe.db.commit()`**
 4. Setiap perubahan struktur **wajib** di-export ke fixture JSON dan commit ke repo, atau hilang saat `bench migrate`
 5. Frappe v16 di instalasi ini — **banyak nama kolom tabel berbeda** dari dokumentasi umum. Selalu `DESCRIBE tabNamaTable` dulu sebelum query
+6. **Tambah DocField baru via raw SQL wajib diikuti `ALTER TABLE ADD COLUMN`** — insert ke `tabDocField` saja tidak otomatis membuat kolom fisik di tabel data. Detail di `POLA_KERJA_DAN_BUG.md`
+7. Setelah perubahan field/meta yang tidak muncul di UI meski data sudah benar di database, coba `bench clear-cache` + `bench restart` di server sebelum curiga ada bug data
 
 ---
 
@@ -161,7 +163,7 @@ Nama kolom beberapa tabel berbeda dari dokumentasi umum — selalu `DESCRIBE` du
 
 # UPDATE — 15 Agustus 2026
 
-## ✅ SELESAI & TERVERIFIKASI (Sesi 15 Agustus)
+## ✅ SELESAI & TERVERIFIKASI (Sesi 15 Agustus, Bagian 1)
 
 ### 1. Export Fixture Lengkap — Item Kritis Kemarin, Sekarang Tuntas
 **Status:** ✅ Selesai (15 Agustus 2026)
@@ -204,12 +206,56 @@ Setelah update Property Setter, dropdown "Naming Series" di form masih menampilk
 
 ---
 
+## ✅ SELESAI & TERVERIFIKASI (Sesi 15 Agustus, Bagian 2 — Relasi Asset)
+
+### 4. Field `related_asset` di NextHD Problem + Auto-link dari Ticket
+**Status:** ✅ Selesai (15 Agustus 2026)
+
+Ditambahkan field baru `related_asset` (Link → NextHD Asset) di NextHD Problem, supaya Problem yang dibuat proaktif (tanpa lewat Ticket) tetap bisa dikaitkan ke aset spesifik.
+
+Client Script `a258744559` ("Buat Problem dari Tiket") diupdate — saat Problem dibuat dari tombol ini, `related_asset` otomatis diisi dari `affected_asset` milik Ticket asal.
+
+**Desain relasi Asset lengkap:**
+
+| Relasi | Cara Terhubung |
+|---|---|
+| Ticket → Asset | Field langsung `affected_asset` (sudah ada sebelumnya) |
+| Problem → Asset | Field langsung `related_asset` (baru) — auto-isi kalau dari Ticket, manual kalau Problem dibuat proaktif |
+| Change Request → Asset | Field langsung `related_asset` (sudah ada sebelumnya) |
+| Known Error → Asset | **Tidak langsung** — ditelusuri lewat `related_problem` → `related_asset` Problem. Keputusan sengaja: Known Error tanpa Problem dianggap kasus jarang (murni knowledge base), tidak diberi field asset sendiri untuk sekarang |
+
+### 5. Tombol "Buat Change Request dari Asset"
+**Status:** ✅ Selesai (15 Agustus 2026)
+
+Client Script baru `cs_change_request_from_asset` di form NextHD Asset. Klik tombol → buat Change Request baru, auto-isi `title` dari `asset_name` dan `related_asset` dari nama Asset.
+
+### 6. Search Fields NextHD Asset — Bisa Dicari dari Nama Pemakai
+**Status:** ✅ Selesai (15 Agustus 2026)
+
+Property Setter `search_fields` di NextHD Asset diset ke `asset_name,assigned_to,serial_number`. Efeknya: di semua dropdown Link yang mengarah ke NextHD Asset (`affected_asset` di Ticket, `related_asset` di Problem/Change Request), pencarian sekarang bisa pakai nama nomor aset, nama user pemakai (`assigned_to`), atau serial number — tidak cuma nama aset saja.
+
+### 7. Bug: Field Baru via SQL Tidak Otomatis Jadi Kolom Fisik Tabel
+**Status:** ✅ Ditemukan & diperbaiki (15 Agustus 2026)
+
+Setelah insert `related_asset` ke `tabDocField`, error `Unknown column 'related_asset' in 'INSERT INTO'` / `'in SET'` muncul saat coba pakai field itu (baik insert Problem baru maupun update lewat `frappe.client.set_value`). **Root cause:** insert ke `tabDocField` cuma mendaftarkan metadata, tidak otomatis membuat kolom fisik di tabel data (`tabNextHD Problem`) — beda dengan `doc.save()`/migrate yang biasanya auto-sync ini.
+
+**Fix:** `ALTER TABLE \`tabNextHD Problem\` ADD COLUMN \`related_asset\` VARCHAR(140)` manual. Ditambahkan aturan wajib baru di `POLA_KERJA_DAN_BUG.md` — detail lengkap di sana.
+
+Dilakukan pengecekan menyeluruh untuk 5 DocType inti (Ticket, Problem, Change Request, Known Error, Asset) — semua field DocField vs kolom fisik sudah sinkron 100% setelah fix ini.
+
+### 8. Bug: "Field related_problem not found" — Murni Cache
+**Status:** ✅ Root cause ditemukan, bukan bug data
+
+Setelah semua field terverifikasi ada (baik DocField maupun kolom fisik), tombol "Buat Known Error dari Problem" sempat gagal dengan pesan "Field related_problem not found" — padahal field itu sudah ada sejak lama. **Fix:** `bench clear-cache` + `bench clear-website-cache` + `bench restart`, lalu hard refresh browser. Ini kasus kedua di sesi ini di mana gejala terlihat seperti bug data padahal murni cache server/browser — lihat juga item #3 di atas.
+
+---
+
 ## ❌ OPEN ITEMS (Update)
 
 ### 1. ~~Export Fixture~~ — SELESAI, lihat di atas
 
 ### 2. Desktop Icon Routing — Verifikasi Route History Cleanup
-**Masih menggantung dari sesi 13 Agustus**, belum diverifikasi ulang di sesi ini. Perlu cek apakah routing desktop icon tetap benar setelah cleanup Route History yang dilakukan sebelumnya.
+**Masih menggantung dari sesi 13 Agustus**, belum diverifikasi ulang. Perlu cek apakah routing desktop icon tetap benar setelah cleanup Route History yang dilakukan sebelumnya.
 
 ---
 
@@ -220,3 +266,5 @@ Setelah update Property Setter, dropdown "Naming Series" di form masih menampilk
 | NextHD Ticket naming | **DIUBAH** ke `YY.MM` (15 Agustus) — *keputusan 14 Agustus dibatalkan* |
 | Format naming series semua DocType | Seragam `YY.MM` untuk Ticket, Problem, Asset, Change Request, Known Error |
 | File backup lokal (`fixtures.bak_*`, `*.bak`) | Jangan ikut di-commit — tambahkan ke `.gitignore` |
+| Known Error → Asset | **Tidak diberi field langsung** — ditelusuri lewat Problem. Bisa direvisi kalau ternyata sering butuh Known Error tanpa Problem yang terhubung ke Asset |
+| Field baru via raw SQL ke `tabDocField` | **Wajib** diikuti `ALTER TABLE ADD COLUMN` manual — bukan otomatis |
