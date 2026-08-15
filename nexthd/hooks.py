@@ -183,7 +183,8 @@ fixtures = [
                 "a258744559",
                 "cs_known_error_from_problem",
                 "cs_change_request_from_problem",
-                "cs_change_request_from_known_error"
+                "cs_change_request_from_known_error",
+                "cs_change_request_from_asset"
         ]]]},
         {"dt": "Property Setter", "filters": [["doc_type", "like", "NextHD%"]]},
         {"dt": "DocField", "filters": [["parent", "in", [
