@@ -40,6 +40,8 @@ Konfigurasi navigasi berikut sudah dikunci dan **tidak boleh diubah** kecuali ad
 5. Frappe v16 di instalasi ini — **banyak nama kolom tabel berbeda** dari dokumentasi umum. Selalu `DESCRIBE tabNamaTable` dulu sebelum query
 6. **Tambah DocField baru via raw SQL wajib diikuti `ALTER TABLE ADD COLUMN`** — insert ke `tabDocField` saja tidak otomatis membuat kolom fisik di tabel data. Detail di `POLA_KERJA_DAN_BUG.md`
 7. Setelah perubahan field/meta yang tidak muncul di UI meski data sudah benar di database, coba `bench clear-cache` + `bench restart` di server sebelum curiga ada bug data
+8. **Kolom `action` di `tabWorkflow Transition` adalah Link ke `Workflow Action Master`** — tidak bisa diganti bebas via `doc.save()` tanpa master record-nya ada dulu. Kalau cuma perlu ubah `condition`, pakai raw SQL UPDATE
+9. **Field baru jangan ditempatkan (idx) langsung setelah field bertipe Table** tanpa Column Break — kadang tidak ter-render di UI meski data valid
 
 ---
 
@@ -58,21 +60,7 @@ Root cause ditemukan setelah investigasi panjang. Solusi terdiri dari 4 komponen
 Semua perubahan sudah di-commit ke repo (commit `59edfbe`).
 
 ### 2. Naming Series — Format YYMM
-**Status:** ✅ Selesai (14 Agustus 2026)
-
-Format baru (reset otomatis tiap bulan):
-
-| DocType | Format Baru | Contoh |
-|---|---|---|
-| NextHD Problem | `PRB-.YY.MM.-.####.` | `PRB-2608-00001` |
-| NextHD Change Request | `CHG-.YY.MM.-.####.` | `CHG-2608-00001` |
-| NextHD Asset | `AST-.YY.MM.-.####.` | `AST-2608-00001` |
-| NextHD Known Error | `KE-.YY.MM.-.####.` | `KE-2608-00001` |
-| NextHD Ticket | Tidak diubah | `TKT-2026-xxxxx` |
-
-Diupdate via SQL langsung ke `tabDocField`. Dokumen lama yang kena bug `####` (7 Problem, 1 Change Request, 1 Asset) **sengaja tidak di-rename** sesuai keputusan Efendy.
-
-> ⚠️ **Belum ditest manual** — perlu buat 1 NextHD Problem baru dan verifikasi nama dokumennya `PRB-2608-xxxxx`.
+**Status:** ✅ Selesai (14 Agustus 2026, direvisi 15 Agustus — lihat Update di bawah)
 
 ### 3. Workflow Dedup
 **Status:** ✅ Selesai (sesi sebelumnya)
@@ -93,46 +81,12 @@ Nama script: `a258744559`. Tombol standalone muncul di form NextHD Ticket ketika
 
 ---
 
-## ❌ OPEN ITEMS — Belum Dikerjakan
-
-### 1. Export Fixture — KRITIS
-**Risiko: perubahan hilang saat `bench migrate` berikutnya**
-
-Perubahan berikut **belum terdaftar di `hooks.py`** dan belum di-export ke fixture JSON:
-
-| Perubahan | Fixture DocType yang Perlu Ditambahkan |
-|---|---|
-| Naming series (DocField) | `DocField` |
-| Kolom list view (Property Setter) | `Property Setter` |
-| Client Script "Buat Problem dari Tiket" | `Client Script` |
-
-Yang sudah terdaftar (aman):
-```python
-fixtures = [
-    {"dt": "Workflow", ...},
-    {"dt": "Workflow Transition", ...},
-    {"dt": "Desktop Icon", ...},
-    {"dt": "Workspace Sidebar", ...}
-]
-```
-
-**Langkah yang perlu dilakukan:**
-1. Tambahkan `DocField`, `Property Setter`, `Client Script` ke `hooks.py` di bagian `fixtures`
-2. Jalankan `bench --site desk.ciptamebel.co.id export-fixtures`
-3. Commit hasil export ke repo
-
-### 2. Test Manual Naming Series
-Buat 1 NextHD Problem baru → verifikasi nama dokumen `PRB-2608-00001` (bukan format lama).
-
----
-
 ## Keputusan Final (Jangan Diulang Tanya)
 
 | Keputusan | Detail |
 |---|---|
 | Dokumen lama kena bug `####` | **Tidak di-rename** — biarkan apa adanya |
-| Format nomor baru | **YYMM** (reset bulanan), bukan YYYY |
-| NextHD Ticket naming | **Tidak diubah** |
+| Format nomor baru | **YYMM** (reset bulanan) — **berlaku untuk SEMUA DocType termasuk Ticket**, lihat Update 15 Agustus |
 | Tombol "Aksi" terpisah dari custom button | **Bukan bug** — perilaku normal Frappe, tidak diubah |
 | Konfigurasi navigasi desktop/workspace | **Tidak boleh diubah** tanpa persetujuan Efendy |
 
@@ -149,6 +103,7 @@ Nama kolom beberapa tabel berbeda dari dokumentasi umum — selalu `DESCRIBE` du
 | `tabWorkspace Shortcut` | `for_user` (tidak ada) |
 | `tabModule Onboarding` | `reference_doctype` (tidak ada) |
 | `tabDesktop Icon` | `module_name` (tidak ada) |
+| `tabDocField` | `insert_after` (tidak ada — urutan field murni via `idx`) |
 
 **Workspace NextHD:** didefinisikan dari file JSON di repo (`nexthd/next_helpdesk/workspace/nexthd/nexthd.json`), di-load ke DB saat `bench migrate`. Child records (Shortcut, Sidebar Item) tidak selalu ter-sync otomatis — selalu verifikasi via SQL setelah migrate.
 
@@ -250,12 +205,78 @@ Setelah semua field terverifikasi ada (baik DocField maupun kolom fisik), tombol
 
 ---
 
-## ❌ OPEN ITEMS (Update)
+## ✅ SELESAI & TERVERIFIKASI (Sesi 15 Agustus, Bagian 3 — Guard Workflow & Perbaikan Lanjutan)
 
-### 1. ~~Export Fixture~~ — SELESAI, lihat di atas
+### 9. Guard Transisi "Convert to Known Error" — Celah Ditutup
+**Status:** ✅ Selesai (15 Agustus 2026)
 
-### 2. Desktop Icon Routing — Verifikasi Route History Cleanup
-**Masih menggantung dari sesi 13 Agustus**, belum diverifikasi ulang. Perlu cek apakah routing desktop icon tetap benar setelah cleanup Route History yang dilakukan sebelumnya.
+Ditemukan transisi workflow polos `Investigasi → Known Error` yang sudah dihapus tanggal 11
+Agustus **muncul lagi tanpa disengaja** (kemungkinan re-import/edit manual tidak tercatat).
+Ini membuka celah lama: status Problem bisa pindah ke "Known Error" tanpa field `known_error`
+terisi, karena transisi polos cuma ubah status tanpa membuat record.
+
+**Fix:** transisi diberi `condition: doc.known_error` via raw SQL (percobaan pertama pakai
+`doc.save()` untuk rename action gagal — `action` adalah Link ke Workflow Action Master, lihat
+`WORKFLOW.md §4 Jebakan 3`). Sekarang tombol transisi ini hanya muncul di Actions kalau
+`known_error` sudah terisi (baik lewat tombol otomatis atau dipilih manual). Detail lengkap
+riwayat bug dan fix di `WORKFLOW.md §5`.
+
+**Sudah di-export ke fixture dan commit.**
+
+### 10. Bug: Field `related_asset` di Problem Tidak Muncul di UI
+**Status:** ✅ Ditemukan & diperbaiki (15 Agustus 2026)
+
+Setelah field `related_asset` berhasil dibuat (item #4 di atas), field-nya **tidak tampil**
+di form meski `hidden=0` dan data valid. **Root cause:** field ditempatkan (idx) tepat setelah
+field bertipe **Table** (`related_tickets`) tanpa Column Break di antaranya — Frappe kadang
+tidak konsisten me-render field biasa yang menempel langsung setelah field Table.
+
+**Fix:** field dipindah (ubah `idx`) ke posisi sejajar dengan Priority/Category, di bagian atas
+form, bukan menumpuk di section "Tiket Terkait". Sudah diverifikasi tampil normal di browser.
+Sudah di-export ke fixture dan commit.
+
+### 11. Klarifikasi Alur: Known Error vs Change Request, Urutan Mana Dulu
+**Status:** ✅ Diklarifikasi (15 Agustus 2026), didokumentasikan di `WORKFLOW.md §2`
+
+Tidak ada urutan wajib — tergantung situasi: kalau perbaikan permanen butuh waktu/approval,
+Known Error dibuat dulu sebagai referensi sementara sebelum Change Request. Kalau solusi bisa
+langsung dieksekusi, Change Request bisa langsung dibuat tanpa Known Error. Kalau solusi sudah
+pernah didokumentasikan di Known Error lama, tinggal dipilih manual, tidak perlu duplikasi.
+
+Juga diklarifikasi: **Ticket tidak wajib berhubungan dengan Problem** — mayoritas tiket rutin
+selesai dan ditutup langsung tanpa pernah masuk alur Problem.
+
+### 12. Catatan Referensi: Generalisasi ke Domain Non-IT
+**Status:** ✅ Dicatat sebagai referensi masa depan (15 Agustus 2026), bukan pekerjaan aktif
+
+Dibahas kemungkinan NextHD dipakai untuk domain lain (bengkel/otomotif, maintenance pabrik,
+fasilitas gedung) — pola Ticket→Problem→CR→KE bersifat generik ITSM, bisa dipakai lintas
+domain. **Belum ada rencana eksekusi konkret** (masih wacana). Detail 2 opsi desain (tetap 1
+Asset dengan section per kategori vs Asset generik + detail terpisah) dicatat di
+`ARSITEKTUR.md §8` untuk referensi kalau suatu saat serius dieksekusi.
+
+---
+
+## ❌ OPEN ITEMS (Update Terbaru)
+
+### 1. Desktop Icon Routing — Verifikasi Route History Cleanup
+**Masih menggantung dari sesi 13 Agustus**, belum diverifikasi ulang di sesi manapun setelahnya.
+Perlu cek apakah routing desktop icon tetap benar setelah cleanup Route History yang dilakukan
+sebelumnya.
+
+### 2. Fitur Kandidat (Belum Dikerjakan, Sekadar Usulan)
+Dibahas 15 Agustus, belum ada keputusan eksekusi:
+- Dashboard "Aset Bermasalah" (Number Card hitung Ticket per Asset)
+- SLA otomatis untuk Problem/Change Request (saat ini SLA cuma untuk Ticket)
+- Notifikasi Telegram untuk Problem/Change Request (saat ini trigger baru ada untuk Ticket + approval CR)
+- Laporan bulanan otomatis (jumlah tiket, MTTR, aset bermasalah)
+- Field "Root Cause Category" di Problem untuk analisis tren
+
+### 3. Skenario Test Data — Disiapkan, Perlu Dieksekusi Manual
+Tiga skenario end-to-end sudah disusun untuk mengisi data test sekaligus verifikasi semua alur
+(termasuk relasi Asset dan guard workflow baru): (A) Ticket→Problem→CR full flow dengan Asset,
+(B) Ticket→Problem→Known Error dengan root cause, (C) Ticket mandiri tanpa Problem + Problem
+proaktif tanpa Ticket. Belum dikonfirmasi sudah dieksekusi atau belum.
 
 ---
 
@@ -268,3 +289,5 @@ Setelah semua field terverifikasi ada (baik DocField maupun kolom fisik), tombol
 | File backup lokal (`fixtures.bak_*`, `*.bak`) | Jangan ikut di-commit — tambahkan ke `.gitignore` |
 | Known Error → Asset | **Tidak diberi field langsung** — ditelusuri lewat Problem. Bisa direvisi kalau ternyata sering butuh Known Error tanpa Problem yang terhubung ke Asset |
 | Field baru via raw SQL ke `tabDocField` | **Wajib** diikuti `ALTER TABLE ADD COLUMN` manual — bukan otomatis |
+| Transisi workflow "Convert to Known Error" | **Tidak dihapus lagi** — diberi `condition: doc.known_error` supaya lebih tahan terhadap re-import tidak sengaja |
+| Generalisasi ke domain non-IT | **Masih wacana**, tidak ada eksekusi aktif — catatan tersimpan di `ARSITEKTUR.md §8` |
