@@ -3,7 +3,7 @@
 > Referensi statis: infrastruktur, struktur app, DocType/field, permissions, schema DB, label ID.
 > Jarang berubah kecuali ada penambahan DocType atau perubahan infrastruktur.
 >
-> **Last updated:** 2026-08-12 10:00 WIB
+> **Last updated:** 2026-08-15 WIB
 
 ---
 
@@ -89,18 +89,23 @@ nexthd/
 
 | DocType | Route | Naming Series |
 |---|---|---|
-| NextHD Asset | nexthd-asset | `AST-2026-####` |
+| NextHD Asset | nexthd-asset | `AST-.YY.MM.-.####.` |
 | NextHD Business Hours | nexthd-business-hours | — |
 | NextHD Category | nexthd-category | — |
-| NextHD Change Request | nexthd-change-request | `CHG-2026-####` |
-| NextHD Known Error | nexthd-known-error | `KE-2026-####` |
-| NextHD Problem | nexthd-problem | `PRB-2026-####` |
+| NextHD Change Request | nexthd-change-request | `CHG-.YY.MM.-.####.` |
+| NextHD Known Error | nexthd-known-error | `KE-.YY.MM.-.####.` |
+| NextHD Problem | nexthd-problem | `PRB-.YY.MM.-.####.` |
 | NextHD Service Catalog | nexthd-service-catalog | `SVC-2026-####` |
 | NextHD Settings | nexthd-settings | — (Single) |
 | NextHD SLA Policy | nexthd-sla-policy | — |
 | NextHD Team | nexthd-team | — |
-| NextHD Ticket | nexthd-ticket | `TKT-.YYYY.-.####` |
+| NextHD Ticket | nexthd-ticket | `TKT-.YY.MM.-.####.` |
 | NextHD User Profile | nexthd-user-profile | — |
+
+> ⚠️ **Naming series diseragamkan ke format `YY.MM` (reset bulanan) pada 2026-08-15**, termasuk
+> NextHD Ticket yang sebelumnya sengaja tidak diubah (keputusan 14 Agustus dibatalkan). Dokumen
+> lama dengan format sebelumnya (`YYYY` atau `2026` statis) dibiarkan apa adanya, tidak di-rename.
+> Detail lengkap di `HANDOFF.md`.
 
 ### Child DocType (2) — istable=1, tidak perlu di sidebar
 
@@ -114,7 +119,7 @@ nexthd/
 ### Detail Field: NextHD Ticket
 
 ```
-naming_series         → TKT-.YYYY.-.####
+naming_series         → TKT-.YY.MM.-.####.
 ticket_type           → Select: Insiden / Permintaan Layanan
 subject               → Data (required)
 description           → Text Editor
@@ -138,11 +143,12 @@ attachments           → Attach
 ### Detail Field: NextHD Problem
 
 ```
-naming_series         → PRB-2026-####
+naming_series         → PRB-.YY.MM.-.####.
 title                 → Data (required)
 status                → Select: Terbuka / Investigasi / Known Error / Selesai / Ditutup
 priority              → Select: Kritis / Tinggi / Sedang / Rendah
 category              → Link: NextHD Category
+related_asset         → Link: NextHD Asset   (ditambahkan 2026-08-15, opsional)
 root_cause            → Text Editor
 workaround            → Text Editor
 known_error           → Link: NextHD Known Error (depends_on: status = Known Error)
@@ -150,16 +156,26 @@ change_request        → Link: NextHD Change Request
 related_tickets       → Table: NextHD Problem Ticket
 ```
 
-> **Cara resmi mencapai status `Known Error`:** WAJIB lewat tombol custom **"Convert to
-> Known Error"** di grup Actions (muncul saat status = `Investigasi` & `root_cause` terisi),
-> BUKAN lewat tombol workflow. Tombol ini otomatis membuat record NextHD Known Error +
-> mengisi field `known_error` di atas. Transisi workflow polos `Investigasi → Known Error`
-> sudah **dihapus** (2026-08-11). Detail lengkap di `WORKFLOW.md`.
+> ⚠️ **Posisi field penting:** `related_asset` sengaja diletakkan **sejajar dengan Priority/Category**
+> (idx 7, sebelum section "Detail & Relasi"), BUKAN setelah field Table `related_tickets`. Field biasa
+> yang ditempatkan langsung setelah field bertipe Table kadang tidak ter-render di UI meski datanya
+> valid — ditemukan sebagai bug pada 2026-08-15. Lihat `POLA_KERJA_DAN_BUG.md`.
+
+> **Cara resmi mencapai status `Known Error`:** dua jalur yang sama-sama valid —
+> **(a)** tombol custom **"Buat Known Error dari Problem"** (Client Script, muncul saat field
+> `known_error` masih kosong) yang otomatis membuat record Known Error baru dan mengisi
+> `known_error`, atau **(b)** kalau Known Error yang cocok **sudah ada**, pilih manual di field
+> `known_error`, lalu transisi status lewat Actions.
+>
+> Transisi workflow "Convert to Known Error" (Investigasi → Known Error) **diberi `condition:
+> doc.known_error`** sejak 2026-08-15 — tombol transisi ini hanya muncul di Actions kalau field
+> `known_error` sudah terisi (lewat cara a atau b), supaya tidak bisa pindah status tanpa Known
+> Error yang benar-benar terhubung. Detail lengkap riwayat perbaikan ini di `WORKFLOW.md`.
 
 ### Detail Field: NextHD Asset (dengan field dinamis)
 
 ```
-naming_series         → AST-2026-####
+naming_series         → AST-.YY.MM.-.####.
 asset_name            → Data (required)
 asset_type            → Select: Laptop / PC / Server / Network Device / Printer / Lainnya
 location              → Data
@@ -182,15 +198,20 @@ warranty_until        → Date
   other_description
 ```
 
+> **Property Setter `search_fields`** (ditambahkan 2026-08-15): `asset_name,assigned_to,serial_number`
+> — dropdown Link ke NextHD Asset (di Ticket/Problem/Change Request) sekarang bisa dicari lewat nama
+> aset, nama user pemakai, atau serial number, tidak cuma nama aset saja.
+
 ### Detail Field: NextHD Change Request
 
 ```
-naming_series         → CHG-2026-####
+naming_series         → CHG-.YY.MM.-.####.
 title                 → Data
 status                → Select: Draft / Diajukan / Direview / Disetujui / Ditolak / Implementasi / Selesai / Ditutup
 change_type           → Select: Standard / Normal / Emergency
 risk_level            → Select: Rendah / Sedang / Tinggi
 related_problem       → Link: NextHD Problem
+related_asset         → Link: NextHD Asset
 implementation_plan   → Text Editor
 rollback_plan         → Text Editor
 ```
@@ -198,7 +219,7 @@ rollback_plan         → Text Editor
 ### Detail Field: NextHD Known Error
 
 ```
-naming_series         → KE-2026-####
+naming_series         → KE-.YY.MM.-.####.
 title                 → Data (required)
 symptom               → Text Editor   (BUKAN root_cause — nama field beda dari Problem)
 workaround            → Text Editor
@@ -208,6 +229,11 @@ related_problem       → Link: NextHD Problem   (BUKAN "problem")
 > ⚠️ **Tidak ada field `status`** di Known Error — jangan asumsikan ada.
 > Field `root_cause` di Problem di-mapping ke `symptom` di Known Error (nama beda, isi sama).
 > Diverifikasi langsung dari `nexthd_known_error.json` pada 2026-08-11.
+>
+> **Tidak ada field asset langsung** di Known Error — ini keputusan sengaja (2026-08-15). Asset
+> terkait ditelusuri lewat `related_problem` → `related_asset` milik Problem tersebut. Berlaku
+> untuk Known Error yang dibuat dari Problem. Known Error yang dibuat manual tanpa Problem
+> (kasus jarang) tidak punya jejak Asset — bisa direvisi kalau ternyata sering dibutuhkan.
 
 ### Detail Field: NextHD User Profile
 
@@ -338,6 +364,11 @@ label, icon, indicator_color
 ```
 > ❌ Tidak ada kolom: `number_cards` (disimpan di child table `tabWorkspace Number Card`)
 
+### tabDocField
+> ❌ Tidak ada kolom: `insert_after` (berbeda dari dokumentasi umum Frappe). Urutan tampilan
+> field murni dikontrol lewat kolom `idx` — angka lebih kecil tampil lebih dulu. Ditemukan
+> 2026-08-15 saat query `SELECT insert_after` gagal dengan `Unknown column`.
+
 ---
 
 ## 7. Bahasa Indonesia — Label Referensi
@@ -377,4 +408,37 @@ label, icon, indicator_color
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-12 10:00 WIB.*
+## 8. Pertimbangan Generalisasi ke Domain Lain (Non-IT)
+
+**Status:** Wacana, belum ada rencana eksekusi konkret (dicatat 2026-08-15 untuk referensi masa depan).
+
+Inti NextHD sebenarnya bukan "IT helpdesk" secara sempit — polanya adalah **ITSM generik**:
+Ticket (laporan masalah) → Problem (akar masalah berulang) → Change Request (perubahan
+terencana) → Known Error (basis pengetahuan solusi), semua terhubung ke Asset (objek fisik
+apapun). Pola ini bisa dipakai untuk domain non-IT: bengkel/otomotif (Asset = kendaraan),
+maintenance pabrik (Asset = mesin produksi), fasilitas gedung/stasiun (Asset = peralatan/unit).
+
+**Masalah struktural saat ini:** field-field `NextHD Asset` flat dan campur — field IT
+(`cpu`, `ram`, `os`, `ip_address`) ada di tabel yang sama dengan field network (`mac_address`,
+`device_role`) dan printer (`printer_type`). Menambah domain baru berarti menambah lebih
+banyak kolom yang `NULL` untuk kategori yang tidak relevan.
+
+**Dua opsi desain kalau generalisasi jadi serius:**
+
+| Opsi | Cara Kerja | Kelebihan | Kekurangan |
+|---|---|---|---|
+| **A: Tetap satu Asset, tambah field per kategori** (pola yang sudah dipakai untuk network/printer) | Tambah section baru per domain dengan `depends_on: asset_type=='Kendaraan'` dst | Cepat dikerjakan, konsisten dengan pola yang sudah ada | Tabel makin gemuk tiap tambah kategori, banyak kolom kosong |
+| **B: Asset jadi "generik", detail spesifik di child table/DocType terpisah** (misal `NextHD Asset Detail` per kategori) | Asset cuma simpan info umum (nama, lokasi, status, pemakai); detail spesifik di tabel terpisah yang di-link | Skalabel untuk banyak domain, tabel inti tetap ramping | Butuh restrukturisasi lebih besar, form jadi 2 layer |
+
+**Rekomendasi:** selama generalisasi masih wacana, lanjut pakai Opsi A (pola section per
+kategori yang sudah berjalan) — tidak perlu migrasi besar di muka. Kalau rencana ini jadi
+serius/dekat, evaluasi ulang ke Opsi B **sebelum** data bertambah banyak, karena migrasi
+struktur akan makin sulit setelah banyak record tersimpan.
+
+**Catatan tambahan:** hindari menambah label/field baru yang terlalu spesifik-IT tanpa perlu
+ke depan — sebagian besar field umum yang sudah ada (`location`, `assigned_to`, `status`)
+sudah netral dan aman dipakai lintas domain.
+
+---
+
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-15 WIB.*
