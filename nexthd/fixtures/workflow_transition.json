@@ -363,7 +363,7 @@
   "action": "Convert to Known Error",
   "allow_self_approval": 1,
   "allowed": "Agent",
-  "condition": null,
+  "condition": "doc.known_error",
   "docstatus": 0,
   "doctype": "Workflow Transition",
   "modified": "2026-08-15 07:28:33",
