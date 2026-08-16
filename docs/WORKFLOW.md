@@ -3,7 +3,7 @@
 > State machine untuk Ticket, Problem, Change Request + sistem notifikasi Telegram.
 > File ini paling sering dirujuk saat debugging workflow.
 >
-> **Last updated:** 2026-08-12 10:00 WIB
+> **Last updated:** 2026-08-15 WIB
 
 ---
 
@@ -32,6 +32,10 @@
 | Status berubah jadi Selesai | Requester | "Tiket Anda telah diselesaikan, mohon konfirmasi" |
 | SLA mendekati breach (H-30 menit) | Agent + Manager | "⚠️ SLA tiket TKT-2026-XXXX akan terlampaui" |
 | Change Request perlu approval | Approver terkait | "Ada Change Request menunggu persetujuan" |
+
+> ⚠️ **Belum ada trigger notifikasi untuk NextHD Problem dan NextHD Change Request**
+> selain baris terakhir di atas (approval CR). Dicatat sebagai kandidat fitur tambahan
+> di `HANDOFF.md` sesi 2026-08-15.
 
 ### Implementasi Teknis
 
@@ -69,18 +73,33 @@ Baru → Sedang Dikerjakan → [Menunggu User ⇄ Sedang Dikerjakan] → Selesai
 | Requester | Selesai → Ditutup (konfirmasi) ATAU Selesai → Baru (buka kembali) |
 | Agent Manager | Bisa override semua transisi |
 
+> **Ticket tidak wajib berhubungan dengan Problem.** Kebanyakan tiket (misal reset password,
+> permintaan layanan rutin) selesai dan ditutup langsung tanpa pernah melalui alur Problem.
+> Field `related_problem` di Ticket sifatnya opsional — hanya diisi untuk insiden
+> berulang/besar yang butuh investigasi root cause. Diklarifikasi 2026-08-15.
+
 ### Workflow 2: NextHD Problem
 
 ```
-Terbuka → Investigasi ──[tombol custom "Convert to Known Error"]──▶ Known Error → Selesai → Ditutup
+Terbuka → Investigasi ──[kondisi: known_error terisi]──▶ Known Error → Selesai → Ditutup
    │                                                                                  ▲
    └──Selesaikan Langsung──────────────────────────────────────────────────────────┘
                     Investigasi ──Selesaikan──▶ Selesai (juga tersedia langsung)
 ```
 
-> ⚠️ Transisi workflow polos `Investigasi → Known Error` **sudah dihapus** (2026-08-11).
-> Satu-satunya jalan ke status `Known Error` sekarang adalah tombol custom **"Convert to Known Error"
-> di `nexthd_problem.js`**, yang membuat record Known Error + mengisi relasi sekaligus.
+> ⚠️ Transisi workflow polos `Investigasi → Known Error` **sudah dihapus** (2026-08-11), lalu
+> **muncul kembali secara tidak sengaja** (kemungkinan re-import atau edit manual yang tidak
+> tercatat) dan ditemukan lagi pada 2026-08-15 saat review fixture. Alih-alih dihapus lagi,
+> transisi ini **diberi `condition: doc.known_error`** — sekarang tombol transisi hanya muncul
+> di Actions kalau field `known_error` di Problem sudah terisi. Ini menutup celah jebakan §4
+> tanpa perlu menghapus transisi selamanya (lebih robust terhadap re-import tidak sengaja di
+> masa depan). Detail teknis fix di `POLA_KERJA_DAN_BUG.md`.
+>
+> **Dua cara mencapai status Known Error yang sekarang valid:**
+> 1. Tombol custom **"Buat Known Error dari Problem"** (Client Script) — kalau Known Error
+>    belum ada, otomatis dibuatkan + `known_error` terisi otomatis
+> 2. Kalau Known Error yang cocok **sudah ada** sebelumnya — pilih manual di field
+>    `known_error`, baru transisi status via Actions
 
 **Sisa transitions NextHD Problem (5):**
 ```
@@ -90,6 +109,7 @@ Investigasi -> Selesaikan -> Selesai
 Known Error -> Selesaikan -> Selesai
 Selesai -> Tutup -> Ditutup
 ```
+*(+1 transisi "Convert to Known Error" dengan condition, lihat di atas — total 6)*
 
 ### Workflow 3: NextHD Change Request
 
@@ -98,6 +118,19 @@ Draft → Diajukan → Direview → [Disetujui/Ditolak] → Implementasi → Sel
                                       ↓
                               Ditolak → Draft (bisa resubmit)
 ```
+
+### Kapan Problem Perlu Known Error Dulu vs Langsung Change Request
+
+Tidak ada urutan wajib satu arah — tergantung situasi (diklarifikasi 2026-08-15):
+
+| Situasi | Urutan Disarankan |
+|---|---|
+| Root cause ditemukan, ada solusi sementara (workaround), perbaikan permanen butuh waktu/approval | Problem → **Known Error dulu** → baru Change Request |
+| Root cause ditemukan, solusi jelas dan bisa langsung dieksekusi | Problem → **Change Request langsung**, tanpa Known Error |
+| Root cause sudah pernah terjadi, solusi sudah tercatat di Known Error lama | Problem → **pilih Known Error existing** (bukan buat baru) |
+
+Known Error = "kita tahu solusinya, ini catatannya". Change Request = "kita akan eksekusi
+perubahan permanen". Bisa salah satu saja atau dua-duanya.
 
 ### Alur End-to-End (Ticket → Problem → Change Request)
 
@@ -108,6 +141,19 @@ Ticket (berulang/insiden besar)
              └─ jika perlu fix permanen → Change Request dibuat via field `change_request`
                   └─ Change Request disetujui → Implementasi → Selesai
                        └─ Problem ditutup → Ticket-ticket terkait bisa ditutup
+```
+
+### Alur Relasi Asset (ditambahkan 2026-08-15)
+
+```
+Ticket → affected_asset ─────┐
+                              ├──(auto-link saat "Buat Problem dari Tiket")──▶ Problem.related_asset
+Problem (proaktif, tanpa Ticket) → related_asset diisi manual ──┘
+                              │
+                              ├──(tombol "Buat Change Request dari Problem")──▶ CR.related_asset (dari Problem)
+Asset → (tombol "Buat Change Request dari Asset" di form Asset) ──────────────▶ CR.related_asset (langsung)
+
+Known Error → TIDAK ada field asset langsung, ditelusuri lewat related_problem → Problem.related_asset
 ```
 
 ---
@@ -159,8 +205,22 @@ fixtures = [
 > ⚠️ **Dua jalur ke state yang sama = risiko field relasi kosong.** Kalau ada state yang
 > seharusnya selalu diiringi pembuatan record lain (seperti Problem → Known Error), JANGAN
 > biarkan ada transisi workflow polos yang mengubah status tanpa membuat record itu.
-> Hapus transisi polosnya, biarkan hanya tombol custom (`frappe.call()` ke method whitelisted)
-> yang bisa mencapai state tersebut.
+>
+> **Update 2026-08-15:** solusi yang lebih tahan lama BUKAN sekadar menghapus transisi
+> polosnya (transisi bisa muncul lagi lewat re-import/edit manual tidak sengaja, seperti yang
+> terjadi), melainkan **tambahkan `condition`** pada transisi tersebut yang mensyaratkan field
+> relasi sudah terisi (contoh: `condition = "doc.known_error"`). Ini membuat transisi polos
+> tetap ada tapi tidak bisa dipakai sampai prasyaratnya terpenuhi — lebih robust terhadap
+> perubahan tidak sengaja di masa depan.
+
+### Jebakan 3: Field Link sebagai Action di Workflow Transition (Baru — 2026-08-15)
+
+> ⚠️ Kolom `action` di `tabWorkflow Transition` adalah **Link ke master `Workflow Action
+> Master`**, bukan teks bebas. Mengganti nilai `action` ke nama baru yang belum ada sebagai
+> master record lewat `doc.save()` akan gagal dengan `LinkValidationError: Could not find
+> Row #N: Action: <nama baru>`. Kalau memang perlu nama aksi baru, buat dulu master record-nya
+> di `Workflow Action Master`, atau — kalau cuma perlu ubah `condition` tanpa ganti nama aksi —
+> pakai **raw SQL UPDATE langsung**, hindari `doc.save()` yang menjalankan validasi link.
 
 ---
 
@@ -245,6 +305,32 @@ frappe.db.commit()
 
 **Diverifikasi:** `apply_workflow(doc, "Set sebagai Known Error")` sekarang melempar `WorkflowTransitionError`.
 
+### ✅ RESOLVED (2026-08-15) — Transisi "Convert to Known Error" Muncul Lagi Tanpa Disengaja
+
+Ditemukan saat review fixture: transisi `Investigasi → Known Error` (action: "Convert to Known
+Error") yang sudah dihapus 2026-08-11 **muncul lagi** di `tabWorkflow Transition`, kemungkinan
+lewat re-import atau edit manual yang tidak tercatat. Ini membuka kembali celah Jebakan #2 —
+status bisa berubah "Known Error" tanpa field `known_error` terisi.
+
+**Percobaan pertama gagal** — rename `action` ke "Tandai Known Error" via `doc.save()` kena
+`LinkValidationError` karena `action` adalah Link ke `Workflow Action Master` (lihat Jebakan #3).
+
+**Fix final (raw SQL, tidak ganti nama action):**
+```python
+frappe.db.sql("""
+    UPDATE `tabWorkflow Transition`
+    SET `condition` = 'doc.known_error'
+    WHERE parent = 'NextHD Problem'
+    AND state = 'Investigasi'
+    AND next_state = 'Known Error'
+""")
+frappe.db.commit()
+```
+
+**Hasil:** transisi tetap bernama "Convert to Known Error", tapi hanya muncul di Actions kalau
+`known_error` sudah terisi. Diverifikasi manual di browser — field kosong = tombol tidak
+muncul, field terisi = tombol muncul.
+
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-12 10:00 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-15 WIB.*
