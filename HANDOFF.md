@@ -31,6 +31,9 @@ Konfigurasi navigasi berikut sudah dikunci dan **tidak boleh diubah** kecuali ad
 
 **Alasan:** Kombinasi keempat setting ini yang memastikan user langsung masuk ke Workspace dashboard NextHD (bukan ke list Ticket) setiap kali login atau klik icon NextHD. Mengubah salah satu bisa merusak alur navigasi dan membutuhkan investigasi panjang untuk debug ulang.
 
+> ✅ **Diverifikasi ulang 15 Agustus 2026** — semua 4 komponen masih persis sesuai kuncian ini,
+> tidak ada drift. Lihat item #13 di bawah.
+
 ### Pola Kerja Teknis Wajib
 
 1. **Jangan** paste multi-line Python langsung ke IPython console — selalu tulis ke file via heredoc, lalu pipe ke console
@@ -48,7 +51,7 @@ Konfigurasi navigasi berikut sudah dikunci dan **tidak boleh diubah** kecuali ad
 ## ✅ SELESAI & TERVERIFIKASI
 
 ### 1. Navigasi — Icon NextHD → Workspace Dashboard
-**Status:** ✅ Selesai (14 Agustus 2026)
+**Status:** ✅ Selesai (14 Agustus 2026), diverifikasi ulang 15 Agustus 2026
 
 Root cause ditemukan setelah investigasi panjang. Solusi terdiri dari 4 komponen:
 
@@ -247,24 +250,36 @@ Juga diklarifikasi: **Ticket tidak wajib berhubungan dengan Problem** — mayori
 selesai dan ditutup langsung tanpa pernah masuk alur Problem.
 
 ### 12. Catatan Referensi: Generalisasi ke Domain Non-IT
-**Status:** ✅ Dicatat sebagai referensi masa depan (15 Agustus 2026), bukan pekerjaan aktif
+**Status:** ✅ Rencana teknis lengkap disusun (15 Agustus 2026), belum ada jadwal eksekusi
 
 Dibahas kemungkinan NextHD dipakai untuk domain lain (bengkel/otomotif, maintenance pabrik,
 fasilitas gedung) — pola Ticket→Problem→CR→KE bersifat generik ITSM, bisa dipakai lintas
-domain. **Belum ada rencana eksekusi konkret** (masih wacana). Detail 2 opsi desain (tetap 1
-Asset dengan section per kategori vs Asset generik + detail terpisah) dicatat di
-`ARSITEKTUR.md §8` untuk referensi kalau suatu saat serius dieksekusi.
+domain. **Belum ada rencana eksekusi konkret** (masih wacana), tapi rencana teknis lengkap
+sudah disusun sebagai draft siap-pakai: DocType baru `NextHD Asset Category` (master kategori
+extensible: Komputer & IT, Kendaraan, Mesin Produksi, Infrastruktur & Fasilitas, dll) dan
+`NextHD Asset Attribute` (child table key-value/EAV untuk field spesifik per kategori tanpa
+perlu ubah struktur tiap tambah kategori baru), plus rencana migrasi 5 langkah untuk data
+existing. Detail lengkap di `ARSITEKTUR.md §8`.
+
+---
+
+## ✅ SELESAI & TERVERIFIKASI (Sesi 15 Agustus, Bagian 4 — Penutupan Item Lama)
+
+### 13. Desktop Icon Routing — Verifikasi Route History Cleanup
+**Status:** ✅ Terverifikasi (15 Agustus 2026) — item ini menggantung sejak 13 Agustus
+
+Dicek ulang semua 5 komponen konfigurasi navigasi terkunci (lihat bagian "ATURAN WAJIB" di
+atas): `add_to_apps_screen.route`, Desktop Icon `link_type`, item pertama Workspace Sidebar,
+`default_app` System Settings, `default_app` user `support@ciptamebel.co.id`. **Semua cocok
+persis** dengan konfigurasi yang dikunci sejak 14 Agustus — tidak ada drift. Diverifikasi juga
+manual di browser (private window): klik icon NextHD langsung masuk ke Dashboard, bukan ke
+list Ticket.
 
 ---
 
 ## ❌ OPEN ITEMS (Update Terbaru)
 
-### 1. Desktop Icon Routing — Verifikasi Route History Cleanup
-**Masih menggantung dari sesi 13 Agustus**, belum diverifikasi ulang di sesi manapun setelahnya.
-Perlu cek apakah routing desktop icon tetap benar setelah cleanup Route History yang dilakukan
-sebelumnya.
-
-### 2. Fitur Kandidat (Belum Dikerjakan, Sekadar Usulan)
+### 1. Fitur Kandidat (Belum Dikerjakan, Sekadar Usulan)
 Dibahas 15 Agustus, belum ada keputusan eksekusi:
 - Dashboard "Aset Bermasalah" (Number Card hitung Ticket per Asset)
 - SLA otomatis untuk Problem/Change Request (saat ini SLA cuma untuk Ticket)
@@ -272,11 +287,15 @@ Dibahas 15 Agustus, belum ada keputusan eksekusi:
 - Laporan bulanan otomatis (jumlah tiket, MTTR, aset bermasalah)
 - Field "Root Cause Category" di Problem untuk analisis tren
 
-### 3. Skenario Test Data — Disiapkan, Perlu Dieksekusi Manual
+### 2. Skenario Test Data — Disiapkan, Perlu Dieksekusi Manual
 Tiga skenario end-to-end sudah disusun untuk mengisi data test sekaligus verifikasi semua alur
 (termasuk relasi Asset dan guard workflow baru): (A) Ticket→Problem→CR full flow dengan Asset,
 (B) Ticket→Problem→Known Error dengan root cause, (C) Ticket mandiri tanpa Problem + Problem
 proaktif tanpa Ticket. Belum dikonfirmasi sudah dieksekusi atau belum.
+
+### 3. Generalisasi Domain Non-IT — Menunggu Kebutuhan Nyata
+Rencana teknis sudah lengkap di `ARSITEKTUR.md §8`, tidak butuh tindakan sampai ada kebutuhan
+konkret (misal benar-benar mau pakai NextHD untuk bengkel/maintenance/dll).
 
 ---
 
@@ -290,4 +309,5 @@ proaktif tanpa Ticket. Belum dikonfirmasi sudah dieksekusi atau belum.
 | Known Error → Asset | **Tidak diberi field langsung** — ditelusuri lewat Problem. Bisa direvisi kalau ternyata sering butuh Known Error tanpa Problem yang terhubung ke Asset |
 | Field baru via raw SQL ke `tabDocField` | **Wajib** diikuti `ALTER TABLE ADD COLUMN` manual — bukan otomatis |
 | Transisi workflow "Convert to Known Error" | **Tidak dihapus lagi** — diberi `condition: doc.known_error` supaya lebih tahan terhadap re-import tidak sengaja |
-| Generalisasi ke domain non-IT | **Masih wacana**, tidak ada eksekusi aktif — catatan tersimpan di `ARSITEKTUR.md §8` |
+| Generalisasi ke domain non-IT | **Masih wacana**, tapi rencana teknis lengkap sudah disusun di `ARSITEKTUR.md §8`, siap dieksekusi kapan pun dibutuhkan |
+| Desktop Icon Routing (item 13 Agustus) | **Ditutup** — diverifikasi ulang 15 Agustus, semua konfigurasi cocok, tidak ada drift |
