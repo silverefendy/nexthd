@@ -178,11 +178,11 @@ related_tickets       → Table: NextHD Problem Ticket
 naming_series         → AST-.YY.MM.-.####.
 asset_name            → Data (required)
 asset_type            → Select: Laptop / PC / Server / Network Device / Printer / Lainnya
-location              → Data
-assigned_to           → Link: User
-status                → Select: Aktif / Rusak / Diperbaiki / Dihapus
-purchase_date         → Date
-warranty_until        → Date
+location               → Data
+assigned_to            → Link: User
+status                 → Select: Aktif / Rusak / Diperbaiki / Dihapus
+purchase_date          → Date
+warranty_until         → Date
 
 # Field dinamis — muncul sesuai asset_type (depends_on):
 [PC / Laptop / Server]
@@ -201,6 +201,9 @@ warranty_until        → Date
 > **Property Setter `search_fields`** (ditambahkan 2026-08-15): `asset_name,assigned_to,serial_number`
 > — dropdown Link ke NextHD Asset (di Ticket/Problem/Change Request) sekarang bisa dicari lewat nama
 > aset, nama user pemakai, atau serial number, tidak cuma nama aset saja.
+
+> ⚠️ **Struktur ini berencana direstrukturisasi** kalau generalisasi ke domain non-IT
+> dieksekusi — lihat §8 untuk desain lengkap sebelum menambah field IT-spesifik baru lagi.
 
 ### Detail Field: NextHD Change Request
 
@@ -410,7 +413,9 @@ label, icon, indicator_color
 
 ## 8. Pertimbangan Generalisasi ke Domain Lain (Non-IT)
 
-**Status:** Wacana, belum ada rencana eksekusi konkret (dicatat 2026-08-15 untuk referensi masa depan).
+**Status:** Rencana teknis disusun (2026-08-15), **belum ada jadwal eksekusi**. Bagian ini
+adalah draft siap-pakai kalau suatu saat dieksekusi — supaya tidak perlu mikir ulang struktur
+dari nol.
 
 Inti NextHD sebenarnya bukan "IT helpdesk" secara sempit — polanya adalah **ITSM generik**:
 Ticket (laporan masalah) → Problem (akar masalah berulang) → Change Request (perubahan
@@ -418,26 +423,89 @@ terencana) → Known Error (basis pengetahuan solusi), semua terhubung ke Asset 
 apapun). Pola ini bisa dipakai untuk domain non-IT: bengkel/otomotif (Asset = kendaraan),
 maintenance pabrik (Asset = mesin produksi), fasilitas gedung/stasiun (Asset = peralatan/unit).
 
-**Masalah struktural saat ini:** field-field `NextHD Asset` flat dan campur — field IT
-(`cpu`, `ram`, `os`, `ip_address`) ada di tabel yang sama dengan field network (`mac_address`,
-`device_role`) dan printer (`printer_type`). Menambah domain baru berarti menambah lebih
-banyak kolom yang `NULL` untuk kategori yang tidak relevan.
+**Cakupan perubahan kalau dieksekusi: TERBATAS ke seputar `NextHD Asset` saja.** Ticket,
+Problem, Change Request, Known Error — 11 dari 12 DocType non-child — **tidak perlu disentuh
+sama sekali**, karena strukturnya sudah generik sejak awal (tidak berasumsi IT).
 
-**Dua opsi desain kalau generalisasi jadi serius:**
+### 8.1. Dua Pendekatan Teknis untuk Field Detail per Kategori
 
-| Opsi | Cara Kerja | Kelebihan | Kekurangan |
-|---|---|---|---|
-| **A: Tetap satu Asset, tambah field per kategori** (pola yang sudah dipakai untuk network/printer) | Tambah section baru per domain dengan `depends_on: asset_type=='Kendaraan'` dst | Cepat dikerjakan, konsisten dengan pola yang sudah ada | Tabel makin gemuk tiap tambah kategori, banyak kolom kosong |
-| **B: Asset jadi "generik", detail spesifik di child table/DocType terpisah** (misal `NextHD Asset Detail` per kategori) | Asset cuma simpan info umum (nama, lokasi, status, pemakai); detail spesifik di tabel terpisah yang di-link | Skalabel untuk banyak domain, tabel inti tetap ramping | Butuh restrukturisasi lebih besar, form jadi 2 layer |
+| Pendekatan | Cara Kerja | Nambah Kategori Baru |
+|---|---|---|
+| **A — Section per kategori** (pola yang dipakai sekarang untuk IT/Network/Printer) | Tiap kategori punya DocField tetap sendiri dengan `depends_on` | Butuh tambah DocField + edit struktur tiap kali ada kategori baru |
+| **B — Atribut dinamis (key-value / EAV)** | 1 child table generik berisi baris "Nama Atribut" + "Nilai", diisi bebas sesuai kategori | **Tidak butuh perubahan struktur** — kategori baru tinggal isi atribut baru di data |
 
-**Rekomendasi:** selama generalisasi masih wacana, lanjut pakai Opsi A (pola section per
-kategori yang sudah berjalan) — tidak perlu migrasi besar di muka. Kalau rencana ini jadi
-serius/dekat, evaluasi ulang ke Opsi B **sebelum** data bertambah banyak, karena migrasi
-struktur akan makin sulit setelah banyak record tersimpan.
+**Rekomendasi: Pendekatan B**, karena tujuan generalisasi adalah supaya nambah domain baru
+(bengkel, mesin, dst) **tidak berulang kali butuh kerja teknis** seperti pendekatan A.
 
-**Catatan tambahan:** hindari menambah label/field baru yang terlalu spesifik-IT tanpa perlu
-ke depan — sebagian besar field umum yang sudah ada (`location`, `assigned_to`, `status`)
-sudah netral dan aman dipakai lintas domain.
+### 8.2. Rancangan DocType Baru
+
+**`NextHD Asset Category`** (master, baru)
+```
+category_name    → Data (required) — misal: "Komputer & IT", "Kendaraan", "Mesin Produksi",
+                     "Infrastruktur & Fasilitas", "Lainnya"
+description       → Small Text (opsional)
+```
+Menggantikan `asset_type` yang sekarang Select tertutup — jadi Link ke master ini, supaya
+kategori baru bisa ditambah dari UI (buat record baru), **tanpa edit kode/DocField**.
+
+**`NextHD Asset Attribute`** (child table, baru, parent = NextHD Asset)
+```
+attribute_name    → Data (required) — misal: "CPU", "Plat Nomor", "Kapasitas Produksi"
+attribute_value   → Data (required) — nilai bebas
+unit              → Data (opsional) — misal: "GB", "Ton/Jam", "KM"
+```
+Setiap baris = 1 spesifikasi. Contoh isi untuk Asset kategori "Kendaraan":
+```
+Plat Nomor    | B 1234 CD  |
+Tahun         | 2023       |
+KM Terakhir   | 45000      | KM
+```
+Contoh isi untuk Asset kategori "Mesin Produksi":
+```
+Kapasitas     | 500        | unit/jam
+Jam Operasi   | 12400      | jam
+```
+
+**`NextHD Asset` disederhanakan** — sisakan field yang benar-benar universal:
+```
+naming_series, asset_name, asset_category (Link → NextHD Asset Category, ganti asset_type),
+location, assigned_to, status, purchase_date, warranty_until,
+asset_attributes (Table → NextHD Asset Attribute)
+```
+Field IT-spesifik yang sekarang menempel langsung (`cpu`, `ram`, `os`, `mac_address`,
+`printer_type`, dst) **dipindah isinya** menjadi baris-baris di `asset_attributes`, bukan
+DocField terpisah lagi.
+
+### 8.3. Rencana Migrasi Data Existing
+
+Saat ini baru **1 record Asset live** (`AST-2608-0001`, kategori Printer) — migrasinya ringan:
+
+1. Buat `NextHD Asset Category` dan isi kategori awal (Komputer & IT, Kendaraan, Mesin Produksi,
+   Infrastruktur & Fasilitas, Lainnya)
+2. Buat DocType `NextHD Asset Attribute` (child table)
+3. Tambah field `asset_category` (Link) dan `asset_attributes` (Table) ke `NextHD Asset` — via
+   raw SQL + `ALTER TABLE` (ikuti aturan wajib di `POLA_KERJA_DAN_BUG.md`)
+4. Script migrasi: untuk tiap Asset existing, baca field lama yang terisi (`cpu`, `ram`, dst),
+   insert sebagai baris `NextHD Asset Attribute`, set `asset_category` sesuai `asset_type` lama
+5. Setelah data beres dan terverifikasi, hapus DocField lama yang IT-spesifik (`cpu`, `ram`,
+   `mac_address`, dst) dari `NextHD Asset`
+6. Export fixture (DocType baru, DocField Asset yang berubah), commit
+
+### 8.4. Yang Tidak Berubah
+
+- Semua field relasi ke Asset di DocType lain (`affected_asset`, `related_asset`) — tetap Link
+  ke `NextHD Asset`, tidak perlu diubah sama sekali
+- Ticket, Problem, Change Request, Known Error, workflow-nya, semua Client Script tombol
+  otomatis — logic-nya generik (buat dokumen + isi relasi), tidak menyentuh field
+  spesifik-domain
+
+### 8.5. Kapan Layak Dieksekusi
+
+Belum mendesak — direkomendasikan ditunda sampai ada kebutuhan nyata (misal benar-benar mau
+pakai NextHD untuk domain lain), supaya struktur atribut yang dirancang benar-benar sesuai
+kebutuhan real, bukan tebakan di muka. Data live yang masih sedikit sekarang (1 Asset) membuat
+migrasi tetap ringan kapan pun dieksekusi — menunda tidak menambah risiko migrasi jadi lebih
+berat.
 
 ---
 
