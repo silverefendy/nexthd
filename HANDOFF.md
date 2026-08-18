@@ -277,29 +277,105 @@ list Ticket.
 
 ---
 
-## ❌ OPEN ITEMS (Update Terbaru)
+# UPDATE — 16 Agustus 2026
 
-### 1. Fitur Kandidat (Belum Dikerjakan, Sekadar Usulan)
-Dibahas 15 Agustus, belum ada keputusan eksekusi:
+## ✅ SELESAI & TERVERIFIKASI (Sesi 16 Agustus — Data Master & Permission)
+
+### 14. Data Master Diisi: Team, Category, Business Hours, SLA Policy
+**Status:** ✅ Selesai (16 Agustus 2026)
+
+- **NextHD Team:** 2 record (Infrastructure, Application Support)
+- **NextHD Category:** 5 record (Hardware, Network, Software, Akun & Akses, Printer)
+- **NextHD Business Hours:** diisi Senin s/d Sabtu (per hari, lihat catatan struktur di bawah)
+- **NextHD SLA Policy:** 4 record (Kritis 15/240 menit, Tinggi 30/480, Sedang 60/1440, Rendah 120/2880)
+
+> ⚠️ **Struktur `NextHD Business Hours` ternyata 1 record = 1 hari** (field `day` Select
+> wajib), bukan 1 record judul umum berisi jadwal seminggu penuh. Sempat salah asumsi di
+> awal (percobaan pertama gagal `ValidationError: Day / Hari is required`). Dicatat untuk
+> referensi di `ARSITEKTUR.md`.
+
+**List view NextHD Business Hours** ditambahkan kolom `day`, `start_time`, `end_time`,
+`is_working_day` via Property Setter — supaya jadwal langsung terlihat tanpa buka satu-satu
+record.
+
+### 15. Bug Desain Ditemukan: `business_hours` di SLA Policy Wajib Diisi Tapi Tidak Dipakai
+**Status:** ⚠️ Ditemukan (16 Agustus 2026), **BELUM diperbaiki — lihat Open Items**
+
+Field `business_hours` di NextHD SLA Policy adalah **Link tunggal** (bukan tabel) yang
+**wajib diisi** (`reqd=1`). Tapi karena `NextHD Business Hours` sekarang berstruktur 1
+record = 1 hari (lihat item #14), Link tunggal ini secara desain **tidak bisa merepresentasikan
+jadwal seminggu penuh** — paling banter link ke 1 hari saja.
+
+**Dikonfirmasi lewat pengecekan `tasks.py`:** field `business_hours` **tidak dipakai sama
+sekali** di logic perhitungan SLA. Artinya SLA response/resolution time saat ini dihitung
+**linear 24/7**, tidak memperhitungkan jam kerja atau hari libur — meski field-nya ada dan
+wajib diisi di form.
+
+**Solusi sementara:** 4 SLA Policy yang baru dibuat diisi `business_hours = "Senin"` sebagai
+placeholder (tidak salah secara teknis, tapi tidak berpengaruh ke perhitungan). Perbaikan
+sesungguhnya (`tasks.py` dibuat sadar jam kerja) dicatat sebagai open item.
+
+### 16. Permission Per Role — Dicek, Kondisi Bagus
+**Status:** ✅ Dicek (16 Agustus 2026), tidak ada perbaikan mendesak
+
+Permission untuk 5 DocType inti (Ticket, Problem, Change Request, Known Error, Asset) sudah
+sesuai desain yang tercatat di `ARSITEKTUR.md §4` — IT Manager & Agent Manager full akses,
+Agent CRUD tanpa beberapa delete, Requester read-only (kecuali create Ticket), IT Auditor
+read-only semua. Tidak ada role yang bolong.
+
+**Kondisi user saat ini** (baru 2 user real):
+- `ahmad.fauzi@ciptamebel.co.id` — role Requester + Agent + Agent Manager sekaligus.
+  **Sengaja begitu untuk sementara** (masih tahap coba-coba, belum final peran masing-masing
+  user) — dikonfirmasi Efendy 16 Agustus, bukan bug atau kesalahan assignment.
+- `support@ciptamebel.co.id` — punya hampir semua role di sistem termasuk role default
+  Frappe/ERPNext yang tidak relevan (Sales Manager, Purchase Manager, dll). Wajar untuk akun
+  operasional/admin, tidak berisiko ke NextHD, tapi berpotensi berantakan kalau nanti perlu
+  diaudit peran per user secara ketat.
+
+---
+
+## ❌ OPEN ITEMS (Update 16 Agustus — Menggantikan Daftar Sebelumnya)
+
+### 1. SLA Belum Sadar Jam Kerja — PERLU DIPERBAIKI
+**Baru ditemukan 16 Agustus, prioritas disarankan naik** karena berhubungan langsung dengan
+data SLA Policy yang baru diisi (item #15 di atas). `tasks.py` perlu diupdate supaya membaca
+`NextHD Business Hours` (cek hari berjalan + `is_working_day` + rentang `start_time`/
+`end_time`) sebelum menghitung breach SLA, bukan linear 24/7 seperti sekarang. Field
+`business_hours` di SLA Policy sendiri mungkin perlu direvisi dari Link tunggal jadi bentuk
+lain (misal Link ke grup hari, atau dihapus kewajibannya) — perlu didiskusikan desainnya
+lebih dulu sebelum implementasi.
+
+### 2. Fitur Kandidat (Belum Dikerjakan, Sekadar Usulan)
 - Dashboard "Aset Bermasalah" (Number Card hitung Ticket per Asset)
-- SLA otomatis untuk Problem/Change Request (saat ini SLA cuma untuk Ticket)
-- Notifikasi Telegram untuk Problem/Change Request (saat ini trigger baru ada untuk Ticket + approval CR)
+- SLA otomatis untuk Problem/Change Request (saat ini SLA cuma untuk Ticket, dan itu pun
+  belum sadar jam kerja — lihat item #1)
+- Notifikasi Telegram untuk Problem/Change Request — **disepakati dikerjakan belakangan**
+  (16 Agustus), fokus dulu ke fitur lain
 - Laporan bulanan otomatis (jumlah tiket, MTTR, aset bermasalah)
 - Field "Root Cause Category" di Problem untuk analisis tren
 
-### 2. Skenario Test Data — Disiapkan, Perlu Dieksekusi Manual
-Tiga skenario end-to-end sudah disusun untuk mengisi data test sekaligus verifikasi semua alur
-(termasuk relasi Asset dan guard workflow baru): (A) Ticket→Problem→CR full flow dengan Asset,
-(B) Ticket→Problem→Known Error dengan root cause, (C) Ticket mandiri tanpa Problem + Problem
-proaktif tanpa Ticket. Belum dikonfirmasi sudah dieksekusi atau belum.
+### 3. Fitur Foto (Attach Image) — Direncanakan, Belum Dieksekusi
+Dibahas 16 Agustus: tambah field `Attach Image` (opsional) di NextHD Ticket, Problem, dan
+Asset — supaya foto tampil langsung inline di form (thumbnail + preview), tidak perlu
+download seperti field `Attach` biasa. Plus hook kompresi otomatis (resize + reduce quality
+pakai Pillow) supaya ukuran file tidak membengkak dari upload foto kamera HP. Rencana teknis:
+tambah field via SQL+ALTER TABLE (pola standar), buat hook `after_insert` pada DocType File
+untuk resize+compress kalau file ter-attach ke field foto tsb. Belum dieksekusi — perlu sesi
+tersendiri karena cukup besar.
 
-### 3. Generalisasi Domain Non-IT — Menunggu Kebutuhan Nyata
+### 4. Skenario Test Data — Diperluas, Perlu Dieksekusi Manual
+Selain 3 skenario lama (A: Ticket→Problem→CR full flow, B: Ticket→Problem→Known Error,
+C: Ticket mandiri + Problem proaktif), ditambah 3 skenario baru yang memanfaatkan data master
+yang baru diisi (D: SLA breach test dengan prioritas Kritis, E: lintas Team beda kategori,
+F: siklus dengan kategori & business hours). Belum dikonfirmasi sudah dieksekusi.
+
+### 5. Generalisasi Domain Non-IT — Menunggu Kebutuhan Nyata
 Rencana teknis sudah lengkap di `ARSITEKTUR.md §8`, tidak butuh tindakan sampai ada kebutuhan
 konkret (misal benar-benar mau pakai NextHD untuk bengkel/maintenance/dll).
 
 ---
 
-## Keputusan Final (Update — Menggantikan Tabel 14 Agustus)
+## Keputusan Final (Update 16 Agustus — Menambahkan ke Tabel Sebelumnya)
 
 | Keputusan | Detail |
 |---|---|
@@ -311,3 +387,6 @@ konkret (misal benar-benar mau pakai NextHD untuk bengkel/maintenance/dll).
 | Transisi workflow "Convert to Known Error" | **Tidak dihapus lagi** — diberi `condition: doc.known_error` supaya lebih tahan terhadap re-import tidak sengaja |
 | Generalisasi ke domain non-IT | **Masih wacana**, tapi rencana teknis lengkap sudah disusun di `ARSITEKTUR.md §8`, siap dieksekusi kapan pun dibutuhkan |
 | Desktop Icon Routing (item 13 Agustus) | **Ditutup** — diverifikasi ulang 15 Agustus, semua konfigurasi cocok, tidak ada drift |
+| `ahmad.fauzi` punya 3 role sekaligus | **Sengaja, sementara** — masih tahap coba-coba peran user, bukan kesalahan |
+| Notifikasi Telegram Problem/CR | **Ditunda** — dikerjakan belakangan setelah fitur lain |
+| `business_hours` di SLA Policy | **Diisi placeholder "Senin"** untuk sementara — field ini secara desain belum lengkap, perbaikan logic `tasks.py` jadi open item terpisah |
