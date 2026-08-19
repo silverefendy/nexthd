@@ -3,7 +3,7 @@
 > Frappe quirks, aturan wajib saat coding/debug, dan riwayat bug per sesi.
 > File ini yang paling sering bertambah tiap sesi baru.
 >
-> **Last updated:** 2026-08-19 WIB
+> **Last updated:** 2026-08-20 10:00 WIB
 
 ---
 
@@ -151,7 +151,7 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 | **Baris kosong di dalam blok manapun** (for/if/def) di script console | **Error/perilaku tidak terduga.** IPython nganggap baris kosong = akhir blok. Hindari baris kosong di DALAM blok — boleh ada ANTAR blok top-level saja |
 | **Loop/logic kompleks di console** | **Selalu bungkus dalam 1 fungsi** (`def run(): ...` lalu panggil `run()` terpisah) — IPython baca seluruh body sebagai 1 unit |
 | `doc.save()` | Selalu gagal di production. Pakai SQL INSERT/UPDATE + `frappe.db.commit()` — **kecuali** untuk `doc.insert()` pada custom DocType baru yang memang perlu validasi Frappe |
-| **Field Link yang wajib diisi (`reqd=1`)** | Cek dulu via `frappe.get_meta(doctype)` — filter `f.reqd or f.fieldtype == "Link"` |
+| **Field Link yang wajib diisi (`reqd=1`)** | Cek dulu via `frappe.get_meta(doctype)` — filter `f.reqd or f.fieldtype == "Link"`. Contoh: `NextHD Ticket` butuh `subject` dan `requested_by` — kalau test insert via console lupa isi ini, akan kena `MandatoryError` meski `calculate_sla()` sendiri sudah terpanggil dan sukses |
 | **Field Link ke master doctype** | Master record harus **sudah ada duluan** sebelum insert dokumen yang mereferensikannya |
 | Perubahan DB langsung | Export fixture → git commit → git push |
 | `bench migrate` | Bisa hapus Desktop Icon dan Workspace Sidebar yang tidak di fixtures |
@@ -171,6 +171,7 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 | **`bench --site X mariadb -e "..."` tiap panggilan buka KONEKSI BARU** | `SET SQL_SAFE_UPDATES=0` di command `-e` terpisah TIDAK terbawa ke command `-e` berikutnya (safe update mode akan error lagi). WAJIB gabung dalam satu koneksi: `bench --site X mariadb << 'SQL' ... SQL` |
 | **`bench migrate` — urutan wajib saat menambah kolom BARU lalu langsung mengisi datanya** | Migrate dulu (agar kolom fisik tercipta di DB) BARU UPDATE data. Kalau dibalik → `ERROR 1054 Unknown column` |
 | **`__pycache__` basi setelah edit file `.py`** | Kadang perubahan logic Python tidak langsung kepakai meski file sudah diedit dan `bench restart` dijalankan. Kalau hasil eksekusi masih mengikuti kode versi lama, hapus `find <app_path> -type d -name "__pycache__" -exec rm -rf {} +` lalu restart lagi |
+| **Selalu verifikasi isi file DI DISK dengan `grep`/`cat` sebelum asumsi kode sudah ter-replace** | Kasus nyata (2026-08-20): sesi sebelumnya "mengaku" sudah menulis ulang `calculate_sla()`, tapi `grep` di sesi berikutnya membuktikan file masih versi lama (`add_to_date`, bukan `add_working_time`). Root cause: perubahan tidak pernah benar-benar tersimpan ke disk sesi sebelumnya. **Jangan percaya catatan dokumentasi 100% — selalu cross-check langsung ke file sebelum lanjut debug** |
 
 ---
 
@@ -251,28 +252,31 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 | 2 | Dedup transisi workflow NextHD Ticket & Change Request | Baris duplikat semua punya `idx=0` (prefix nama `ai9*`), baris asli idx berurutan (prefix `l86*`/`l87*`) | `DELETE FROM tabWorkflow Transition WHERE name LIKE 'ai9%'` per parent. Hasil akhir: Ticket 7 transisi, Change Request 8 transisi |
 | 3 | Bug penomoran `####` di SEMUA DocType (bukan cuma Ticket) | Opsi `naming_series` di JSON DocType pakai literal salah tanpa titik pemisah: `PRB-2026-####`, `CHG-2026-####`, `AST-2026-####`, `KE-2026-####`, `SVC-2026-####` | Diseragamkan ke format `.YY.MM.-.####` (reset otomatis per bulan) di 6 DocType (Ticket, Problem, Change Request, Asset, Known Error, Service Catalog) + update data existing + bersihkan row lama `tabSeries` + migrate developer_mode. Terverifikasi record baru format `XXX-2608-0001` |
 
-### 🔄 SEDANG DIKERJAKAN — SLA Enforcement Business Hours (2026-08-19, BELUM SELESAI)
+### ✅ SELESAI — Bug Session 2026-08-20 (SLA Enforcement Business Hours)
 
-Root cause: `calculate_sla()` lama pakai `add_to_date()` mentah, sama sekali tidak menghitung jam kerja/hari libur.
+Root cause awal: `calculate_sla()` lama pakai `add_to_date()` mentah, sama sekali tidak menghitung jam kerja/hari libur.
 
-**Sudah dikerjakan:**
-- `business_hours.py` (utils) — ditemukan bug lama: `WEEKDAY_MAP` pakai nama Inggris (Monday dst) padahal `tabNextHD Business Hours` isinya nama Indonesia (Senin dst), jadi `get_business_hours()` selalu `None` — fungsi lama belum pernah jalan bener. Sudah diperbaiki ke nama Indonesia.
-- `add_working_time()` di file yang sama ditulis ulang jadi versi loop (mengurangi sisa menit per hari kerja, lompat ke hari kerja berikutnya) — versi lama tidak bisa menangani durasi multi-hari (Sedang 2 hari, Rendah 1 minggu).
+**Yang dikerjakan:**
+- `business_hours.py` (utils) — bug lama: `WEEKDAY_MAP` pakai nama Inggris (Monday dst) padahal `tabNextHD Business Hours` isinya nama Indonesia (Senin dst), jadi `get_business_hours()` selalu `None`. Diperbaiki ke nama Indonesia.
+- `add_working_time()` ditulis ulang jadi versi loop (mengurangi sisa menit per hari kerja, lompat ke hari kerja berikutnya) — menangani durasi multi-hari (Sedang 2 hari, Rendah 1 minggu).
 - `NextHD SLA Policy` — field diubah jadi `response_value`+`response_unit` dan `resolution_value`+`resolution_unit` (Menit/Jam/Hari), auto-terhitung ke `response_time_minutes`/`resolution_time_minutes` via controller `validate()`.
 - Data SOP final (semua business hours): Kritis response 15 menit/resolusi 1 jam, Tinggi response 30 menit/resolusi 4 jam, Sedang response 60 menit/resolusi 2 hari kerja, Rendah response 120 menit/resolusi 7 hari kerja. `is_24x7 = 0` untuk semua priority.
-- `calculate_sla()` di `nexthd_ticket.py` sudah diarahkan memanggil `add_working_time()`, bukan `add_to_date()` lagi.
+- **Root cause kenapa fix sebelumnya "belum jalan":** `calculate_sla()` di `nexthd_ticket.py` ternyata **belum pernah benar-benar diarahkan** memanggil `add_working_time()` — masih memanggil `add_to_date()` mentah. Klaim sesi sebelumnya bahwa fungsi "sudah ditulis ulang" tidak akurat; diverifikasi langsung via `grep` di file disk.
+- Fix final: tambah import `from nexthd.next_helpdesk.utils.business_hours import add_working_time`, replace body `calculate_sla()` agar memanggil `add_working_time(now, minutes, is_24x7=...)` untuk `sla_response_by` dan `sla_resolution_by`.
 
-**BELUM SELESAI — bug masih ada:**
-Test insert ticket terbaru (`TKT-2608-0003`, dibuat 2026-08-20 05:12 — di luar jam kerja) masih menghasilkan pola LAMA: `sla_response_by` = tepat +60 menit dari waktu insert, `sla_resolution_by` = tepat +2 hari (2880 menit) dari waktu insert. Seharusnya (kalau fix aktif) waktu mulai hitung SLA digeser ke jam buka berikutnya (08:00), bukan dihitung mentah dari jam 05:12.
+**Verifikasi test (2026-08-20 05:32 WIB insert):**
 
-Sudah dicoba: hapus `__pycache__`, `bench restart`, tapi hasil test terakhir belum dikonfirmasi post-fix.
+| Field | Hasil | Status |
+|---|---|---|
+| Waktu insert | 2026-08-20 05:32 (di luar jam kerja) | — |
+| `sla_response_by` | 2026-08-20 09:00 (jam buka 08:00 + 60 menit, prioritas Sedang) | ✅ Benar |
+| `sla_resolution_by` | 2026-08-26 12:30 (+2 hari kerja dari jam buka) | ✅ Benar |
 
-**Next step sesi berikutnya:**
-1. Cek ulang isi `calculate_sla()` di disk — pastikan replace kemarin benar-benar tersimpan (`grep -A 20 "def calculate_sla" nexthd_ticket.py`)
-2. Kalau kode di disk sudah benar tapi behavior masih lama → curigai worker Frappe yang masih hold reference module lama, coba restart lebih menyeluruh
-3. File yang berubah sesi ini **BELUM di-push ke GitHub** (masih di server saja, sengaja ditahan sampai fix terverifikasi jalan): `nexthd_sla_policy.json`, `nexthd_sla_policy.py`, `nexthd_ticket.py`, `business_hours.py`
-4. Data `tabNextHD SLA Policy` di server SUDAH terupdate ke angka final — tidak perlu diulang, hanya kode yang perlu diperbaiki
+Ticket test: `TKT-2608-0004`. Sudah di-commit (`8d3f26d`) dan push ke `origin/main`.
+
+**Tersisa (masuk ke `SUMMARY.md` §2 sebagai item baru):**
+- Verifikasi custom reports (item #2 lama) sekarang bisa jalan penuh di produksi karena `sla_resolution_by` sudah konsisten terisi.
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-19 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-20 10:00 WIB.*
