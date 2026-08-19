@@ -299,7 +299,7 @@ list Ticket.
 record.
 
 ### 15. Bug Desain Ditemukan: `business_hours` di SLA Policy Wajib Diisi Tapi Tidak Dipakai
-**Status:** ⚠️ Ditemukan (16 Agustus 2026), **BELUM diperbaiki — lihat Open Items**
+**Status:** ✅ **DIPERBAIKI 19 Agustus 2026 — lihat Update 19 Agustus di bawah**
 
 Field `business_hours` di NextHD SLA Policy adalah **Link tunggal** (bukan tabel) yang
 **wajib diisi** (`reqd=1`). Tapi karena `NextHD Business Hours` sekarang berstruktur 1
@@ -311,9 +311,9 @@ sekali** di logic perhitungan SLA. Artinya SLA response/resolution time saat ini
 **linear 24/7**, tidak memperhitungkan jam kerja atau hari libur — meski field-nya ada dan
 wajib diisi di form.
 
-**Solusi sementara:** 4 SLA Policy yang baru dibuat diisi `business_hours = "Senin"` sebagai
-placeholder (tidak salah secara teknis, tapi tidak berpengaruh ke perhitungan). Perbaikan
-sesungguhnya (`tasks.py` dibuat sadar jam kerja) dicatat sebagai open item.
+**Solusi sementara (16 Agustus):** 4 SLA Policy yang baru dibuat diisi `business_hours = "Senin"` sebagai
+placeholder. **Solusi permanen (19 Agustus):** field `business_hours` dihapus total, diganti
+`is_24x7` — lihat Update 19 Agustus untuk detail lengkap.
 
 ### 16. Permission Per Role — Dicek, Kondisi Bagus
 **Status:** ✅ Dicek (16 Agustus 2026), tidak ada perbaikan mendesak
@@ -336,19 +336,14 @@ read-only semua. Tidak ada role yang bolong.
 
 ## ❌ OPEN ITEMS (Update 16 Agustus — Menggantikan Daftar Sebelumnya)
 
-### 1. SLA Belum Sadar Jam Kerja — PERLU DIPERBAIKI
-**Baru ditemukan 16 Agustus, prioritas disarankan naik** karena berhubungan langsung dengan
-data SLA Policy yang baru diisi (item #15 di atas). `tasks.py` perlu diupdate supaya membaca
-`NextHD Business Hours` (cek hari berjalan + `is_working_day` + rentang `start_time`/
-`end_time`) sebelum menghitung breach SLA, bukan linear 24/7 seperti sekarang. Field
-`business_hours` di SLA Policy sendiri mungkin perlu direvisi dari Link tunggal jadi bentuk
-lain (misal Link ke grup hari, atau dihapus kewajibannya) — perlu didiskusikan desainnya
-lebih dulu sebelum implementasi.
+### 1. SLA Belum Sadar Jam Kerja — ✅ DALAM PENGERJAAN, lihat Update 19 Agustus
+Desain sudah final (all-or-nothing, `is_24x7`, prioritas otomatis, dll), sebagian sudah
+dieksekusi di server. Detail lengkap & open items baru ada di bagian **UPDATE — 19 Agustus
+2026** di bawah — item ini digantikan oleh open items baru di sana.
 
 ### 2. Fitur Kandidat (Belum Dikerjakan, Sekadar Usulan)
 - Dashboard "Aset Bermasalah" (Number Card hitung Ticket per Asset)
-- SLA otomatis untuk Problem/Change Request (saat ini SLA cuma untuk Ticket, dan itu pun
-  belum sadar jam kerja — lihat item #1)
+- SLA otomatis untuk Problem/Change Request (saat ini SLA cuma untuk Ticket)
 - Notifikasi Telegram untuk Problem/Change Request — **disepakati dikerjakan belakangan**
   (16 Agustus), fokus dulu ke fitur lain
 - Laporan bulanan otomatis (jumlah tiket, MTTR, aset bermasalah)
@@ -389,4 +384,126 @@ konkret (misal benar-benar mau pakai NextHD untuk bengkel/maintenance/dll).
 | Desktop Icon Routing (item 13 Agustus) | **Ditutup** — diverifikasi ulang 15 Agustus, semua konfigurasi cocok, tidak ada drift |
 | `ahmad.fauzi` punya 3 role sekaligus | **Sengaja, sementara** — masih tahap coba-coba peran user, bukan kesalahan |
 | Notifikasi Telegram Problem/CR | **Ditunda** — dikerjakan belakangan setelah fitur lain |
-| `business_hours` di SLA Policy | **Diisi placeholder "Senin"** untuk sementara — field ini secara desain belum lengkap, perbaikan logic `tasks.py` jadi open item terpisah |
+| `business_hours` di SLA Policy | **DIPERBAIKI 19 Agustus** — lihat Update 19 Agustus, field ini sudah dihapus diganti `is_24x7` |
+
+---
+
+
+
+# UPDATE — 19 Agustus 2026 (SLA Sadar Jam Kerja & Prioritas Otomatis)
+
+## Konteks Sesi Ini
+
+Menindaklanjuti **Open Item #1 (16 Agustus): "SLA Belum Sadar Jam Kerja"**. Sekaligus
+memperluas scope jadi 3 hal sekaligus setelah diskusi lebih lanjut dengan Efendy: (1) SLA
+sadar jam kerja, (2) prioritas tiket dihitung otomatis dari Impact × Urgency (bukan pilihan
+bebas tanpa kriteria), (3) titik mulai SLA Resolution dipindah ke saat agent mulai kerja,
+plus pause SLA saat menunggu respons user.
+
+## ✅ Keputusan Desain Final (Disepakati 19 Agustus — Jangan Ditanya Ulang)
+
+### A. Aturan SLA di Luar Jam Kerja — All-or-Nothing (Menggantikan Rencana Awal "Partial Carry-Over")
+Kalau durasi SLA tidak muat sampai jam pulang hari ini (atau tiket masuk di luar jam kerja/
+hari libur) → **seluruh durasi dihitung ulang dari awal jam kerja berikutnya**, bukan carry-
+over sebagian. Contoh: tiket masuk 16:50 (jam kerja s/d 17:00), SLA 15 menit → deadline jadi
+**besok 08:15** (bukan 17:05, bukan besok 08:05 partial).
+
+### B. SLA Policy — `is_24x7` (Menggantikan Field `business_hours` Lama)
+Field `business_hours` (Link tunggal ke NextHD Business Hours, akar masalah di Open Item #1
+lama) **dihapus total**, diganti field Check `is_24x7`. **Kritis = 24/7** (skip jam kerja
+sama sekali). Tinggi/Sedang/Rendah = ikut jam kerja normal dengan aturan all-or-nothing (A).
+
+### C. Prioritas Otomatis dari Impact × Urgency
+Field baru `impact` dan `urgency` (Select: Tinggi/Rendah), **diisi bebas oleh user pelapor**
+saat buat tiket (sengaja dibiarkan bebas dulu — fase pembiasaan/edukatif, bukan mundur dari
+desain). `priority` dihitung otomatis dari matriks (Tinggi+Tinggi=Kritis, Tinggi+Rendah=Tinggi,
+Rendah+Tinggi=Sedang, Rendah+Rendah=Rendah), field `priority` jadi read-only untuk user biasa.
+**Agent Manager / IT Manager** boleh override manual kapan saja (permission level khusus,
+implementasi belum selesai — lihat Open Items).
+
+### D. Titik Mulai SLA — Skema 2 (Response Tetap dari Awal, Resolution dari "Mulai Kerjakan")
+`sla_response_by` tetap dihitung sejak tiket dibuat (tidak berubah). Tombol **baru** "Mulai
+Kerjakan" (transisi Baru → Sedang Dikerjakan): saat diklik, catat `responded_on`, lalu
+`sla_resolution_by` **baru mulai dihitung dari situ** (pakai `priority` terkini saat itu,
+bukan priority awal saat tiket dibuat).
+
+### E. Pause SLA saat Status "Menunggu User"
+Ditemukan dari `fixtures/workflow.json`: status "Sedang Dikerjakan" bisa dicapai dari 2 jalur
+— **"Mulai Kerjakan"** (Baru → Sedang Dikerjakan, titik mulai resolution clock) dan **"Lanjut
+Kerjakan"** (Menunggu User → Sedang Dikerjakan, BUKAN titik mulai baru, cuma resume dari
+pause). Child table baru `NextHD Ticket Waiting Log` (field: `asked_on`, `asked_by`,
+`question` reqd, `replied_on`, `reply` permlevel 1 khusus Requester) menyimpan riwayat
+tanya-jawab per siklus menunggu (bisa terjadi berkali-kali per tiket). Saat "Lanjut
+Kerjakan": durasi pause (`replied_on - asked_on`, auto-terisi meski user belum sempat balas)
+ditambahkan ke `sla_resolution_by`.
+
+### F. Hari Libur
+DocType baru `NextHD Holiday` (`holiday_date`, `description`) — hari libur nasional saja,
+tanpa konsep cuti bersama terpisah (dikonfirmasi Efendy tidak ada istilah cuti bersama di
+tempat kerja ini).
+
+## ✅ Sudah Dikerjakan di Server (19 Agustus)
+
+1. `utils/business_hours.py` dibuat (⚠️ **masih versi draft awal/partial carry-over, BELUM
+   ditulis ulang sesuai keputusan final A di atas** — prioritas tinggi untuk sesi berikutnya)
+2. DocType `NextHD Holiday` dan `NextHD Ticket Waiting Log` dibuat (json + py controller +
+   `__init__.py`), berhasil migrate
+3. Field `impact`, `urgency`, `responded_on`, `waiting_log` ditambahkan ke NextHD Ticket
+4. `NextHD SLA Policy`: `business_hours` dihapus, `is_24x7` ditambahkan, `is_24x7=1` untuk
+   Kritis
+5. **2 bug lama tidak terkait ditemukan & diperbaiki tidak sengaja** saat proses ini:
+   - `NextHD SLA Policy.priority` field punya `unique=1` yang cacat (Select tidak boleh
+     unique) — dihapus
+   - `naming_rule` di NextHD Ticket (`"By Series"`) dan NextHD SLA Policy
+     (`"By Field Name"`) berisi nilai usang yang sudah tidak valid di versi Frappe ini —
+     dikoreksi ke `"By \"Naming Series\" field"` dan `"By fieldname"`
+
+## ❌ OPEN ITEMS BARU (Menggantikan/Melanjutkan Open Item #1 Lama "SLA Belum Sadar Jam Kerja")
+
+### 1. `business_hours.py` Perlu Ditulis Ulang — PRIORITAS TERTINGGI
+File yang sudah di-deploy masih logic partial carry-over draft awal, BUKAN all-or-nothing
+final (keputusan A). Jangan dipakai apa adanya.
+
+### 2. Field Baru Tidak Muncul di Form Tiket
+`impact`/`urgency`/`waiting_log` sudah ada di JSON tapi tidak terlihat di UI form NextHD
+Ticket. Dugaan: field tidak masuk ke `field_order`. Perlu `grep field_order` di
+`nexthd_ticket.json` untuk konfirmasi, lalu tambahkan manual + `bench migrate`.
+
+### 3. Halaman NextHD SLA Policy 404 "Not Found"
+`desk.ciptamebel.co.id/desk/nexthd-sla-policy` error 404 meski DocType valid di backend.
+Dugaan: asset JS Desk (SPA) perlu `bench build` penuh, bukan cuma `clear-cache`. Belum
+dicoba.
+
+### 4. `NextHD Holiday` Tidak Muncul di Sidebar Workspace
+Kemungkinan bukan bug — DocType baru tidak otomatis masuk ke Workspace sidebar "NextHD",
+perlu ditambahkan manual lewat Workspace Editor. Cek dulu apakah terkait Open Item #3 (akses
+langsung via URL juga 404 atau tidak).
+
+### 5. Logic `nexthd_ticket.py` Belum Ditulis Sama Sekali
+Perhitungan priority otomatis dari matriks, hook tombol "Mulai Kerjakan", dan pause/resume
+SLA saat Menunggu User — semuanya baru desain, implementasi kode belum dimulai.
+
+### 6. Tombol Workflow "Mulai Kerjakan" Belum Dibuat
+Transisi "Lanjut Kerjakan" sudah ada di `fixtures/workflow.json`, tapi "Mulai Kerjakan"
+(Baru → Sedang Dikerjakan) sebagai tombol eksplisit baru belum dibuat.
+
+### 7. Permission Level `priority` (Agent Manager override) dan `reply` (Requester write)
+Field `priority` sudah di-set read-only global, tapi belum ada mekanisme override per role.
+Field `reply` di Waiting Log sudah di-set `permlevel=1` dengan role Requester punya write,
+tapi belum pernah ditest jalan atau tidak.
+
+> **Dokumen kerja lengkap untuk melanjutkan sesi ini** (termasuk pelajaran teknis detail dari
+> semua error yang ditemui, urutan pengerjaan yang disarankan, dan path file lengkap di
+> server) ada di file terpisah `HANDOFF_SLA_NextHD_2026-08-19.md` di root repo ini — baca file
+> itu untuk detail lebih dalam dari ringkasan di atas.
+
+## Keputusan Final (Update 19 Agustus — Menambahkan ke Tabel Sebelumnya)
+
+| Keputusan | Detail |
+|---|---|
+| Aturan SLA luar jam kerja | **All-or-nothing** (bukan partial carry-over) — durasi penuh diulang dari jam kerja berikutnya kalau tidak muat hari ini |
+| Field `business_hours` di SLA Policy | **Dihapus**, diganti `is_24x7` (Check). Kritis=1, lainnya=0 |
+| Prioritas tiket | **Otomatis** dari matriks Impact×Urgency, bukan pilihan bebas tanpa kriteria — tapi Impact/Urgency sendiri boleh diisi bebas oleh user (fase edukatif), dengan Agent Manager/IT Manager berhak override `priority` final |
+| Titik mulai `sla_resolution_by` | **Saat tombol "Mulai Kerjakan" diklik**, bukan saat tiket dibuat. `sla_response_by` tetap dari awal |
+| Status "Menunggu User" | **Pause SLA Resolution**, dengan wajib isi alasan (`question`) dan riwayat tersimpan di child table `NextHD Ticket Waiting Log` |
+| Hari libur | Cukup `NextHD Holiday` (tanggal libur nasional), tanpa konsep cuti bersama |
