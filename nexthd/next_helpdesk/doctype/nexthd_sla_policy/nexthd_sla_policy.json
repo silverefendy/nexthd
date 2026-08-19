@@ -9,7 +9,12 @@
  "engine": "InnoDB",
  "field_order": [
   "priority",
+  "response_value",
+  "response_unit",
   "response_time_minutes",
+  "col_break_1",
+  "resolution_value",
+  "resolution_unit",
   "resolution_time_minutes",
   "is_24x7"
  ],
@@ -22,16 +27,50 @@
    "reqd": 1
   },
   {
+   "fieldname": "response_value",
+   "fieldtype": "Int",
+   "label": "Response Time",
+   "reqd": 1,
+   "default": "1"
+  },
+  {
+   "fieldname": "response_unit",
+   "fieldtype": "Select",
+   "label": "Satuan Response",
+   "options": "Menit\nJam\nHari",
+   "default": "Menit",
+   "reqd": 1
+  },
+  {
    "fieldname": "response_time_minutes",
    "fieldtype": "Int",
-   "label": "Response Time (minutes)",
+   "label": "Response Time (menit, auto)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "resolution_value",
+   "fieldtype": "Int",
+   "label": "Resolution Time",
+   "reqd": 1,
+   "default": "1"
+  },
+  {
+   "fieldname": "resolution_unit",
+   "fieldtype": "Select",
+   "label": "Satuan Resolution",
+   "options": "Menit\nJam\nHari",
+   "default": "Jam",
    "reqd": 1
   },
   {
    "fieldname": "resolution_time_minutes",
    "fieldtype": "Int",
-   "label": "Resolution Time (minutes)",
-   "reqd": 1
+   "label": "Resolution Time (menit, auto)",
+   "read_only": 1
   },
   {
    "fieldname": "is_24x7",
