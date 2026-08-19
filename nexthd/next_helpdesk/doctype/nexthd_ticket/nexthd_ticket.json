@@ -48,7 +48,7 @@
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "label": "Naming Series",
-   "options": "TKT-.YYYY.-.####"
+   "options": "TKT-.YY.MM.-.####"
   },
   {
    "default": "Insiden",

@@ -19,7 +19,7 @@
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "label": "Naming Series",
-   "options": "SVC-2026-####"
+   "options": "SVC-.YY.MM.-.####"
   },
   {
    "fieldname": "service_name",

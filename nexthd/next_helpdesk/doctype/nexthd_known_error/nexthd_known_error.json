@@ -19,7 +19,7 @@
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "label": "Naming Series",
-   "options": "KE-2026-####"
+   "options": "KE-.YY.MM.-.####"
   },
   {
    "fieldname": "title",

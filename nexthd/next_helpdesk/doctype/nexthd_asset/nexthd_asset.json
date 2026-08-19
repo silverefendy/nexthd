@@ -51,7 +51,7 @@
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "label": "Naming Series",
-   "options": "AST-2026-####"
+   "options": "AST-.YY.MM.-.####"
   },
   {
    "fieldname": "asset_name",
