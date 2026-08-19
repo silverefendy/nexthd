@@ -1,361 +1,77 @@
 {
-    "app": "nexthd",
-    "charts": [],
-    "content": "[{\"id\":\"hdr-main\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\\\"h4\\\\\"><b>Operasional</b></span>\",\"col\":12}},{\"id\":\"sc-new-ticket\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Ticket\",\"col\":3}},{\"id\":\"sc-ticket-list\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"All Tickets\",\"col\":3}},{\"id\":\"sc-problem\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD Problem\",\"col\":3}},{\"id\":\"sc-change\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD Change Request\",\"col\":3}},{\"id\":\"hdr-stats\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\\\"h4\\\\\"><b>Statistik Tiket</b></span>\",\"col\":12}},{\"id\":\"card-open\",\"type\":\"card\",\"data\":{\"card_name\":\"Tiket Baru\",\"col\":4}},{\"id\":\"card-inprogress\",\"type\":\"card\",\"data\":{\"card_name\":\"Tiket Sedang Dikerjakan\",\"col\":4}},{\"id\":\"card-waiting\",\"type\":\"card\",\"data\":{\"card_name\":\"Menunggu User\",\"col\":4}},{\"id\":\"card-resolved\",\"type\":\"card\",\"data\":{\"card_name\":\"Tiket Selesai Bulan Ini\",\"col\":4}},{\"id\":\"card-critical\",\"type\":\"card\",\"data\":{\"card_name\":\"Tiket Prioritas Kritis\",\"col\":4}},{\"id\":\"card-problem\",\"type\":\"card\",\"data\":{\"card_name\":\"Problem Terbuka\",\"col\":4}},{\"id\":\"card-sla-warning\",\"type\":\"card\",\"data\":{\"card_name\":\"SLA Hampir Breach\",\"col\":6}},{\"id\":\"card-sla-breach\",\"type\":\"card\",\"data\":{\"card_name\":\"SLA Breach Resolusi\",\"col\":6}},{\"id\":\"hdr-list\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\\\"h4\\\\\"><b>Tiket Terbaru</b></span>\",\"col\":12}},{\"id\":\"ql-ticket\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Open Tickets\",\"col\":6}},{\"id\":\"ql-critical\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Critical Tickets\",\"col\":6}},{\"id\":\"hdr-config\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\\\"h4\\\\\"><b>Konfigurasi</b></span>\",\"col\":12}},{\"id\":\"sc-settings\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD Settings\",\"col\":3}},{\"id\":\"sc-sla\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD SLA Policy\",\"col\":3}},{\"id\":\"sc-holiday\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD Holiday\",\"col\":3}},{\"id\":\"sc-team\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD Team\",\"col\":3}},{\"id\":\"sc-category\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD Category\",\"col\":3}}]",
-    "creation": "2026-08-07 00:00:00",
-    "custom_blocks": [],
-    "docstatus": 0,
-    "doctype": "Workspace",
-    "external_link": null,
-    "for_user": null,
-    "hide_custom": 0,
-    "icon": "activities",
-    "idx": 0,
-    "indicator_color": "blue",
-    "is_hidden": 0,
-    "label": "NextHD",
-    "link_to": null,
-    "link_type": null,
-    "links": [
-        {
-            "label": "NextHD Ticket",
-            "link_to": "NextHD Ticket",
-            "link_type": "DocType",
-            "type": "Link",
-            "hidden": 0,
-            "is_query_report": 0,
-            "onboard": 0,
-            "link_count": 0
-        },
-        {
-            "label": "NextHD Problem",
-            "link_to": "NextHD Problem",
-            "link_type": "DocType",
-            "type": "Link",
-            "hidden": 0,
-            "is_query_report": 0,
-            "onboard": 0,
-            "link_count": 0
-        },
-        {
-            "label": "NextHD Change Request",
-            "link_to": "NextHD Change Request",
-            "link_type": "DocType",
-            "type": "Link",
-            "hidden": 0,
-            "is_query_report": 0,
-            "onboard": 0,
-            "link_count": 0
-        },
-        {
-            "label": "NextHD Known Error",
-            "link_to": "NextHD Known Error",
-            "link_type": "DocType",
-            "type": "Link",
-            "hidden": 0,
-            "is_query_report": 0,
-            "onboard": 0,
-            "link_count": 0
-        },
-        {
-            "label": "NextHD Asset",
-            "link_to": "NextHD Asset",
-            "link_type": "DocType",
-            "type": "Link",
-            "hidden": 0,
-            "is_query_report": 0,
-            "onboard": 0,
-            "link_count": 0
-        },
-        {
-            "label": "NextHD Team",
-            "link_to": "NextHD Team",
-            "link_type": "DocType",
-            "type": "Link",
-            "hidden": 0,
-            "is_query_report": 0,
-            "onboard": 0,
-            "link_count": 0
-        },
-        {
-            "label": "NextHD Category",
-            "link_to": "NextHD Category",
-            "link_type": "DocType",
-            "type": "Link",
-            "hidden": 0,
-            "is_query_report": 0,
-            "onboard": 0,
-            "link_count": 0
-        },
-        {
-            "label": "NextHD SLA Policy",
-            "link_to": "NextHD SLA Policy",
-            "link_type": "DocType",
-            "type": "Link",
-            "hidden": 0,
-            "is_query_report": 0,
-            "onboard": 0,
-            "link_count": 0
-        },
-        {
-            "label": "NextHD Holiday",
-            "link_to": "NextHD Holiday",
-            "link_type": "DocType",
-            "type": "Link",
-            "hidden": 0,
-            "is_query_report": 0,
-            "onboard": 0,
-            "link_count": 0
-        },
-        {
-            "label": "NextHD Service Catalog",
-            "link_to": "NextHD Service Catalog",
-            "link_type": "DocType",
-            "type": "Link",
-            "hidden": 0,
-            "is_query_report": 0,
-            "onboard": 0,
-            "link_count": 0
-        },
-        {
-            "label": "NextHD User Profile",
-            "link_to": "NextHD User Profile",
-            "link_type": "DocType",
-            "type": "Link",
-            "hidden": 0,
-            "is_query_report": 0,
-            "onboard": 0,
-            "link_count": 0
-        },
-        {
-            "label": "NextHD Settings",
-            "link_to": "NextHD Settings",
-            "link_type": "DocType",
-            "type": "Link",
-            "hidden": 0,
-            "is_query_report": 0,
-            "onboard": 0,
-            "link_count": 0
-        }
-    ],
-    "modified": "2026-08-19 16:58:00.000000",
-    "modified_by": "Administrator",
-    "module": "Next Helpdesk",
-    "name": "NextHD",
-    "number_cards": [
-        {
-            "label": "Tiket Baru",
-            "document_type": "NextHD Ticket",
-            "function": "Count",
-            "aggregate_function_based_on": null,
-            "filters_json": "[[\"NextHD Ticket\",\"status\",\"=\",\"Baru\",false]]"
-        },
-        {
-            "label": "Tiket Sedang Dikerjakan",
-            "document_type": "NextHD Ticket",
-            "function": "Count",
-            "aggregate_function_based_on": null,
-            "filters_json": "[[\"NextHD Ticket\",\"status\",\"=\",\"Sedang Dikerjakan\",false]]"
-        },
-        {
-            "label": "Menunggu User",
-            "document_type": "NextHD Ticket",
-            "function": "Count",
-            "aggregate_function_based_on": null,
-            "filters_json": "[[\"NextHD Ticket\",\"status\",\"=\",\"Menunggu User\",false]]"
-        },
-        {
-            "label": "Tiket Selesai Bulan Ini",
-            "document_type": "NextHD Ticket",
-            "function": "Count",
-            "aggregate_function_based_on": null,
-            "filters_json": "[[\"NextHD Ticket\",\"status\",\"=\",\"Selesai\",false],[\"NextHD Ticket\",\"modified\",\"Timespan\",\"this month\",false]]"
-        },
-        {
-            "label": "Tiket Prioritas Kritis",
-            "document_type": "NextHD Ticket",
-            "function": "Count",
-            "aggregate_function_based_on": null,
-            "filters_json": "[[\"NextHD Ticket\",\"priority\",\"=\",\"Kritis\",false],[\"NextHD Ticket\",\"status\",\"not in\",\"Selesai,Ditutup\",false]]"
-        },
-        {
-            "label": "Problem Terbuka",
-            "document_type": "NextHD Problem",
-            "function": "Count",
-            "aggregate_function_based_on": null,
-            "filters_json": "[[\"NextHD Problem\",\"status\",\"not in\",\"Selesai,Ditutup\",false]]"
-        },
-        {
-            "label": "SLA Hampir Breach",
-            "document_type": "NextHD Ticket",
-            "function": "Count",
-            "aggregate_function_based_on": null,
-            "filters_json": "[[\"NextHD Ticket\",\"sla_warning_sent\",\"=\",1,false],[\"NextHD Ticket\",\"status\",\"not in\",\"Selesai,Ditutup\",false]]"
-        },
-        {
-            "label": "SLA Breach Resolusi",
-            "document_type": "NextHD Ticket",
-            "function": "Count",
-            "aggregate_function_based_on": null,
-            "filters_json": "[[\"NextHD Ticket\",\"sla_resolution_by\",\"<\",\"Today\",false],[\"NextHD Ticket\",\"status\",\"not in\",\"Selesai,Ditutup\",false]]"
-        }
-    ],
-    "owner": "Administrator",
-    "parent_page": "",
-    "public": 1,
-    "quick_lists": [
-        {
-            "document_type": "NextHD Ticket",
-            "label": "Open Tickets",
-            "quick_list_filter": "[[\"NextHD Ticket\",\"status\",\"not in\",\"Selesai,Ditutup\",false]]"
-        },
-        {
-            "document_type": "NextHD Ticket",
-            "label": "Critical Tickets",
-            "quick_list_filter": "[[\"NextHD Ticket\",\"priority\",\"=\",\"Kritis\",false],[\"NextHD Ticket\",\"status\",\"not in\",\"Selesai,Ditutup\",false]]"
-        }
-    ],
-    "restrict_to_domain": "",
-    "roles": [
-        {
-            "role": "System Manager"
-        },
-        {
-            "role": "IT Manager"
-        },
-        {
-            "role": "Agent Manager"
-        },
-        {
-            "role": "Agent"
-        },
-        {
-            "role": "IT Auditor"
-        },
-        {
-            "role": "Requester"
-        }
-    ],
-    "sequence_id": 0.0,
-    "shortcuts": [
-        {
-            "color": "Red",
-            "doc_view": "New",
-            "doctype": "Workspace Shortcut",
-            "idx": 1,
-            "label": "New Ticket",
-            "link_to": "NextHD Ticket",
-            "name": "sc-new-ticket",
-            "parent": "NextHD",
-            "parentfield": "shortcuts",
-            "parenttype": "Workspace",
-            "type": "DocType"
-        },
-        {
-            "color": "Blue",
-            "doc_view": "List",
-            "doctype": "Workspace Shortcut",
-            "idx": 2,
-            "label": "All Tickets",
-            "link_to": "NextHD Ticket",
-            "name": "sc-all-tickets",
-            "parent": "NextHD",
-            "parentfield": "shortcuts",
-            "parenttype": "Workspace",
-            "type": "DocType"
-        },
-        {
-            "color": "Orange",
-            "doc_view": "List",
-            "doctype": "Workspace Shortcut",
-            "idx": 3,
-            "label": "NextHD Problem",
-            "link_to": "NextHD Problem",
-            "name": "sc-problem",
-            "parent": "NextHD",
-            "parentfield": "shortcuts",
-            "parenttype": "Workspace",
-            "type": "DocType"
-        },
-        {
-            "color": "Purple",
-            "doc_view": "List",
-            "doctype": "Workspace Shortcut",
-            "idx": 4,
-            "label": "NextHD Change Request",
-            "link_to": "NextHD Change Request",
-            "name": "sc-change",
-            "parent": "NextHD",
-            "parentfield": "shortcuts",
-            "parenttype": "Workspace",
-            "type": "DocType"
-        },
-        {
-            "color": "Grey",
-            "doc_view": "Form",
-            "doctype": "Workspace Shortcut",
-            "idx": 5,
-            "label": "NextHD Settings",
-            "link_to": "NextHD Settings",
-            "name": "sc-settings",
-            "parent": "NextHD",
-            "parentfield": "shortcuts",
-            "parenttype": "Workspace",
-            "type": "DocType"
-        },
-        {
-            "color": "Cyan",
-            "doc_view": "List",
-            "doctype": "Workspace Shortcut",
-            "idx": 6,
-            "label": "NextHD SLA Policy",
-            "link_to": "NextHD SLA Policy",
-            "name": "sc-sla",
-            "parent": "NextHD",
-            "parentfield": "shortcuts",
-            "parenttype": "Workspace",
-            "type": "DocType"
-        },
-        {
-            "color": "Pink",
-            "doc_view": "List",
-            "doctype": "Workspace Shortcut",
-            "idx": 7,
-            "label": "NextHD Holiday",
-            "link_to": "NextHD Holiday",
-            "name": "sc-holiday",
-            "parent": "NextHD",
-            "parentfield": "shortcuts",
-            "parenttype": "Workspace",
-            "type": "DocType"
-        },
-        {
-            "color": "Green",
-            "doc_view": "List",
-            "doctype": "Workspace Shortcut",
-            "idx": 8,
-            "label": "NextHD Team",
-            "link_to": "NextHD Team",
-            "name": "sc-team",
-            "parent": "NextHD",
-            "parentfield": "shortcuts",
-            "parenttype": "Workspace",
-            "type": "DocType"
-        },
-        {
-            "color": "Yellow",
-            "doc_view": "List",
-            "doctype": "Workspace Shortcut",
-            "idx": 9,
-            "label": "NextHD Category",
-            "link_to": "NextHD Category",
-            "name": "sc-category",
-            "parent": "NextHD",
-            "parentfield": "shortcuts",
-            "parenttype": "Workspace",
-            "type": "DocType"
-        }
-    ],
-    "title": "NextHD",
-    "type": null
+ "app": "nexthd",
+ "charts": [],
+ "content": "[{\"id\":\"hdr-main\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Operasional</b></span>\",\"col\":12}},{\"id\":\"sc-new-ticket\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Ticket\",\"col\":3}},{\"id\":\"sc-ticket-list\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"All Tickets\",\"col\":3}},{\"id\":\"sc-problem\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD Problem\",\"col\":3}},{\"id\":\"sc-change\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD Change Request\",\"col\":3}},{\"id\":\"hdr-stats\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Statistik Tiket</b></span>\",\"col\":12}},{\"id\":\"card-open\",\"type\":\"card\",\"data\":{\"card_name\":\"Tiket Baru\",\"col\":4}},{\"id\":\"card-inprogress\",\"type\":\"card\",\"data\":{\"card_name\":\"Tiket Sedang Dikerjakan\",\"col\":4}},{\"id\":\"card-waiting\",\"type\":\"card\",\"data\":{\"card_name\":\"Menunggu User\",\"col\":4}},{\"id\":\"card-resolved\",\"type\":\"card\",\"data\":{\"card_name\":\"Tiket Selesai Bulan Ini\",\"col\":4}},{\"id\":\"card-critical\",\"type\":\"card\",\"data\":{\"card_name\":\"Tiket Prioritas Kritis\",\"col\":4}},{\"id\":\"card-problem\",\"type\":\"card\",\"data\":{\"card_name\":\"Problem Terbuka\",\"col\":4}},{\"id\":\"card-sla-warning\",\"type\":\"card\",\"data\":{\"card_name\":\"SLA Hampir Breach\",\"col\":6}},{\"id\":\"card-sla-breach\",\"type\":\"card\",\"data\":{\"card_name\":\"SLA Breach Resolusi\",\"col\":6}},{\"id\":\"hdr-list\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Tiket Terbaru</b></span>\",\"col\":12}},{\"id\":\"ql-ticket\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Open Tickets\",\"col\":6}},{\"id\":\"ql-critical\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Critical Tickets\",\"col\":6}},{\"id\":\"hdr-config\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Konfigurasi</b></span>\",\"col\":12}},{\"id\":\"sc-settings\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD Settings\",\"col\":3}},{\"id\":\"sc-sla\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD SLA Policy\",\"col\":3}},{\"id\":\"sc-holiday\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD Holiday\",\"col\":3}},{\"id\":\"sc-team\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD Team\",\"col\":3}},{\"id\":\"sc-category\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"NextHD Category\",\"col\":3}}]",
+ "creation": "2026-08-07 00:00:00",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "external_link": null,
+ "for_user": null,
+ "hide_custom": 0,
+ "icon": "activities",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "NextHD",
+ "link_to": null,
+ "link_type": null,
+ "links": [
+  {"label": "NextHD Ticket", "link_to": "NextHD Ticket", "link_type": "DocType", "type": "Link", "hidden": 0, "is_query_report": 0, "onboard": 0, "link_count": 0},
+  {"label": "NextHD Problem", "link_to": "NextHD Problem", "link_type": "DocType", "type": "Link", "hidden": 0, "is_query_report": 0, "onboard": 0, "link_count": 0},
+  {"label": "NextHD Change Request", "link_to": "NextHD Change Request", "link_type": "DocType", "type": "Link", "hidden": 0, "is_query_report": 0, "onboard": 0, "link_count": 0},
+  {"label": "NextHD Known Error", "link_to": "NextHD Known Error", "link_type": "DocType", "type": "Link", "hidden": 0, "is_query_report": 0, "onboard": 0, "link_count": 0},
+  {"label": "NextHD Asset", "link_to": "NextHD Asset", "link_type": "DocType", "type": "Link", "hidden": 0, "is_query_report": 0, "onboard": 0, "link_count": 0},
+  {"label": "NextHD Team", "link_to": "NextHD Team", "link_type": "DocType", "type": "Link", "hidden": 0, "is_query_report": 0, "onboard": 0, "link_count": 0},
+  {"label": "NextHD Category", "link_to": "NextHD Category", "link_type": "DocType", "type": "Link", "hidden": 0, "is_query_report": 0, "onboard": 0, "link_count": 0},
+  {"label": "NextHD SLA Policy", "link_to": "NextHD SLA Policy", "link_type": "DocType", "type": "Link", "hidden": 0, "is_query_report": 0, "onboard": 0, "link_count": 0},
+  {"label": "NextHD Holiday", "link_to": "NextHD Holiday", "link_type": "DocType", "type": "Link", "hidden": 0, "is_query_report": 0, "onboard": 0, "link_count": 0},
+  {"label": "NextHD Service Catalog", "link_to": "NextHD Service Catalog", "link_type": "DocType", "type": "Link", "hidden": 0, "is_query_report": 0, "onboard": 0, "link_count": 0},
+  {"label": "NextHD User Profile", "link_to": "NextHD User Profile", "link_type": "DocType", "type": "Link", "hidden": 0, "is_query_report": 0, "onboard": 0, "link_count": 0},
+  {"label": "NextHD Settings", "link_to": "NextHD Settings", "link_type": "DocType", "type": "Link", "hidden": 0, "is_query_report": 0, "onboard": 0, "link_count": 0}
+ ],
+ "modified": "2026-08-19 19:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "Next Helpdesk",
+ "name": "NextHD",
+ "number_cards": [
+  {"label": "Tiket Baru", "document_type": "NextHD Ticket", "function": "Count", "aggregate_function_based_on": null, "filters_json": "[[\"NextHD Ticket\",\"status\",\"=\",\"Baru\",false]]"},
+  {"label": "Tiket Sedang Dikerjakan", "document_type": "NextHD Ticket", "function": "Count", "aggregate_function_based_on": null, "filters_json": "[[\"NextHD Ticket\",\"status\",\"=\",\"Sedang Dikerjakan\",false]]"},
+  {"label": "Menunggu User", "document_type": "NextHD Ticket", "function": "Count", "aggregate_function_based_on": null, "filters_json": "[[\"NextHD Ticket\",\"status\",\"=\",\"Menunggu User\",false]]"},
+  {"label": "Tiket Selesai Bulan Ini", "document_type": "NextHD Ticket", "function": "Count", "aggregate_function_based_on": null, "filters_json": "[[\"NextHD Ticket\",\"status\",\"=\",\"Selesai\",false],[\"NextHD Ticket\",\"modified\",\"Timespan\",\"this month\",false]]"},
+  {"label": "Tiket Prioritas Kritis", "document_type": "NextHD Ticket", "function": "Count", "aggregate_function_based_on": null, "filters_json": "[[\"NextHD Ticket\",\"priority\",\"=\",\"Kritis\",false],[\"NextHD Ticket\",\"status\",\"not in\",\"Selesai,Ditutup\",false]]"},
+  {"label": "Problem Terbuka", "document_type": "NextHD Problem", "function": "Count", "aggregate_function_based_on": null, "filters_json": "[[\"NextHD Problem\",\"status\",\"not in\",\"Selesai,Ditutup\",false]]"},
+  {"label": "SLA Hampir Breach", "document_type": "NextHD Ticket", "function": "Count", "aggregate_function_based_on": null, "filters_json": "[[\"NextHD Ticket\",\"sla_warning_sent\",\"=\",1,false],[\"NextHD Ticket\",\"status\",\"not in\",\"Selesai,Ditutup\",false]]"},
+  {"label": "SLA Breach Resolusi", "document_type": "NextHD Ticket", "function": "Count", "aggregate_function_based_on": null, "filters_json": "[[\"NextHD Ticket\",\"sla_resolution_by\",\"<\",\"Today\",false],[\"NextHD Ticket\",\"status\",\"not in\",\"Selesai,Ditutup\",false]]"}
+ ],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [
+  {"document_type": "NextHD Ticket", "label": "Open Tickets", "quick_list_filter": "[[\"NextHD Ticket\",\"status\",\"not in\",\"Selesai,Ditutup\",false]]"},
+  {"document_type": "NextHD Ticket", "label": "Critical Tickets", "quick_list_filter": "[[\"NextHD Ticket\",\"priority\",\"=\",\"Kritis\",false],[\"NextHD Ticket\",\"status\",\"not in\",\"Selesai,Ditutup\",false]]"}
+ ],
+ "restrict_to_domain": "",
+ "roles": [
+  {"role": "System Manager"},
+  {"role": "IT Manager"},
+  {"role": "Agent Manager"},
+  {"role": "Agent"},
+  {"role": "IT Auditor"},
+  {"role": "Requester"}
+ ],
+ "sequence_id": 0.0,
+ "shortcuts": [
+  {"color": "Red", "doc_view": "New", "doctype": "Workspace Shortcut", "idx": 1, "label": "New Ticket", "link_to": "NextHD Ticket", "name": "sc-new-ticket", "parent": "NextHD", "parentfield": "shortcuts", "parenttype": "Workspace", "type": "DocType"},
+  {"color": "Blue", "doc_view": "List", "doctype": "Workspace Shortcut", "idx": 2, "label": "All Tickets", "link_to": "NextHD Ticket", "name": "sc-all-tickets", "parent": "NextHD", "parentfield": "shortcuts", "parenttype": "Workspace", "type": "DocType"},
+  {"color": "Orange", "doc_view": "List", "doctype": "Workspace Shortcut", "idx": 3, "label": "NextHD Problem", "link_to": "NextHD Problem", "name": "sc-problem", "parent": "NextHD", "parentfield": "shortcuts", "parenttype": "Workspace", "type": "DocType"},
+  {"color": "Purple", "doc_view": "List", "doctype": "Workspace Shortcut", "idx": 4, "label": "NextHD Change Request", "link_to": "NextHD Change Request", "name": "sc-change", "parent": "NextHD", "parentfield": "shortcuts", "parenttype": "Workspace", "type": "DocType"},
+  {"color": "Grey", "doc_view": "Form", "doctype": "Workspace Shortcut", "idx": 5, "label": "NextHD Settings", "link_to": "NextHD Settings", "name": "sc-settings", "parent": "NextHD", "parentfield": "shortcuts", "parenttype": "Workspace", "type": "DocType"},
+  {"color": "Cyan", "doc_view": "List", "doctype": "Workspace Shortcut", "idx": 6, "label": "NextHD SLA Policy", "link_to": "NextHD SLA Policy", "name": "sc-sla", "parent": "NextHD", "parentfield": "shortcuts", "parenttype": "Workspace", "type": "DocType"},
+  {"color": "Pink", "doc_view": "List", "doctype": "Workspace Shortcut", "idx": 7, "label": "NextHD Holiday", "link_to": "NextHD Holiday", "name": "sc-holiday", "parent": "NextHD", "parentfield": "shortcuts", "parenttype": "Workspace", "type": "DocType"},
+  {"color": "Green", "doc_view": "List", "doctype": "Workspace Shortcut", "idx": 8, "label": "NextHD Team", "link_to": "NextHD Team", "name": "sc-team", "parent": "NextHD", "parentfield": "shortcuts", "parenttype": "Workspace", "type": "DocType"},
+  {"color": "Yellow", "doc_view": "List", "doctype": "Workspace Shortcut", "idx": 9, "label": "NextHD Category", "link_to": "NextHD Category", "name": "sc-category", "parent": "NextHD", "parentfield": "shortcuts", "parenttype": "Workspace", "type": "DocType"}
+ ],
+ "title": "NextHD",
+ "type": null
 }

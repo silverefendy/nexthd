@@ -18,6 +18,10 @@
   "col_info2",
   "category",
   "service_catalog",
+  "section_priority",
+  "impact",
+  "col_priority2",
+  "urgency",
   "section_assign",
   "requested_by",
   "assigned_to",
@@ -27,17 +31,16 @@
   "section_sla",
   "sla_response_by",
   "sla_resolution_by",
+  "responded_on",
   "col_sla2",
-  "sla_warning_sent",
   "resolved_on",
   "col_sla3",
   "closed_on",
+  "sla_warning_sent",
   "section_relation",
   "related_problem",
   "attachments",
-  "impact",
-  "urgency",
-  "responded_on",
+  "section_waiting",
   "waiting_log"
  ],
  "fields": [
@@ -86,6 +89,7 @@
    "in_list_view": 1,
    "label": "Priority",
    "options": "Kritis\nTinggi\nSedang\nRendah",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -104,6 +108,27 @@
    "fieldtype": "Link",
    "label": "Service Catalog",
    "options": "NextHD Service Catalog"
+  },
+  {
+   "fieldname": "section_priority",
+   "fieldtype": "Section Break",
+   "label": "Prioritas"
+  },
+  {
+   "fieldname": "impact",
+   "fieldtype": "Select",
+   "label": "Impact",
+   "options": "\nTinggi\nRendah"
+  },
+  {
+   "fieldname": "col_priority2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "urgency",
+   "fieldtype": "Select",
+   "label": "Urgency",
+   "options": "\nTinggi\nRendah"
   },
   {
    "fieldname": "section_assign",
@@ -158,15 +183,14 @@
    "read_only": 1
   },
   {
-   "fieldname": "col_sla2",
-   "fieldtype": "Column Break"
+   "fieldname": "responded_on",
+   "fieldtype": "Datetime",
+   "label": "Direspon Pada",
+   "read_only": 1
   },
   {
-   "default": "0",
-   "fieldname": "sla_warning_sent",
-   "fieldtype": "Check",
-   "label": "SLA Warning Sent",
-   "read_only": 1
+   "fieldname": "col_sla2",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "resolved_on",
@@ -182,6 +206,14 @@
    "fieldname": "closed_on",
    "fieldtype": "Datetime",
    "label": "Closed On",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "sla_warning_sent",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "SLA Warning Sent",
    "read_only": 1
   },
   {
@@ -201,22 +233,9 @@
    "label": "Attachments"
   },
   {
-   "fieldname": "impact",
-   "fieldtype": "Select",
-   "label": "Impact",
-   "options": "\nTinggi\nRendah"
-  },
-  {
-   "fieldname": "urgency",
-   "fieldtype": "Select",
-   "label": "Urgency",
-   "options": "\nTinggi\nRendah"
-  },
-  {
-   "fieldname": "responded_on",
-   "fieldtype": "Datetime",
-   "label": "Direspon Pada",
-   "read_only": 1
+   "fieldname": "section_waiting",
+   "fieldtype": "Section Break",
+   "label": "Riwayat Menunggu User"
   },
   {
    "fieldname": "waiting_log",
@@ -226,7 +245,7 @@
   }
  ],
  "links": [],
- "modified": "2026-08-19 09:14:57.130661",
+ "modified": "2026-08-19 19:10:00.000000",
  "modified_by": "Administrator",
  "module": "Next Helpdesk",
  "name": "NextHD Ticket",
