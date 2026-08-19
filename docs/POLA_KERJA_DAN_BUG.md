@@ -3,7 +3,7 @@
 > Frappe quirks, aturan wajib saat coding/debug, dan riwayat bug per sesi.
 > File ini yang paling sering bertambah tiap sesi baru.
 >
-> **Last updated:** 2026-08-15 WIB
+> **Last updated:** 2026-08-19 WIB
 
 ---
 
@@ -72,6 +72,12 @@ Dikontrol oleh **`tabWorkspace`** dan file `nexthd/next_helpdesk/workspace/nexth
 Dikontrol oleh **`tabWorkspace Sidebar`** dan **`tabWorkspace Sidebar Item`**.
 
 > `standard=1` → sidebar tidak bisa diedit via UI. Fix: `UPDATE tabWorkspace Sidebar SET standard=0`
+
+> ✅ **FIXED (2026-08-19):** Item **Holiday hilang dari sidebar, sidebar rusak saat diklik**.
+> Root cause: `NextHD Holiday` (DocType terpisah dari `NextHD Business Hours`) tidak pernah
+> terdaftar di fixture `nexthd/fixtures/workspace_sidebar.json`, sehingga insert manual
+> sebelumnya selalu tertimpa/rusak tiap `bench migrate`. Fix: tambah entry Holiday langsung
+> ke fixture file (bukan insert manual ke DB), lalu migrate.
 
 ### D. Aturan Fixtures — WAJIB
 
@@ -162,6 +168,9 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 | **Property Setter — filter fixture** | Tidak punya kolom `app`. Filter yang benar: `doc_type` (`=` atau `LIKE`), bukan `app =` |
 | **DocField baru via raw SQL INSERT ke `tabDocField`** | **Wajib** diikuti `ALTER TABLE \`tabNamaDocType\` ADD COLUMN` manual. Insert ke `tabDocField` cuma daftar metadata, TIDAK otomatis membuat kolom fisik di tabel data — beda dari `doc.save()`/migrate yang auto-sync. Lupa langkah ini → error `Unknown column 'xxx' in 'INSERT INTO'` atau `'in SET'` saat field dipakai |
 | **Field/meta baru tidak muncul di UI meski data DB sudah benar** | Coba `bench clear-cache` + `bench clear-website-cache` + `bench restart` dulu sebelum curiga bug struktur data. Sering kali murni cache boot info server, bukan masalah field/kolom |
+| **`bench --site X mariadb -e "..."` tiap panggilan buka KONEKSI BARU** | `SET SQL_SAFE_UPDATES=0` di command `-e` terpisah TIDAK terbawa ke command `-e` berikutnya (safe update mode akan error lagi). WAJIB gabung dalam satu koneksi: `bench --site X mariadb << 'SQL' ... SQL` |
+| **`bench migrate` — urutan wajib saat menambah kolom BARU lalu langsung mengisi datanya** | Migrate dulu (agar kolom fisik tercipta di DB) BARU UPDATE data. Kalau dibalik → `ERROR 1054 Unknown column` |
+| **`__pycache__` basi setelah edit file `.py`** | Kadang perubahan logic Python tidak langsung kepakai meski file sudah diedit dan `bench restart` dijalankan. Kalau hasil eksekusi masih mengikuti kode versi lama, hapus `find <app_path> -type d -name "__pycache__" -exec rm -rf {} +` lalu restart lagi |
 
 ---
 
@@ -229,11 +238,41 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 | # | Item | Masalah | Fix |
 |---|---|---|---|
 | 1 | Export fixture `Property Setter` gagal | `Unknown column 'app' in 'WHERE'` | Property Setter tidak punya kolom `app`. Filter benar: `doc_type LIKE 'NextHD%'` |
-| 2 | Naming series tidak konsisten antar DocType | Ticket/Problem/Asset pakai format lama (`YYYY`/statis `2026`) via Property Setter, override DocField yang sudah `YY.MM` | Diseragamkan semua ke `YY.MM` via update Property Setter (lihat `HANDOFF.md`) |
+| 2 | Naming series tidak konsisten antar DocType | Ticket/Problem/Asset pakai format lama (`YYYY`/statis `2026`) via Property Setter, override DocField yang sudah `YY.MM` | Diseragamkan semua ke `YY.MM` via update Property Setter |
 | 3 | Dropdown Naming Series di form tampil format lama meski data DB sudah benar | Cache boot info browser, bukan bug data (diverifikasi tidak ada duplikat Property Setter) | Hard refresh / buka private-incognito window |
 | 4 | `Unknown column 'related_asset' in 'INSERT INTO'` / `'in SET'` saat pakai field baru di NextHD Problem | Field didaftarkan ke `tabDocField` via SQL, tapi kolom fisik di `tabNextHD Problem` tidak otomatis terbuat | `ALTER TABLE \`tabNextHD Problem\` ADD COLUMN \`related_asset\` VARCHAR(140)` manual. Aturan baru ditambahkan di §3 |
 | 5 | `Field related_problem not found` saat klik "Buat Known Error dari Problem" | Field sudah ada di DocField DAN kolom fisik (diverifikasi), murni cache metadata server | `bench clear-cache` + `bench clear-website-cache` + `bench restart` |
 
+### ✅ SELESAI — Bug Session 2026-08-19 (Sidebar Holiday, Dedup Workflow, Naming Series Semua DocType)
+
+| # | Item | Masalah | Fix |
+|---|---|---|---|
+| 1 | Sidebar Holiday hilang, rusak saat diklik | `NextHD Holiday` tidak ada di fixture `workspace_sidebar.json` | Tambah entry Holiday ke fixture, migrate. Lihat §1.C |
+| 2 | Dedup transisi workflow NextHD Ticket & Change Request | Baris duplikat semua punya `idx=0` (prefix nama `ai9*`), baris asli idx berurutan (prefix `l86*`/`l87*`) | `DELETE FROM tabWorkflow Transition WHERE name LIKE 'ai9%'` per parent. Hasil akhir: Ticket 7 transisi, Change Request 8 transisi |
+| 3 | Bug penomoran `####` di SEMUA DocType (bukan cuma Ticket) | Opsi `naming_series` di JSON DocType pakai literal salah tanpa titik pemisah: `PRB-2026-####`, `CHG-2026-####`, `AST-2026-####`, `KE-2026-####`, `SVC-2026-####` | Diseragamkan ke format `.YY.MM.-.####` (reset otomatis per bulan) di 6 DocType (Ticket, Problem, Change Request, Asset, Known Error, Service Catalog) + update data existing + bersihkan row lama `tabSeries` + migrate developer_mode. Terverifikasi record baru format `XXX-2608-0001` |
+
+### 🔄 SEDANG DIKERJAKAN — SLA Enforcement Business Hours (2026-08-19, BELUM SELESAI)
+
+Root cause: `calculate_sla()` lama pakai `add_to_date()` mentah, sama sekali tidak menghitung jam kerja/hari libur.
+
+**Sudah dikerjakan:**
+- `business_hours.py` (utils) — ditemukan bug lama: `WEEKDAY_MAP` pakai nama Inggris (Monday dst) padahal `tabNextHD Business Hours` isinya nama Indonesia (Senin dst), jadi `get_business_hours()` selalu `None` — fungsi lama belum pernah jalan bener. Sudah diperbaiki ke nama Indonesia.
+- `add_working_time()` di file yang sama ditulis ulang jadi versi loop (mengurangi sisa menit per hari kerja, lompat ke hari kerja berikutnya) — versi lama tidak bisa menangani durasi multi-hari (Sedang 2 hari, Rendah 1 minggu).
+- `NextHD SLA Policy` — field diubah jadi `response_value`+`response_unit` dan `resolution_value`+`resolution_unit` (Menit/Jam/Hari), auto-terhitung ke `response_time_minutes`/`resolution_time_minutes` via controller `validate()`.
+- Data SOP final (semua business hours): Kritis response 15 menit/resolusi 1 jam, Tinggi response 30 menit/resolusi 4 jam, Sedang response 60 menit/resolusi 2 hari kerja, Rendah response 120 menit/resolusi 7 hari kerja. `is_24x7 = 0` untuk semua priority.
+- `calculate_sla()` di `nexthd_ticket.py` sudah diarahkan memanggil `add_working_time()`, bukan `add_to_date()` lagi.
+
+**BELUM SELESAI — bug masih ada:**
+Test insert ticket terbaru (`TKT-2608-0003`, dibuat 2026-08-20 05:12 — di luar jam kerja) masih menghasilkan pola LAMA: `sla_response_by` = tepat +60 menit dari waktu insert, `sla_resolution_by` = tepat +2 hari (2880 menit) dari waktu insert. Seharusnya (kalau fix aktif) waktu mulai hitung SLA digeser ke jam buka berikutnya (08:00), bukan dihitung mentah dari jam 05:12.
+
+Sudah dicoba: hapus `__pycache__`, `bench restart`, tapi hasil test terakhir belum dikonfirmasi post-fix.
+
+**Next step sesi berikutnya:**
+1. Cek ulang isi `calculate_sla()` di disk — pastikan replace kemarin benar-benar tersimpan (`grep -A 20 "def calculate_sla" nexthd_ticket.py`)
+2. Kalau kode di disk sudah benar tapi behavior masih lama → curigai worker Frappe yang masih hold reference module lama, coba restart lebih menyeluruh
+3. File yang berubah sesi ini **BELUM di-push ke GitHub** (masih di server saja, sengaja ditahan sampai fix terverifikasi jalan): `nexthd_sla_policy.json`, `nexthd_sla_policy.py`, `nexthd_ticket.py`, `business_hours.py`
+4. Data `tabNextHD SLA Policy` di server SUDAH terupdate ke angka final — tidak perlu diulang, hanya kode yang perlu diperbaiki
+
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-15 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-19 WIB.*
