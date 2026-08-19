@@ -1,6 +1,7 @@
 import frappe
 from frappe.model.document import Document
-from frappe.utils import now_datetime, add_to_date
+from frappe.utils import now_datetime, add_to_date, get_datetime
+from nexthd.next_helpdesk.utils.business_hours import add_working_time
 
 
 class NextHDTicket(Document):
@@ -33,14 +34,15 @@ class NextHDTicket(Document):
 			frappe.log_error(f"No SLA Policy found for priority: {self.priority}")
 			return
 		sla_policy = frappe.get_doc("NextHD SLA Policy", sla_policy_name)
+		is_24x7 = getattr(sla_policy, "is_24x7", 0)
 		now = now_datetime()
 		if sla_policy.response_time_minutes:
-			self.sla_response_by = add_to_date(
-				now, minutes=sla_policy.response_time_minutes, as_datetime=True
+			self.sla_response_by = add_working_time(
+				now, sla_policy.response_time_minutes, is_24x7=is_24x7
 			)
 		if sla_policy.resolution_time_minutes:
-			self.sla_resolution_by = add_to_date(
-				now, minutes=sla_policy.resolution_time_minutes, as_datetime=True
+			self.sla_resolution_by = add_working_time(
+				now, sla_policy.resolution_time_minutes, is_24x7=is_24x7
 			)
 
 	def get_user_profile(self, user):
