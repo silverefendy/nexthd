@@ -11,7 +11,7 @@
   "priority",
   "response_time_minutes",
   "resolution_time_minutes",
-  "business_hours"
+  "is_24x7"
  ],
  "fields": [
   {
@@ -19,8 +19,7 @@
    "fieldtype": "Select",
    "label": "Priority",
    "options": "Kritis\nTinggi\nSedang\nRendah",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
   },
   {
    "fieldname": "response_time_minutes",
@@ -35,20 +34,19 @@
    "reqd": 1
   },
   {
-   "fieldname": "business_hours",
-   "fieldtype": "Link",
-   "label": "Business Hours",
-   "options": "NextHD Business Hours",
-   "reqd": 1
+   "fieldname": "is_24x7",
+   "fieldtype": "Check",
+   "label": "24/7 (Abaikan Jam Kerja)",
+   "default": "0"
   }
  ],
  "idx_unique": [],
  "links": [],
- "modified": "2026-08-07 00:00:00.000000",
+ "modified": "2026-08-19 15:15:00.000000",
  "modified_by": "Administrator",
  "module": "Next Helpdesk",
  "name": "NextHD SLA Policy",
- "naming_rule": "By Field Name",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [],
  "sort_field": "modified",
