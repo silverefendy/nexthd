@@ -165,6 +165,10 @@ scheduler_events = {
 
 # Fixtures
 # --------
+# CATATAN: "Workspace Sidebar" SENGAJA DIHAPUS dari fixtures.
+# Workspace dikelola via workspace_json (folder nexthd/next_helpdesk/workspace/),
+# bukan lewat fixtures. Dua mekanisme ini tidak boleh aktif bersamaan karena
+# menyebabkan "Removing orphan Workspaces" saat bench migrate — workspace jadi hilang.
 
 fixtures = [
         {"dt": "Workflow", "filters": [["name", "in", [
@@ -178,7 +182,6 @@ fixtures = [
                 "NextHD Change Request"
         ]]]},
         {"dt": "Desktop Icon", "filters": [["app", "=", "nexthd"]]},
-        {"dt": "Workspace Sidebar", "filters": [["name", "=", "NextHD"]]},
         {"dt": "Client Script", "filters": [["name", "in", [
                 "a258744559",
                 "cs_known_error_from_problem",
@@ -194,8 +197,10 @@ fixtures = [
                 "NextHD Known Error"
         ]]]}
 ]
+
 # Workspace
 # ---------
+# Workspace dikelola via folder JSON ini (satu-satunya sumber kebenaran).
 workspace_json = "nexthd/next_helpdesk/workspace"
 
 # Testing
@@ -286,4 +291,3 @@ workspace_json = "nexthd/next_helpdesk/workspace"
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
-
