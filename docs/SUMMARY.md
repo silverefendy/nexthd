@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-20 11:15 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
+> **Last updated:** 2026-08-20 12:05 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
 
 ---
 
@@ -36,7 +36,7 @@
 ### Modul Aplikasi
 
 - Manajemen tiket insiden dan permintaan layanan
-- Workflow approval untuk Change Request
+- Workflow approval untuk Change Request (state machine terverifikasi via regression test, 2026-08-20)
 - Manajemen Problem dan Known Error (ITIL-lite)
 - Notifikasi real-time via Telegram Bot
 - SLA monitoring otomatis (warning 30 menit sebelum breach)
@@ -51,13 +51,12 @@
 
 | # | Fitur | Keterangan | PIC |
 |---|---|---|---|
-| 1 | User portal Requester | Via Frappe Web Form. **Keputusan sudah ada:** akun baru khusus per karyawan (bukan email kantor existing), reset password manual oleh IT dari Frappe. Belum diimplementasi | Devin |
-| 2 | Workflow — testing end-to-end di UI | Belum ditest: jalur `Selesai→Tutup→Ditutup`, end-to-end Change Request. **Keputusan:** boleh test kapan saja, server online terus | Efendy |
+| 1 | User portal Requester | Via Frappe Web Form. **Keputusan sudah ada:** akun baru khusus per karyawan (bukan email kantor existing), reset password manual oleh IT dari Frappe. Belum diimplementasi. Rencana: dibuatkan GitHub Issue spek lengkap untuk Devin | Devin |
+| 2 | Workflow — testing end-to-end di UI (browser) | Regression test backend (`apply_workflow()`) sudah lulus 100% (2026-08-20) — tapi belum ditest klik manual di browser untuk memastikan tombol Actions & permission per role tampil benar | Efendy |
 | 3 | Role assignment ke user spesifik | `support@ciptamebel.co.id` → role IT Manager. **Keputusan:** sementara 1 akun shared dulu untuk IT Manager, akun terpisah per orang menyusul nanti | Efendy |
-| 4 | Pesan notifikasi Telegram i18n | Hardcoded di `telegram.py`, belum pakai `frappe._()`. Dikerjakan sekalian bareng task lain (tidak di-skip lagi) | Devin |
-| 5 | Regression test `apply_workflow()` | Belum ada test otomatis seluruh jalur transisi. Baru masuk akal dikerjakan sekarang karena dedup workflow (item selesai) sudah beres | Claude |
-| 6 | Wipe data testing | **Desain sudah disepakati:** UI checkbox per DocType (bukan wipe semua sekaligus), hanya data transaksional (Ticket/Problem/CR/Asset dst) yang boleh terhapus — Business Hours/Holiday/SLA Policy/Team/Category/Settings/Workflow/Permission/User/Workspace TIDAK ikut terhapus. Desain harus baca prefix naming_series dari DocType meta secara dinamis (bukan hardcode), supaya tahan kalau prefix diganti nanti. Belum diimplementasi, waktu eksekusi masih "nanti saja" | Claude (desain), Efendy (waktu eksekusi) |
+| 4 | Pesan notifikasi Telegram i18n | Hardcoded di `telegram.py`, belum pakai `frappe._()`. Dikerjakan sekalian bareng task lain (tidak di-skip lagi). Rencana: dibuatkan GitHub Issue spek lengkap untuk Devin | Devin |
+| 5 | Wipe data testing | **Desain sudah disepakati:** UI checkbox per DocType (bukan wipe semua sekaligus), hanya data transaksional (Ticket/Problem/CR/Asset dst) yang boleh terhapus — Business Hours/Holiday/SLA Policy/Team/Category/Settings/Workflow/Permission/User/Workspace TIDAK ikut terhapus. Desain harus baca prefix naming_series dari DocType meta secara dinamis (bukan hardcode), supaya tahan kalau prefix diganti nanti. Belum diimplementasi, waktu eksekusi masih "nanti saja" | Claude (desain), Efendy (waktu eksekusi) |
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-20 11:15 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-20 12:05 WIB.*
