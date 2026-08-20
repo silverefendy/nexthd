@@ -3,7 +3,7 @@
 > Frappe quirks, aturan wajib saat coding/debug, dan riwayat bug per sesi.
 > File ini yang paling sering bertambah tiap sesi baru.
 >
-> **Last updated:** 2026-08-20 11:15 WIB
+> **Last updated:** 2026-08-20 12:00 WIB
 
 ---
 
@@ -120,28 +120,35 @@ Sections:
 
 ### Pola Console — BENAR vs SALAH
 
-**✅ BENAR — Selalu pakai file script + redirect:**
+**✅ BENAR — Selalu pakai file script + redirect, indentasi 4-spasi lalu convert ke tab:**
 ```bash
-# Langkah 1: tulis ke file
+# Langkah 1: tulis ke file dengan indentasi 4-spasi (aman lewat paste/clipboard)
 cat > /home/it/nama_script.py << 'EOF'
-import frappe
-
-def run():
+def main_check():
     results = []
     for item in list_data:
         results.append(str(item))
     print("\n".join(results))
     print("DONE")
 
-run()
+main_check()
 EOF
 
-# Langkah 2: jalankan via redirect
+# Langkah 2: convert indentasi 4-spasi jadi tab di sisi server
+sed -i 's/^    /\t/' /home/it/nama_script.py
+
+# Langkah 3: jalankan via redirect
 bench --site desk.ciptamebel.co.id console < /home/it/nama_script.py
 ```
 
 **❌ SALAH — Jangan paste langsung ke console interaktif:**
 IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
+
+**❌ SALAH — Jangan pakai tab langsung di heredoc script:**
+Karakter tab kerap **hilang saat proses copy-paste** dari chat ke terminal (tergantung terminal/emulator), menyebabkan `IndentationError: expected an indented block`. Lihat entri `sed` di §3 tabel bawah untuk solusinya — tulis dengan 4-spasi dulu, baru convert ke tab via `sed` di server.
+
+**❌ SALAH — Jangan pakai nama fungsi `run`:**
+IPython punya automagic `%run` yang bisa "menangkap" pemanggilan `run()` sebagai magic command, bukan pemanggilan fungsi Python biasa — menghasilkan error aneh `Exception: File '()' not found`. Selalu pakai nama fungsi lain, misal `main_check()`, `main_test()`, dst.
 
 ### Tabel Aturan Wajib Lainnya
 
@@ -149,8 +156,10 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 |---|---|
 | `continue`/`break` dalam loop di console | Error. Gunakan `if/else` sebagai gantinya |
 | **Baris kosong di dalam blok manapun** (for/if/def) di script console | **Error/perilaku tidak terduga.** IPython nganggap baris kosong = akhir blok. Hindari baris kosong di DALAM blok — boleh ada ANTAR blok top-level saja |
-| **Loop/logic kompleks di console** | **Selalu bungkus dalam 1 fungsi** (`def run(): ...` lalu panggil `run()` terpisah) — IPython baca seluruh body sebagai 1 unit |
-| **Import via `from module import nama_fungsi`** | Kadang tidak ter-bind dengan benar di scope IPython saat dipiped dari file (nama fungsi jadi `NameError` walau tanpa error saat import). **Fix aman:** `import module_lengkap` lalu panggil full path `module_lengkap.nama_fungsi(...)` |
+| **Loop/logic kompleks di console** | **Selalu bungkus dalam 1 fungsi** (`def main_check(): ...` lalu panggil terpisah) — IPython baca seluruh body sebagai 1 unit. Berlaku juga untuk banyak fungsi helper terpisah — kalau saling panggil, gabung semua jadi SATU fungsi tunggal, jangan pecah jadi beberapa `def` di level top |
+| **Karakter tab hilang saat paste ke terminal** | Tulis heredoc dengan indentasi 4-spasi (aman lewat clipboard), lalu jalankan `sed -i 's/^    /\t/' nama_file.py` di server sebelum eksekusi, supaya hasil akhirnya tetap tab murni seperti yang dibutuhkan IPython |
+| **Nama fungsi `run`** | Bentrok dengan IPython magic `%run` (automagic) — pakai nama lain seperti `main_check()` |
+| **Import via `from module import nama_fungsi`** | Kadang tidak ter-bind dengan benar di scope IPython saat dipiped dari file (nama fungsi jadi `NameError` walau tanpa error saat import). **Fix aman:** taruh import DI DALAM fungsi (`from ... import ...` sebagai baris pertama body), bukan di level top file |
 | `doc.save()` | Selalu gagal di production. Pakai SQL INSERT/UPDATE + `frappe.db.commit()` — **kecuali** untuk `doc.insert()` pada custom DocType baru yang memang perlu validasi Frappe |
 | **Field Link yang wajib diisi (`reqd=1`)** | Cek dulu via `frappe.get_meta(doctype)` — filter `f.reqd or f.fieldtype == "Link"`. Contoh: `NextHD Ticket` butuh `subject` dan `requested_by` — kalau test insert via console lupa isi ini, akan kena `MandatoryError` meski `calculate_sla()` sendiri sudah terpanggil dan sukses |
 | **Field Link ke master doctype** | Master record harus **sudah ada duluan** sebelum insert dokumen yang mereferensikannya |
@@ -173,6 +182,7 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 | **`bench migrate` — urutan wajib saat menambah kolom BARU lalu langsung mengisi datanya** | Migrate dulu (agar kolom fisik tercipta di DB) BARU UPDATE data. Kalau dibalik → `ERROR 1054 Unknown column` |
 | **`__pycache__` basi setelah edit file `.py`** | Kadang perubahan logic Python tidak langsung kepakai meski file sudah diedit dan `bench restart` dijalankan. Kalau hasil eksekusi masih mengikuti kode versi lama, hapus `find <app_path> -type d -name "__pycache__" -exec rm -rf {} +` lalu restart lagi |
 | **Selalu verifikasi isi file DI DISK dengan `grep`/`cat` sebelum asumsi kode sudah ter-replace** | Kasus nyata (2026-08-20): sesi sebelumnya "mengaku" sudah menulis ulang `calculate_sla()`, tapi `grep` di sesi berikutnya membuktikan file masih versi lama (`add_to_date`, bukan `add_working_time`). Root cause: perubahan tidak pernah benar-benar tersimpan ke disk sesi sebelumnya. **Jangan percaya catatan dokumentasi 100% — selalu cross-check langsung ke file sebelum lanjut debug** |
+| **Counter `tabSeries` bisa TIDAK SINKRON dari data fisik** | Kasus nyata (2026-08-20): `tabSeries` untuk `PRB-2608-` nyangkut di `current=2` padahal data fisik `NextHD Problem` sudah sampai `PRB-2608-0005` — insert baru selalu tabrakan `DuplicateEntryError`. Kemungkinan penyebab: insert manual/import yang tidak lewat jalur normal penomoran Frappe. **Kalau ketemu `DuplicateEntryError` saat insert padahal nomor "terlihat aman"**, cek dulu `SELECT MAX(...) FROM tabDocType` vs `SELECT current FROM tabSeries WHERE name = 'PREFIX-'` — kalau beda, sinkronkan `tabSeries.current` ke nilai `MAX()` data fisik sebelum lanjut |
 
 ---
 
@@ -287,6 +297,31 @@ Dari 3 custom report (`Tiket per Bulan`, `Tiket per Kategori`, `Tiket per Priori
 
 Query jalan tanpa error, kolom breach SLA terhitung normal (0 karena belum ada tiket yang lewat SLA di data testing). **Backlog SLA — SELESAI 100%, tidak ada item tersisa.**
 
+### ✅ SELESAI — Bug Session 2026-08-20 (Dedup Transisi Workflow — Kedua Kalinya) & Regression Test — DITUTUP TOTAL
+
+**Temuan:** Saat menyiapkan regression test `apply_workflow()`, ditemukan **seluruh 21 transisi di 3 workflow terduplikasi 2x** (total 42 baris di `tabWorkflow Transition`) — mirip pola bug 2026-08-19, tapi kali ini polanya konsisten: semua baris duplikat punya **`idx = 0`**, sementara baris asli punya `idx` berurutan 1 s/d N. Kemungkinan besar muncul kembali lewat mekanisme yang sama seperti kasus sebelumnya (re-import/edit tidak tercatat).
+
+**Fix:**
+```python
+frappe.db.sql("DELETE FROM `tabWorkflow Transition` WHERE parent IN ('NextHD Ticket','NextHD Problem','NextHD Change Request') AND idx = 0")
+frappe.db.commit()
+```
+Hasil: 42 → 21 baris. Breakdown final: Ticket 7, Problem 6, Change Request 8. Fixture di-export ulang dan di-push ke `main`.
+
+**Bug turunan yang ketemu saat testing — Counter `tabSeries` tidak sinkron:** Saat regression test coba insert `NextHD Problem` baru, kena `DuplicateEntryError: PRB-2608-0003` padahal filter `title LIKE 'REGTEST%'` kosong. Investigasi: `tabSeries` untuk `PRB-2608-` nyangkut di `current=2`, padahal data fisik (dari sesi testing 15-16 Agustus, bukan data REGTEST) sudah sampai `PRB-2608-0005`. Disinkronkan manual: `UPDATE tabSeries SET current = (SELECT MAX nomor dari data fisik)`. Dicatat sebagai aturan wajib baru di §3.
+
+**Regression test `apply_workflow()` — hasil akhir, semua LULUS:**
+
+| Workflow | Jalur Ditest | Hasil |
+|---|---|---|
+| NextHD Ticket | Baru → Sedang Dikerjakan → Selesai → Ditutup | ✅ |
+| NextHD Problem (jalur investigasi) | Terbuka → Investigasi → Selesai → Ditutup | ✅ |
+| NextHD Problem (jalur langsung) | Terbuka → Selesai (Selesaikan Langsung) | ✅ |
+| NextHD Change Request | Draft → Diajukan → Direview → Disetujui → Implementasi → Selesai → Ditutup | ✅ |
+| Transisi tidak valid (skip step) | Ditolak dengan `WorkflowTransitionError` sesuai harapan | ✅ |
+
+Data test (`TKT-2608-0004`, `TKT-2608-0005`, `PRB-2608-0006`, `PRB-2608-0007`, `CHG-2608-0002`) sudah dibersihkan setelah verifikasi. **Ketiga workflow terverifikasi bersih dari transisi ambigu, tidak ada bug `update_field`, dan validasi jalur tidak valid tetap ketat.**
+
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-20 11:15 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-20 12:00 WIB.*
