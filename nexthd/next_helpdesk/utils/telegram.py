@@ -16,7 +16,7 @@ def get_bot_token():
 	Ambil bot token dari NextHD Settings.
 	TODO (Devin): implementasi setelah Doctype NextHD Settings dibuat.
 	"""
-	return frappe.db.get_single_value("NextHD Settings", "telegram_bot_token")
+	return frappe.db.get_value("NextHD Settings", {}, "telegram_bot_token")
 
 
 def send_telegram_message(chat_id: str, message: str):
@@ -367,7 +367,7 @@ def get_user_chat_id(user: str) -> str:
 def is_telegram_enabled() -> bool:
 	"""Check if Telegram notification is enabled in settings"""
 	try:
-		enabled = frappe.db.get_single_value("NextHD Settings", "enable_telegram_notification")
+		enabled = frappe.db.get_value("NextHD Settings", {}, "enable_telegram_notification")
 		return bool(enabled)
 	except Exception:
 		return False

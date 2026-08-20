@@ -85,7 +85,7 @@ def check_sla_response_breach():
 						)
 						send_telegram_message(chat_id, message)
 		
-		frappe.logger.info(f"SLA response breach check completed. Checked {len(tickets)} tickets.")
+		frappe.logger().info(f"SLA response breach check completed. Checked {len(tickets)} tickets.")
 	
 	except Exception as e:
 		frappe.log_error(f"Error in SLA response breach check: {str(e)}")
