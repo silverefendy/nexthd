@@ -3,7 +3,7 @@
 > Referensi statis: infrastruktur, struktur app, DocType/field, permissions, schema DB, label ID.
 > Jarang berubah kecuali ada penambahan DocType atau perubahan infrastruktur.
 >
-> **Last updated:** 2026-08-20 12:20 WIB
+> **Last updated:** 2026-08-20 14:40 WIB
 
 ---
 
@@ -283,15 +283,18 @@ business_hours        → Link: NextHD Business Hours
 ## 5. Sistem User Tanpa Email
 
 ### Alasan
-Sistem hanya untuk karyawan internal. Frappe mewajibkan field email, tapi email nyata tidak dipakai.
+Sistem hanya untuk karyawan internal. Frappe mewajibkan field email, tapi email nyata tidak dipakai — hosting hanya menyediakan kuota terbatas untuk email asli, tidak cukup untuk seluruh karyawan.
 
 ### Pendekatan Teknis
 
 ```
 1. Saat buat User baru:
    - Field "email" diisi otomatis via hook:
-     format: {username}@noemail.internal
-     contoh: efendy@noemail.internal
+     format: {username}@ciptamebel.co.id   ← DIUBAH 2026-08-20, sebelumnya @noemail.internal
+     contoh: efendy@ciptamebel.co.id
+   - Domain SAMA dengan domain kantor asli, TAPI mailbox-nya dummy — tidak eksis, tidak bisa
+     menerima mail sungguhan. Dipilih supaya alamat terlihat seragam/resmi, bukan supaya
+     berfungsi sebagai email beneran (kuota email asli dari hosting terbatas)
    - Set "Send Welcome Email" = False
 
 2. Login:
@@ -299,13 +302,13 @@ Sistem hanya untuk karyawan internal. Frappe mewajibkan field email, tapi email 
    - Frappe native support ini via field "username" di User doctype
 
 3. Reset Password:
-   - TIDAK bisa via "forgot password" email (karena email dummy)
+   - TIDAK bisa via "forgot password" email (karena mailbox dummy tidak menerima mail)
    - Solusi: Admin reset manual dari backend:
      bench --site desk.ciptamebel.co.id set-password <username>
    - Alternatif lanjutan: OTP reset via Telegram bot
 ```
 
-**File:** `nexthd/next_helpdesk/utils/email_helper.py` (sudah ada, sudah benar)
+**File:** `nexthd/next_helpdesk/utils/email_helper.py` — perlu dicek/diupdate formatnya ke domain baru saat implementasi berikutnya (belum diverifikasi apakah sudah otomatis terupdate atau masih hardcode `@noemail.internal`)
 **Hook:** `before_insert` pada Doctype **User**
 
 ---
@@ -673,4 +676,4 @@ def reset_series_after_wipe(doctype_list):
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-20 12:20 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-20 14:40 WIB.*
