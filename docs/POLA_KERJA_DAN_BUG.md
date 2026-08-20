@@ -3,7 +3,7 @@
 > Frappe quirks, aturan wajib saat coding/debug, dan riwayat bug per sesi.
 > File ini yang paling sering bertambah tiap sesi baru.
 >
-> **Last updated:** 2026-08-20 10:00 WIB
+> **Last updated:** 2026-08-20 11:15 WIB
 
 ---
 
@@ -150,6 +150,7 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 | `continue`/`break` dalam loop di console | Error. Gunakan `if/else` sebagai gantinya |
 | **Baris kosong di dalam blok manapun** (for/if/def) di script console | **Error/perilaku tidak terduga.** IPython nganggap baris kosong = akhir blok. Hindari baris kosong di DALAM blok — boleh ada ANTAR blok top-level saja |
 | **Loop/logic kompleks di console** | **Selalu bungkus dalam 1 fungsi** (`def run(): ...` lalu panggil `run()` terpisah) — IPython baca seluruh body sebagai 1 unit |
+| **Import via `from module import nama_fungsi`** | Kadang tidak ter-bind dengan benar di scope IPython saat dipiped dari file (nama fungsi jadi `NameError` walau tanpa error saat import). **Fix aman:** `import module_lengkap` lalu panggil full path `module_lengkap.nama_fungsi(...)` |
 | `doc.save()` | Selalu gagal di production. Pakai SQL INSERT/UPDATE + `frappe.db.commit()` — **kecuali** untuk `doc.insert()` pada custom DocType baru yang memang perlu validasi Frappe |
 | **Field Link yang wajib diisi (`reqd=1`)** | Cek dulu via `frappe.get_meta(doctype)` — filter `f.reqd or f.fieldtype == "Link"`. Contoh: `NextHD Ticket` butuh `subject` dan `requested_by` — kalau test insert via console lupa isi ini, akan kena `MandatoryError` meski `calculate_sla()` sendiri sudah terpanggil dan sukses |
 | **Field Link ke master doctype** | Master record harus **sudah ada duluan** sebelum insert dokumen yang mereferensikannya |
@@ -252,7 +253,7 @@ IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 | 2 | Dedup transisi workflow NextHD Ticket & Change Request | Baris duplikat semua punya `idx=0` (prefix nama `ai9*`), baris asli idx berurutan (prefix `l86*`/`l87*`) | `DELETE FROM tabWorkflow Transition WHERE name LIKE 'ai9%'` per parent. Hasil akhir: Ticket 7 transisi, Change Request 8 transisi |
 | 3 | Bug penomoran `####` di SEMUA DocType (bukan cuma Ticket) | Opsi `naming_series` di JSON DocType pakai literal salah tanpa titik pemisah: `PRB-2026-####`, `CHG-2026-####`, `AST-2026-####`, `KE-2026-####`, `SVC-2026-####` | Diseragamkan ke format `.YY.MM.-.####` (reset otomatis per bulan) di 6 DocType (Ticket, Problem, Change Request, Asset, Known Error, Service Catalog) + update data existing + bersihkan row lama `tabSeries` + migrate developer_mode. Terverifikasi record baru format `XXX-2608-0001` |
 
-### ✅ SELESAI — Bug Session 2026-08-20 (SLA Enforcement Business Hours)
+### ✅ SELESAI — Bug Session 2026-08-20 (SLA Enforcement Business Hours) — DITUTUP TOTAL
 
 Root cause awal: `calculate_sla()` lama pakai `add_to_date()` mentah, sama sekali tidak menghitung jam kerja/hari libur.
 
@@ -264,7 +265,7 @@ Root cause awal: `calculate_sla()` lama pakai `add_to_date()` mentah, sama sekal
 - **Root cause kenapa fix sebelumnya "belum jalan":** `calculate_sla()` di `nexthd_ticket.py` ternyata **belum pernah benar-benar diarahkan** memanggil `add_working_time()` — masih memanggil `add_to_date()` mentah. Klaim sesi sebelumnya bahwa fungsi "sudah ditulis ulang" tidak akurat; diverifikasi langsung via `grep` di file disk.
 - Fix final: tambah import `from nexthd.next_helpdesk.utils.business_hours import add_working_time`, replace body `calculate_sla()` agar memanggil `add_working_time(now, minutes, is_24x7=...)` untuk `sla_response_by` dan `sla_resolution_by`.
 
-**Verifikasi test (2026-08-20 05:32 WIB insert):**
+**Verifikasi test 1 — Insert ticket individual (2026-08-20 05:32 WIB):**
 
 | Field | Hasil | Status |
 |---|---|---|
@@ -274,9 +275,18 @@ Root cause awal: `calculate_sla()` lama pakai `add_to_date()` mentah, sama sekal
 
 Ticket test: `TKT-2608-0004`. Sudah di-commit (`8d3f26d`) dan push ke `origin/main`.
 
-**Tersisa (masuk ke `SUMMARY.md` §2 sebagai item baru):**
-- Verifikasi custom reports (item #2 lama) sekarang bisa jalan penuh di produksi karena `sla_resolution_by` sudah konsisten terisi.
+**Verifikasi test 2 — Report "Tiket per Prioritas" produksi (2026-08-20 11:10 WIB):**
+
+Dari 3 custom report (`Tiket per Bulan`, `Tiket per Kategori`, `Tiket per Prioritas`), hanya **Tiket per Prioritas** yang memakai kolom `sla_resolution_by` (untuk hitung breach SLA) — 2 report lain tidak terdampak bug ini. Dijalankan via `frappe.desk.query_report.run(...)` filter `2026-01-01` s/d `2026-12-31`:
+
+| Prioritas | Jumlah Tiket | Rata-rata Resolusi (jam) | Breach SLA |
+|---|---|---|---|
+| Kritis | 1 | — (belum resolved) | 0 |
+| Sedang | 9 | 5.5 | 0 |
+| **Total** | **10** | **5.5** | **0** |
+
+Query jalan tanpa error, kolom breach SLA terhitung normal (0 karena belum ada tiket yang lewat SLA di data testing). **Backlog SLA — SELESAI 100%, tidak ada item tersisa.**
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-20 10:00 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-20 11:15 WIB.*
