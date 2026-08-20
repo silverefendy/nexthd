@@ -3,7 +3,7 @@
 > Frappe quirks, aturan wajib saat coding/debug, dan riwayat bug per sesi.
 > File ini yang paling sering bertambah tiap sesi baru.
 >
-> **Last updated:** 2026-08-20 12:00 WIB
+> **Last updated:** 2026-08-20 15:30 WIB
 
 ---
 
@@ -183,6 +183,8 @@ IPython punya automagic `%run` yang bisa "menangkap" pemanggilan `run()` sebagai
 | **`__pycache__` basi setelah edit file `.py`** | Kadang perubahan logic Python tidak langsung kepakai meski file sudah diedit dan `bench restart` dijalankan. Kalau hasil eksekusi masih mengikuti kode versi lama, hapus `find <app_path> -type d -name "__pycache__" -exec rm -rf {} +` lalu restart lagi |
 | **Selalu verifikasi isi file DI DISK dengan `grep`/`cat` sebelum asumsi kode sudah ter-replace** | Kasus nyata (2026-08-20): sesi sebelumnya "mengaku" sudah menulis ulang `calculate_sla()`, tapi `grep` di sesi berikutnya membuktikan file masih versi lama (`add_to_date`, bukan `add_working_time`). Root cause: perubahan tidak pernah benar-benar tersimpan ke disk sesi sebelumnya. **Jangan percaya catatan dokumentasi 100% — selalu cross-check langsung ke file sebelum lanjut debug** |
 | **Counter `tabSeries` bisa TIDAK SINKRON dari data fisik** | Kasus nyata (2026-08-20): `tabSeries` untuk `PRB-2608-` nyangkut di `current=2` padahal data fisik `NextHD Problem` sudah sampai `PRB-2608-0005` — insert baru selalu tabrakan `DuplicateEntryError`. Kemungkinan penyebab: insert manual/import yang tidak lewat jalur normal penomoran Frappe. **Kalau ketemu `DuplicateEntryError` saat insert padahal nomor "terlihat aman"**, cek dulu `SELECT MAX(...) FROM tabDocType` vs `SELECT current FROM tabSeries WHERE name = 'PREFIX-'` — kalau beda, sinkronkan `tabSeries.current` ke nilai `MAX()` data fisik sebelum lanjut |
+| **`frappe.db.get_single_value(doctype, field)` HANYA jalan untuk Single DocType** | Kasus nyata (2026-08-20): `NextHD Settings` `issingle=0` (BUKAN Single, punya nama record biasa spt `3jn1jihj28`), tapi kode lama pakai `get_single_value()` — selalu return `None` walau data sudah diisi & disave di UI, karena fungsi itu baca dari tabel khusus `tabSingles` yang kosong untuk DocType non-Single. **Sebelum pakai `get_single_value()`, cek dulu `frappe.db.get_value("DocType", "<nama>", "issingle")`** — kalau `0`, pakai `frappe.db.get_value(doctype, {}, field)` (ambil record pertama/satu-satunya) sebagai gantinya |
+| **`frappe.logger` vs `frappe.logger()`** | `frappe.logger` adalah fungsi, BUKAN objek logger — harus dipanggil dulu `frappe.logger()` baru bisa `.info(...)`/`.error(...)` dst. Salah tulis `frappe.logger.info(...)` (tanpa kurung) akan lolos saat ditulis tapi meledak saat dieksekusi: `AttributeError: 'function' object has no attribute 'info'`. Cek SEMUA pemakaian `frappe.logger` di file yang sama kalau nemu satu instance salah — kemungkinan ada yang lain juga ke-copy-paste dari pattern salah yang sama |
 
 ---
 
@@ -322,6 +324,50 @@ Hasil: 42 → 21 baris. Breakdown final: Ticket 7, Problem 6, Change Request 8. 
 
 Data test (`TKT-2608-0004`, `TKT-2608-0005`, `PRB-2608-0006`, `PRB-2608-0007`, `CHG-2608-0002`) sudah dibersihkan setelah verifikasi. **Ketiga workflow terverifikasi bersih dari transisi ambigu, tidak ada bug `update_field`, dan validasi jalur tidak valid tetap ketat.**
 
+### 🔴 SEDANG DIKERJAKAN — Bug Session 2026-08-20 (Bot Telegram Tidak Balas) — BELUM SELESAI, LANJUTKAN SESI BERIKUTNYA
+
+**Konteks:** Bot Telegram `@cmlhelpdesk_bot` sudah dibuat (via @BotFather), token sudah diisi & disave di **NextHD Settings**, webhook sudah di-set dan terverifikasi OK via `getWebhookInfo` (tidak ada `last_error_message`, `pending_update_count: 0` — Telegram berhasil kirim update & dapat respons 200). **TAPI bot tidak pernah balas** ke `/start` maupun `/link <username>` yang dikirim berkali-kali dari Telegram (semua centang biru terkirim, nol balasan dari bot).
+
+**Root cause #1 — DITEMUKAN & sudah difix di file, TERKONFIRMASI via `grep` (2026-08-20):**
+`get_bot_token()` dan `is_telegram_enabled()` di `nexthd/next_helpdesk/utils/telegram.py` pakai `frappe.db.get_single_value("NextHD Settings", ...)`. Tapi `NextHD Settings` **`issingle: 0`** (BUKAN Single DocType, cuma 1 record biasa bernama `3jn1jihj28`, dikonfirmasi via console). `get_single_value()` baca dari tabel `tabSingles` yang kosong untuk DocType non-Single, jadi selalu return `None` walau token sudah diisi di UI.
+
+Fix diterapkan (dikonfirmasi via `grep` line 19 & 370 sudah versi baru):
+```python
+# telegram.py line 19
+return frappe.db.get_value("NextHD Settings", {}, "telegram_bot_token")
+# telegram.py line 370
+enabled = frappe.db.get_value("NextHD Settings", {}, "enable_telegram_notification")
+```
+
+**Root cause #2 — bug terpisah (tidak menghalangi Telegram langsung, tapi flooding Error Log tiap 4 menit):**
+`check_sla_response_breach()` di `tasks.py` pakai `frappe.logger.info(...)` (kurang kurung — lihat aturan baru di §3). Fix sudah ditulis di script yang sama dengan fix #1, **BELUM dikonfirmasi ulang via grep apakah masuk ke `tasks.py`** — perlu dicek ulang sesi berikutnya.
+
+**Bug ke-3 ditemukan, BELUM difix, prioritas rendah:**
+Pesan Telegram "Peringatan SLA Response" di `check_sla_response_breach()` (`tasks.py`) masih pakai f-string mentah, bukan `frappe._()` — event ini luput dari scope i18n PR #6 (Devin cuma cover 6 event di `telegram.py`, event ini ada di `tasks.py` jadi tidak ke-cover).
+
+**STATUS TERAKHIR:** Fix #1 sudah dikonfirmasi ada di file, tapi bot MASIH belum balas setelah fix ini. Kemungkinan besar `bench restart` belum dijalankan setelah fix (user tidak yakin sudah restart atau belum) — proses Frappe worker mungkin masih load kode versi lama di memory. Belum ada retest setelah `bench restart` dipastikan jalan.
+
+**NEXT STEPS untuk sesi berikutnya (urutan):**
+1. `grep -n "frappe.logger" nexthd/next_helpdesk/tasks.py` — pastikan fix #2 juga masuk
+2. **WAJIB:** `bench --site desk.ciptamebel.co.id clear-cache` + `bench restart`
+3. Retest: kirim `/start` ke @cmlhelpdesk_bot dari Telegram, tunggu balasan
+4. Kalau masih tidak balas: cek Error Log lagi (script sama seperti sebelumnya) — kalau error BEDA dari "token not configured", ada root cause baru
+5. Kalau sudah balas: `/link test.requester`, cek `NextHD User Profile` untuk `test.requester@ciptamebel.co.id` — field `telegram_chat_id` harus OTOMATIS terisi angka numerik (bukan diisi manual)
+6. Commit + push fix `telegram.py` dan `tasks.py` ke GitHub (BELUM di-push sama sekali — perubahan baru ada di disk server):
+   ```bash
+   cd /home/it/frappe/apps/nexthd
+   git add nexthd/next_helpdesk/utils/telegram.py nexthd/next_helpdesk/tasks.py
+   git commit -m "fix: get_bot_token/is_telegram_enabled tidak pakai get_single_value (NextHD Settings bukan Single doctype); fix frappe.logger().info() di check_sla_response_breach"
+   git push origin main
+   ```
+7. Setelah Telegram jalan: lanjut testing Web Form `/tiket-saya` (PR #6, belum sempat ditest — tertunda karena dialihkan ke debug Telegram). Checklist: field yang tampil/tersembunyi sesuai spek Issue #4, `requested_by` auto-fill dari session user, isolasi data antar Requester
+8. Setelah semua lolos: update tabel status di §2 `SUMMARY.md` (item #1 dan #4 → SELESAI), tambahkan entri bug baru ini (get_single_value + frappe.logger) sebagai closed di sini
+
+**Catatan tambahan:**
+- User sempat isi manual field `Telegram Chat ID`/`Telegram Username` di NextHD User Profile dengan username (`@Silver_efendy`, SALAH — field itu harus numeric chat_id) — sudah dihapus total (record NextHD User Profile untuk test.requester dihapus, dikonfirmasi list kosong)
+- User test `test.requester@ciptamebel.co.id` (role Requester, format email dummy baru — lihat `ARSITEKTUR.md §5`) sudah ada, password sudah di-set manual
+- **Token bot Telegram tidak pernah dicatat di dokumentasi/GitHub ini** — hanya ada di NextHD Settings di server, sesuai praktik keamanan project
+
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-20 12:00 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-20 15:30 WIB.*
