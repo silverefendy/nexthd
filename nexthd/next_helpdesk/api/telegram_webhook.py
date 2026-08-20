@@ -8,6 +8,7 @@ Referensi: NEXTHD_SPEC.md bagian 5
 import frappe
 import json
 from frappe import _
+from datetime import datetime
 
 @frappe.whitelist(allow_guest=True)
 def telegram_webhook():
@@ -85,10 +86,10 @@ def process_command(chat_id, text, message):
 			"👋 <b>Selamat datang di NextHD Bot!</b>\n\n"
 			"Untuk menghubungkan akun Telegram Anda dengan NextHD:\n"
 			"1. Buka halaman profil Anda di NextHD\n"
-			"2. Klik 'Link Telegram Account'\n"
-			"3. Masukkan kode verifikasi yang ditampilkan\n"
-			"4. Kirim kode tersebut ke bot ini\n\n"
-			"Contoh: LINK 12345"
+			"2. Klik tombol 'Link Telegram Account'\n"
+			"3. Salin kode verifikasi 6 digit yang ditampilkan\n"
+			"4. Kirim kode tersebut ke bot ini dalam 10 menit\n\n"
+			"Contoh: 847291"
 		)
 		send_telegram_message(chat_id, welcome_message)
 	
@@ -99,8 +100,8 @@ def process_command(chat_id, text, message):
 			"/start - Memulai dan mendapatkan instruksi\n"
 			"/help - Menampilkan pesan bantuan ini\n\n"
 			"<b>Link Akun:</b>\n"
-			"Kirim kode verifikasi dari profil NextHD Anda\n"
-			"Format: LINK <kode_verifikasi>"
+			"Kirim kode verifikasi 6 digit dari profil NextHD Anda\n"
+			"Kode berlaku selama 10 menit"
 		)
 		send_telegram_message(chat_id, help_message)
 	
@@ -117,43 +118,77 @@ def process_command(chat_id, text, message):
 
 def process_link_code(chat_id, code):
 	"""
-	Process account linking code.
+	Process account linking code using OTP-based verification.
 	
 	Args:
 		chat_id: Telegram chat ID
-		code: Verification code from NextHD profile
+		code: 6-digit verification code from NextHD profile
 	"""
 	from nexthd.next_helpdesk.utils.telegram import send_telegram_message, link_telegram_account
 	
 	try:
-		# Find user profile with this verification code
-		# In production, this should use a proper verification system
-		# For now, we'll use a simple approach where the code is the username
+		# Find user profile with this verification code that hasn't expired
+		profile_name = frappe.db.get_value(
+			"NextHD User Profile",
+			{
+				"telegram_link_code": code,
+				"telegram_link_code_expiry": (">", datetime.now())
+			},
+			"name"
+		)
 		
-		# Try to find user by username
-		user = frappe.db.get_value("User", {"username": code}, "name")
+		if not profile_name:
+			# Check if code exists but expired
+			expired_profile = frappe.db.get_value(
+				"NextHD User Profile",
+				{"telegram_link_code": code},
+				"name"
+			)
+			
+			if expired_profile:
+				send_telegram_message(
+					chat_id,
+					"❌ Kode verifikasi sudah kedaluwarsa (berlaku 10 menit). Silakan generate kode baru dari halaman profil NextHD Anda."
+				)
+			else:
+				send_telegram_message(
+					chat_id,
+					"❌ Kode verifikasi tidak valid. Silakan generate kode baru dari halaman profil NextHD Anda."
+				)
+			return
 		
-		if not user:
+		# Get the profile to check if already linked and get user
+		profile = frappe.get_doc("NextHD User Profile", profile_name)
+		
+		# Check if already linked
+		if profile.telegram_chat_id:
 			send_telegram_message(
 				chat_id,
-				"❌ Kode verifikasi tidak valid. Silakan periksa kode di profil NextHD Anda."
+				"❌ Akun Telegram Anda sudah terhubung sebelumnya."
 			)
 			return
 		
 		# Link the account
-		success = link_telegram_account(user, "", str(chat_id))
+		success = link_telegram_account(profile.user, "", str(chat_id))
 		
 		if success:
+			# Clear the link code and expiry after successful linking
+			frappe.db.set_value("NextHD User Profile", profile_name, {
+				"telegram_link_code": "",
+				"telegram_link_code_expiry": None
+			})
+			frappe.db.commit()
+			
 			send_telegram_message(
 				chat_id,
 				f"✅ Akun Telegram berhasil dihubungkan dengan NextHD!\n\n"
-				f"Username: {user}\n"
+				f"User: {profile.user}\n"
 				f"Anda akan menerima notifikasi tiket melalui Telegram ini."
 			)
 		else:
 			send_telegram_message(
 				chat_id,
-				"❌ Gagal menghubungkan akun. Akun mungkin sudah terhubung sebelumnya."
+				"❌ Gagal menghubungkan akun. Silakan coba lagi nanti."
 			)
 	
 	except Exception as e:

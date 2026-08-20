@@ -9,6 +9,11 @@ STATUS: SKELETON - belum diimplementasikan, untuk Devin
 
 import frappe
 import requests
+import random
+from datetime import datetime, timedelta
+
+# OTP link code expiry duration in minutes
+TELEGRAM_LINK_CODE_EXPIRY_MINUTES = 10
 
 
 def get_bot_token():
@@ -371,3 +376,51 @@ def is_telegram_enabled() -> bool:
 		return bool(enabled)
 	except Exception:
 		return False
+
+
+@frappe.whitelist()
+def generate_telegram_link_code():
+	"""
+	Generate a 6-digit OTP code for linking Telegram account.
+	This endpoint is whitelisted and requires user to be logged in.
+	
+	Returns:
+		dict: {'code': '123456'} or error message
+	"""
+	try:
+		current_user = frappe.session.user
+		if not current_user or current_user == "Guest":
+			return {"status": "error", "message": "User must be logged in"}
+		
+		# Generate 6-digit random code
+		code = str(random.randint(100000, 999999))
+		
+		# Calculate expiry time (current time + 10 minutes)
+		expiry = datetime.now() + timedelta(minutes=TELEGRAM_LINK_CODE_EXPIRY_MINUTES)
+		
+		# Get or create NextHD User Profile for current user
+		profile_name = frappe.db.get_value("NextHD User Profile", {"user": current_user}, "name")
+		
+		if profile_name:
+			# Update existing profile using raw SQL
+			frappe.db.set_value("NextHD User Profile", profile_name, {
+				"telegram_link_code": code,
+				"telegram_link_code_expiry": expiry
+			})
+		else:
+			# Create new profile using raw SQL
+			profile_name = current_user  # autoname is field:user
+			frappe.db.insert("NextHD User Profile", {
+				"name": profile_name,
+				"user": current_user,
+				"telegram_link_code": code,
+				"telegram_link_code_expiry": expiry
+			})
+		
+		frappe.db.commit()
+		
+		return {"status": "success", "code": code}
+	
+	except Exception as e:
+		frappe.log_error(f"Error generating Telegram link code: {str(e)}")
+		return {"status": "error", "message": str(e)}

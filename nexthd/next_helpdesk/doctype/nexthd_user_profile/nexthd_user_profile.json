@@ -11,6 +11,8 @@
   "user",
   "telegram_chat_id",
   "telegram_username",
+  "telegram_link_code",
+  "telegram_link_code_expiry",
   "preferred_language",
   "department",
   "phone_internal"
@@ -33,6 +35,18 @@
    "fieldname": "telegram_username",
    "fieldtype": "Data",
    "label": "Telegram Username"
+  },
+  {
+   "fieldname": "telegram_link_code",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Telegram Link Code"
+  },
+  {
+   "fieldname": "telegram_link_code_expiry",
+   "fieldtype": "Datetime",
+   "hidden": 1,
+   "label": "Telegram Link Code Expiry"
   },
   {
    "default": "ID",
