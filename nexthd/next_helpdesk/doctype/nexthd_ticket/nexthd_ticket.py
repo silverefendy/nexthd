@@ -9,6 +9,9 @@ class NextHDTicket(Document):
 		self.validate_assigned_user()
 		if self.is_new():
 			self.calculate_sla()
+		# Auto-fill requested_by from session user for web form submissions
+		if not self.requested_by:
+			self.requested_by = frappe.session.user
 
 	def validate_assigned_user(self):
 		if self.assigned_to:

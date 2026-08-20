@@ -1,0 +1,71 @@
+[
+ {
+  "allow_multiple": 0,
+  "allowed_roles": "Requester",
+  "creation": "2026-08-20 00:00:00",
+  "doc_type": "NextHD Ticket",
+  "doctype": "Web Form",
+  "is_standard": 1,
+  "list_title": "Tiket Saya",
+  "max_attachments": 5,
+  "modified": "2026-08-20 00:00:00",
+  "module": "Next Helpdesk",
+  "name": "Tiket Saya",
+  "owner": "Administrator",
+  "published": 1,
+  "route": "tiket-saya",
+  "success_url": "/tiket-saya",
+  "title": "Tiket Saya",
+  "web_form_fields": [
+   {
+    "fieldname": "ticket_type",
+    "fieldtype": "Select",
+    "hidden": 0,
+    "label": "Ticket Type",
+    "options": "Insiden\nPermintaan Layanan",
+    "reqd": 1
+   },
+   {
+    "fieldname": "subject",
+    "fieldtype": "Data",
+    "hidden": 0,
+    "label": "Subject",
+    "reqd": 1
+   },
+   {
+    "fieldname": "description",
+    "fieldtype": "Text Editor",
+    "hidden": 0,
+    "label": "Description"
+   },
+   {
+    "fieldname": "category",
+    "fieldtype": "Link",
+    "hidden": 0,
+    "label": "Category",
+    "options": "NextHD Category"
+   },
+   {
+    "depends_on": "eval:doc.ticket_type == 'Permintaan Layanan'",
+    "fieldname": "service_catalog",
+    "fieldtype": "Link",
+    "hidden": 0,
+    "label": "Service Catalog",
+    "options": "NextHD Service Catalog"
+   },
+   {
+    "fieldname": "affected_asset",
+    "fieldtype": "Link",
+    "hidden": 0,
+    "label": "Affected Asset",
+    "options": "NextHD Asset"
+   },
+   {
+    "fieldname": "attachments",
+    "fieldtype": "Attach",
+    "hidden": 0,
+    "label": "Attachments"
+   }
+  ]
+ }
+]
