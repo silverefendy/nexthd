@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-20 12:30 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
+> **Last updated:** 2026-08-20 13:00 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
 
 ---
 
@@ -36,9 +36,10 @@
 ### Modul Aplikasi
 
 - Manajemen tiket insiden dan permintaan layanan
+- Web Form self-service untuk Requester di `/tiket-saya` (merged 2026-08-20, PR #6) — **belum di-deploy ke server produksi**, perlu `bench migrate` + testing manual
 - Workflow approval untuk Change Request (state machine terverifikasi via regression test, 2026-08-20)
 - Manajemen Problem dan Known Error (ITIL-lite)
-- Notifikasi real-time via Telegram Bot
+- Notifikasi real-time via Telegram Bot (string sudah i18n-ready via `frappe._()`, PR #6)
 - SLA monitoring otomatis (warning 30 menit sebelum breach)
 - Multi-tim dengan assignment agent
 - Custom reports: Tiket per Bulan, Tiket per Kategori, Tiket per Prioritas (breach SLA)
@@ -51,19 +52,20 @@
 
 | # | Fitur | Keterangan | PIC |
 |---|---|---|---|
-| 1 | User portal Requester | Via Frappe Web Form. Keputusan: akun baru khusus per karyawan (bukan email kantor existing), reset password manual oleh IT dari Frappe. **GitHub Issue #4 sudah dibuat** (spek lengkap + batasan boleh/tidak boleh untuk Devin) | Devin |
+| 1 | User portal Requester | **Kode sudah merged (PR #6, 2026-08-20)** — Web Form `/tiket-saya` di `main`. **BELUM di-deploy** ke `desk.ciptamebel.co.id`: perlu `git pull` + `bench migrate` di server + testing manual (buat user Requester test, akses `/tiket-saya`, verifikasi field tersembunyi/terlihat sesuai spek, verifikasi isolasi data antar Requester) | Claude (deploy+test) |
 | 2 | Workflow — testing end-to-end di UI (browser) | Regression test backend (`apply_workflow()`) sudah lulus 100% (2026-08-20) — tapi belum ditest klik manual di browser untuk memastikan tombol Actions & permission per role tampil benar | Efendy |
 | 3 | Role assignment ke user spesifik | `support@ciptamebel.co.id` → role IT Manager. **Keputusan:** sementara 1 akun shared dulu untuk IT Manager, akun terpisah per orang menyusul nanti | Efendy |
-| 4 | Pesan notifikasi Telegram i18n | Hardcoded di `telegram.py`, belum pakai `frappe._()`. **GitHub Issue #5 sudah dibuat** (spek lengkap + batasan boleh/tidak boleh untuk Devin) | Devin |
+| 4 | Pesan notifikasi Telegram i18n | **Kode sudah merged (PR #6, 2026-08-20)** — semua string di `telegram.py` sudah dibungkus `frappe._()`. **BELUM di-deploy** ke server produksi, perlu `git pull` di server + smoke-test kirim notif Telegram beneran (pastikan format pesan tidak berubah/rusak) | Claude (deploy+test) |
 | 5 | Wipe data testing | **Desain sudah disepakati:** UI checkbox per DocType (bukan wipe semua sekaligus), hanya data transaksional (Ticket/Problem/CR/Asset dst) yang boleh terhapus — Business Hours/Holiday/SLA Policy/Team/Category/Settings/Workflow/Permission/User/Workspace TIDAK ikut terhapus. Desain harus baca prefix naming_series dari DocType meta secara dinamis (bukan hardcode), supaya tahan kalau prefix diganti nanti. Belum diimplementasi, waktu eksekusi masih "nanti saja" | Claude (desain), Efendy (waktu eksekusi) |
 
-### GitHub Issues Aktif untuk Devin
+### GitHub Issues & PR — Riwayat Devin
 
-| Issue | Judul | Status |
+| # | Judul | Status |
 |---|---|---|
-| [#4](https://github.com/silverefendy/nexthd/issues/4) | User Portal Requester via Frappe Web Form | Open — menunggu Devin |
-| [#5](https://github.com/silverefendy/nexthd/issues/5) | Telegram Notification — i18n (`frappe._()`) | Open — menunggu Devin |
+| [Issue #4](https://github.com/silverefendy/nexthd/issues/4) | User Portal Requester via Frappe Web Form | Selesai via PR #6 |
+| [Issue #5](https://github.com/silverefendy/nexthd/issues/5) | Telegram Notification — i18n (`frappe._()`) | Selesai via PR #6 |
+| [PR #6](https://github.com/silverefendy/nexthd/pull/6) | feat: Add Web Form for Requester role and Telegram i18n | **Merged ke main** 2026-08-20 06:59 UTC — belum dideploy ke server produksi |
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-20 12:30 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-20 13:00 WIB.*
