@@ -73,13 +73,8 @@ def _send_ticket_created_notification(ticket_name: str):
 			for member in team.members:
 				chat_id = get_user_chat_id(member.user)
 				if chat_id and member.user not in notified_users:
-					message = (
-						f"🎫 <b>Tiket Baru</b>\n"
-						f"No: {ticket_name}\n"
-						f"Subjek: {ticket.subject}\n"
-						f"Prioritas: {ticket.priority}\n"
-						f"Dilaporkan oleh: {ticket.requested_by}\n"
-						f"Kategori: {ticket.category or 'N/A'}"
+					message = frappe._("🎫 <b>Tiket Baru</b>\nNo: {0}\nSubjek: {1}\nPrioritas: {2}\nDilaporkan oleh: {3}\nKategori: {4}").format(
+						ticket_name, ticket.subject, ticket.priority, ticket.requested_by, ticket.category or 'N/A'
 					)
 					send_telegram_message(chat_id, message)
 					notified_users.add(member.user)
@@ -88,11 +83,8 @@ def _send_ticket_created_notification(ticket_name: str):
 		if ticket.assigned_to and ticket.assigned_to not in notified_users:
 			chat_id = get_user_chat_id(ticket.assigned_to)
 			if chat_id:
-				message = (
-					f"🎫 <b>Tiket Baru Ditugaskan ke Anda</b>\n"
-					f"No: {ticket_name}\n"
-					f"Subjek: {ticket.subject}\n"
-					f"Prioritas: {ticket.priority}"
+				message = frappe._("🎫 <b>Tiket Baru Ditugaskan ke Anda</b>\nNo: {0}\nSubjek: {1}\nPrioritas: {2}").format(
+					ticket_name, ticket.subject, ticket.priority
 				)
 				send_telegram_message(chat_id, message)
 	except Exception as e:
@@ -147,12 +139,8 @@ def _send_ticket_assigned_notification(ticket_name: str, agent_user: str):
 		chat_id = get_user_chat_id(agent_user)
 		
 		if chat_id:
-			message = (
-				f"✅ <b>Tiket Ditugaskan</b>\n"
-				f"No: {ticket_name}\n"
-				f"Subjek: {ticket.subject}\n"
-				f"Prioritas: {ticket.priority}\n"
-				f"Anda telah ditugaskan untuk menangani tiket ini."
+			message = frappe._("✅ <b>Tiket Ditugaskan</b>\nNo: {0}\nSubjek: {1}\nPrioritas: {2}\nAnda telah ditugaskan untuk menangani tiket ini.").format(
+				ticket_name, ticket.subject, ticket.priority
 			)
 			send_telegram_message(chat_id, message)
 	except Exception as e:
@@ -187,11 +175,8 @@ def _send_new_reply_notification(ticket_name: str):
 		if ticket.requested_by:
 			chat_id = get_user_chat_id(ticket.requested_by)
 			if chat_id:
-				message = (
-					f"💬 <b>Balasan Baru</b>\n"
-					f"Tiket: {ticket_name}\n"
-					f"Subjek: {ticket.subject}\n"
-					f"Ada balasan baru pada tiket Anda."
+				message = frappe._("💬 <b>Balasan Baru</b>\nTiket: {0}\nSubjek: {1}\nAda balasan baru pada tiket Anda.").format(
+					ticket_name, ticket.subject
 				)
 				send_telegram_message(chat_id, message)
 		
@@ -199,11 +184,8 @@ def _send_new_reply_notification(ticket_name: str):
 		if ticket.assigned_to:
 			chat_id = get_user_chat_id(ticket.assigned_to)
 			if chat_id:
-				message = (
-					f"💬 <b>Balasan Baru</b>\n"
-					f"Tiket: {ticket_name}\n"
-					f"Subjek: {ticket.subject}\n"
-					f"Ada balasan baru pada tiket yang Anda tugaskan."
+				message = frappe._("💬 <b>Balasan Baru</b>\nTiket: {0}\nSubjek: {1}\nAda balasan baru pada tiket yang Anda tugaskan.").format(
+					ticket_name, ticket.subject
 				)
 				send_telegram_message(chat_id, message)
 	except Exception as e:
@@ -232,11 +214,8 @@ def _send_ticket_resolved_notification(ticket_name: str):
 		chat_id = get_user_chat_id(ticket.requested_by)
 		
 		if chat_id:
-			message = (
-				f"✅ <b>Tiket Diselesaikan</b>\n"
-				f"Tiket: {ticket_name}\n"
-				f"Subjek: {ticket.subject}\n"
-				f"Tiket Anda telah diselesaikan. Mohon konfirmasi jika sudah sesuai."
+			message = frappe._("✅ <b>Tiket Diselesaikan</b>\nTiket: {0}\nSubjek: {1}\nTiket Anda telah diselesaikan. Mohon konfirmasi jika sudah sesuai.").format(
+				ticket_name, ticket.subject
 			)
 			send_telegram_message(chat_id, message)
 	except Exception as e:
@@ -267,12 +246,8 @@ def _send_sla_breach_warning_notification(ticket_name: str):
 		if ticket.assigned_to:
 			chat_id = get_user_chat_id(ticket.assigned_to)
 			if chat_id:
-				message = (
-					f"⚠️ <b>Peringatan SLA</b>\n"
-					f"Tiket: {ticket_name}\n"
-					f"Subjek: {ticket.subject}\n"
-					f"Prioritas: {ticket.priority}\n"
-					f"SLA akan terlampaui dalam 30 menit. Segera tangani!"
+				message = frappe._("⚠️ <b>Peringatan SLA</b>\nTiket: {0}\nSubjek: {1}\nPrioritas: {2}\nSLA akan terlampaui dalam 30 menit. Segera tangani!").format(
+					ticket_name, ticket.subject, ticket.priority
 				)
 				send_telegram_message(chat_id, message)
 		
@@ -282,11 +257,8 @@ def _send_sla_breach_warning_notification(ticket_name: str):
 			for member in team.members:
 				chat_id = get_user_chat_id(member.user)
 				if chat_id:
-					message = (
-						f"⚠️ <b>Peringatan SLA Tim</b>\n"
-						f"Tiket: {ticket_name}\n"
-						f"Subjek: {ticket.subject}\n"
-						f"SLA akan terlampaui dalam 30 menit."
+					message = frappe._("⚠️ <b>Peringatan SLA Tim</b>\nTiket: {0}\nSubjek: {1}\nSLA akan terlampaui dalam 30 menit.").format(
+						ticket_name, ticket.subject
 					)
 					send_telegram_message(chat_id, message)
 	except Exception as e:
@@ -332,13 +304,8 @@ def _send_change_request_approval_notification(change_request_name: str):
 		for manager in managers:
 			chat_id = get_user_chat_id(manager)
 			if chat_id:
-				message = (
-					f"📋 <b>Change Request Menunggu Persetujuan</b>\n"
-					f"No: {change_request_name}\n"
-					f"Judul: {cr.title}\n"
-					f"Tipe: {cr.change_type}\n"
-					f"Risiko: {cr.risk_level}\n"
-					"Mohon review dan setujui/tolak."
+				message = frappe._("📋 <b>Change Request Menunggu Persetujuan</b>\nNo: {0}\nJudul: {1}\nTipe: {2}\nRisiko: {3}\nMohon review dan setujui/tolak.").format(
+					change_request_name, cr.title, cr.change_type, cr.risk_level
 				)
 				send_telegram_message(chat_id, message)
 	except Exception as e:
