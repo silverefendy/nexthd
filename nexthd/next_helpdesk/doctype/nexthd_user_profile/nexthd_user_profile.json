@@ -29,7 +29,8 @@
   {
    "fieldname": "telegram_chat_id",
    "fieldtype": "Data",
-   "label": "Telegram Chat ID"
+   "label": "Telegram Chat ID",
+   "unique": 1
   },
   {
    "fieldname": "telegram_username",
@@ -74,7 +75,27 @@
  "name": "NextHD User Profile",
  "naming_rule": "By Field Name",
  "owner": "Administrator",
- "permissions": [],
+ "permissions": [
+  {
+   "role": "All",
+   "read": 1,
+   "write": 1,
+   "if_owner": 1
+  },
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  },
+  {
+   "role": "IT Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

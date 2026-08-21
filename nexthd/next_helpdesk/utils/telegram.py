@@ -336,6 +336,7 @@ def link_telegram_account(user: str, telegram_username: str, chat_id: str):
 			# Create new profile if not exists
 			profile = frappe.new_doc("NextHD User Profile")
 			profile.user = user
+			profile.owner = user
 
 		# Link the account
 		profile.telegram_username = telegram_username
@@ -408,14 +409,13 @@ def generate_telegram_link_code():
 				"telegram_link_code_expiry": expiry
 			})
 		else:
-			# Create new profile using raw SQL
-			profile_name = current_user  # autoname is field:user
-			frappe.db.insert("NextHD User Profile", {
-				"name": profile_name,
-				"user": current_user,
-				"telegram_link_code": code,
-				"telegram_link_code_expiry": expiry
-			})
+			# Create new profile using frappe.new_doc().insert()
+			new_profile = frappe.new_doc("NextHD User Profile")
+			new_profile.user = current_user
+			new_profile.telegram_link_code = code
+			new_profile.telegram_link_code_expiry = expiry
+			new_profile.insert(ignore_permissions=True)
+			profile_name = new_profile.name
 		
 		frappe.db.commit()
 		
