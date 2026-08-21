@@ -3,7 +3,7 @@
 > Instalasi, setup Telegram/SLA, alur deploy, pembagian kerja, dan referensi.
 > Dipakai sekali di awal atau saat butuh reinstall.
 >
-> **Last updated:** 2026-08-12 10:00 WIB
+> **Last updated:** 2026-08-22 00:40 WIB
 
 ---
 
@@ -30,12 +30,30 @@ bench --site desk.ciptamebel.co.id migrate
    ```
 6. Setiap user harus kirim `/start` ke bot, lalu ikuti instruksi verifikasi
 
-### Setup SLA Policy
+> ⚠️ **Pastikan `bench restart` dijalankan setelah update kode** — Frappe worker mungkin masih load kode lama dari memory kalau tidak di-restart.
 
-1. Buka **NextHD Business Hours** → New → isi jam kerja Senin–Sabtu
-2. Buka **NextHD SLA Policy** → New → buat 4 record: Kritis, Tinggi, Sedang, Rendah
-3. Isi `response_time_minutes` dan `resolution_time_minutes` sesuai SOP (**belum ditentukan** — lihat item #7 di `SUMMARY.md §2`)
-4. Hubungkan setiap SLA Policy ke Business Hours yang sudah dibuat
+### Setup SLA Policy & Business Hours
+
+> ✅ **Untuk instalasi di `desk.ciptamebel.co.id` — data sudah terisi semua per 2026-08-20.**
+> Bagian ini adalah panduan untuk instalasi BARU di server lain.
+
+1. Buka **NextHD Business Hours** → New → isi **1 record per hari** (Senin s/d Sabtu):
+   - `day`: nama hari dalam Bahasa Indonesia (Senin, Selasa, dst) — **wajib pakai nama Indonesia**, karena `business_hours.py` memetakan weekday Python ke nama ini
+   - `start_time`, `end_time`, `is_working_day`
+   - Contoh CML: Senin–Jumat 08:00–17:00, Sabtu 08:00–14:00, Minggu = `is_working_day: 0`
+
+2. Buka **NextHD Holiday** → New → isi tanggal hari libur nasional satu per satu
+
+3. Buka **NextHD SLA Policy** → New → buat 4 record:
+
+   | Priority | Response | Resolusi | `is_24x7` |
+   |---|---|---|---|
+   | Kritis | 15 menit | 1 jam | 0 |
+   | Tinggi | 30 menit | 4 jam | 0 |
+   | Sedang | 60 menit | 2 hari kerja (2880 menit) | 0 |
+   | Rendah | 120 menit | 7 hari kerja (10080 menit) | 0 |
+
+   > ⚠️ Field `business_hours` **sudah dihapus** dari NextHD SLA Policy (sejak 2026-08-19) — jangan cari field itu. SLA sekarang selalu merujuk ke tabel `NextHD Business Hours` secara global (semua policy pakai jam kerja yang sama). Field `is_24x7` (Check) menggantikannya — kalau dicentang, SLA dihitung 24 jam tanpa melihat jam kerja.
 
 ### Alur Deploy setelah Devin selesai kerja
 
@@ -45,14 +63,14 @@ cd /home/it/frappe/apps/nexthd
 git pull origin main
 cd /home/it/frappe
 bench --site desk.ciptamebel.co.id migrate
-bench restart   # kalau ada perubahan hooks.py / backend logic
+bench restart   # wajib kalau ada perubahan hooks.py, logic Python, atau utils
 ```
 
 ---
 
 ## 2. Urutan Baca untuk Devin (Handover)
 
-1. `docs/SUMMARY.md` ← entry point
+1. `docs/SUMMARY.md` ← entry point, termasuk daftar open items terkini
 2. `docs/ARSITEKTUR.md` ← DocType, field, permission, schema DB
 3. `docs/WORKFLOW.md` ← state machine + notifikasi Telegram
 4. `docs/POLA_KERJA_DAN_BUG.md` ← aturan wajib + riwayat bug
@@ -91,4 +109,4 @@ bench restart   # kalau ada perubahan hooks.py / backend logic
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-12 10:00 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 00:40 WIB.*
