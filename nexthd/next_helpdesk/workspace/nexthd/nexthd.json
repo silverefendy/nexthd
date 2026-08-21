@@ -240,7 +240,7 @@
   },
   {
    "color": "Grey",
-   "doc_view": "Form",
+   "doc_view": "",
    "label": "NextHD Settings",
    "link_to": "NextHD Settings",
    "type": "DocType"
