@@ -222,7 +222,7 @@ Dedup 21 transisi (idx=0), regression test semua lulus. Number Card workspace fi
 
 ## Konteks
 
-Sesi ini melakukan **verifikasi kode langsung** ke repo (bukan hanya membaca dokumentasi) untuk meluruskan status open items yang tidak konsisten antar catatan sesi sebelumnya. File yang dicek: `business_hours.py`, `nexthd_ticket.py`, `nexthd_ticket.json`, `nexthd_ticket_workflow.json`.
+Sesi ini melakukan **verifikasi kode langsung** ke repo (bukan hanya membaca dokumentasi) untuk meluruskan status open items yang tidak konsisten antar catatan sesi sebelumnya. File yang dicek: `business_hours.py`, `nexthd_ticket.py`, `nexthd_ticket.json`, `nexthd_ticket_workflow.json`, `hooks.py`.
 
 ## ✅ Item yang Ternyata SUDAH SELESAI (belum tercatat sebelumnya)
 
@@ -233,6 +233,15 @@ Sesi ini melakukan **verifikasi kode langsung** ke repo (bukan hanya membaca dok
 | Field `impact`, `urgency`, `waiting_log` di form Ticket | ❌ "Tidak muncul di UI" | ✅ **Sudah ada di `field_order`** — ketiga field terdaftar di `nexthd_ticket.json`. Kalau masih tidak muncul di UI, coba `bench clear-cache` + `bench restart` |
 
 > **Catatan:** Perbedaan antara catatan lama dan kondisi aktual kemungkinan disebabkan oleh sesi tambahan yang tidak sempat didokumentasikan di HANDOFF. Ini menegaskan aturan wajib: **selalu verifikasi kode langsung, jangan percaya 100% pada catatan**.
+
+## 🆕 Item BARU Ditemukan (belum pernah tercatat sebagai open item sebelumnya)
+
+Saat cross-check `calculate_sla()` di `nexthd_ticket.py` terhadap keputusan desain tabel di atas (19 Agustus: *"Titik mulai `sla_resolution_by`: Saat tombol Mulai Kerjakan diklik, bukan saat tiket dibuat"*), ditemukan kode **belum mengimplementasikan keputusan ini**:
+
+- `calculate_sla()` hanya dipanggil di `validate()`, dan hanya kalau `self.is_new()` — artinya SLA (response DAN resolution) dihitung **sekali saja, dari `now_datetime()` saat ticket di-insert**.
+- `hooks.py` → `doc_events["NextHD Ticket"]` hanya punya `on_insert` (notify Telegram) dan `on_update` (notify Telegram) — **tidak ada logic yang memanggil ulang `calculate_sla()` atau menggeser `sla_resolution_by` saat status berubah ke "Sedang Dikerjakan"**.
+- Dampak: tiket yang "nganggur" lama di status Baru sebelum dikerjakan agent akan salah hitung waktu resolusi (mundur dari saat insert, padahal seharusnya dari saat mulai dikerjakan) — makin lama nganggur, makin besar risiko SLA breach palsu/dini.
+- Ditambahkan sebagai **item T** (prioritas tinggi) di `docs/SUMMARY.md §2`. Terkait erat dengan item B (pause/resume SLA saat Menunggu User) — sebaiknya dikerjakan dalam satu batch karena sama-sama menyentuh ulang logic `sla_resolution_by` di titik transisi status.
 
 ## ❌ OPEN ITEMS per 22 Agustus 2026 (Final, Terverifikasi dari Kode)
 
@@ -245,6 +254,7 @@ Untuk daftar lengkap dengan kategorisasi prioritas, lihat `docs/SUMMARY.md §2`.
 | A | Logic priority otomatis dari matriks Impact × Urgency di `nexthd_ticket.py` — field `impact`/`urgency` sudah ada tapi tidak dipakai |
 | B | Pause/resume SLA saat "Menunggu User" — tidak ada hook di `nexthd_ticket.py` yang menghitung durasi pause dari `waiting_log` dan menambahkannya ke `sla_resolution_by` |
 | C | Override permission `priority` untuk Agent Manager / IT Manager — saat ini `read_only=1` global tanpa pengecualian per role |
+| T | `sla_resolution_by` tidak recalculate saat "Mulai Kerjakan" diklik — SLA masih dihitung dari waktu insert, bukan dari waktu mulai dikerjakan sesuai keputusan 19 Agustus |
 
 ### 🟡 Kode Sudah Ada, Perlu Deploy/Verifikasi di Produksi
 
