@@ -507,3 +507,129 @@ tapi belum pernah ditest jalan atau tidak.
 | Titik mulai `sla_resolution_by` | **Saat tombol "Mulai Kerjakan" diklik**, bukan saat tiket dibuat. `sla_response_by` tetap dari awal |
 | Status "Menunggu User" | **Pause SLA Resolution**, dengan wajib isi alasan (`question`) dan riwayat tersimpan di child table `NextHD Ticket Waiting Log` |
 | Hari libur | Cukup `NextHD Holiday` (tanggal libur nasional), tanpa konsep cuti bersama |
+
+
+# UPDATE — 20–21 Agustus 2026 (Telegram, Web Form Requester, Dedup Workflow)
+
+## Konteks Sesi Ini
+
+Melanjutkan dari Update 19 Agustus. Fokus sesi 20–21 Agustus: (1) tuntaskan bug Telegram
+notification, (2) portal Web Form untuk role Requester, (3) bersihkan duplikasi workflow
+transition, (4) perbaikan kecil workspace dashboard (Number Card, shortcut). **SLA/business
+hours TIDAK disentuh di sesi ini** — lihat catatan verifikasi di bagian bawah.
+
+## ✅ SELESAI & TERVERIFIKASI (20 Agustus)
+
+### 17. Bug Telegram — Root Cause Ditemukan & Diperbaiki
+**Status:** ✅ Selesai (20 Agustus 2026), diverifikasi ulang lewat pembacaan kode 21 Agustus
+
+Root cause: `get_bot_token()` dan `is_telegram_enabled()` di `utils/telegram.py` sempat
+memakai `frappe.db.get_single_value()`, padahal `NextHD Settings` **bukan Single DocType**
+(record biasa). Diperbaiki jadi `frappe.db.get_value("NextHD Settings", {}, "...")`. Bug
+serupa juga ada di `frappe.logger().info()` pada `check_sla_response_breach` (`tasks.py`).
+
+Setelah fix ini (`fb9369c`), ada iterasi lanjutan (`14c3e2d` "Update telegram", `2b29954`
+"Update lagi"):
+- `nexthd_user_profile.js` dibuat baru lalu di-refactor besar (+110/-81 baris) — kemungkinan
+  UI untuk generate/tampilkan kode link Telegram (OTP)
+- `telegram_webhook.py` diperluas (+53/-18) — kemungkinan handler `/start` + kode OTP untuk
+  proses linking akun
+- Field baru ditambahkan ke `nexthd_user_profile.json` (+14, lalu +24/-3 lagi tgl 21)
+
+**Verifikasi kode langsung (21 Agustus, sesi ini):** dibaca ulang isi `utils/telegram.py`
+saat ini di repo — konsisten dengan fix di atas, `get_bot_token()` dan `is_telegram_enabled()`
+sudah pakai `frappe.db.get_value()` yang benar, alur `generate_telegram_link_code()` dan
+`link_telegram_account()` sudah lengkap ada. **Belum diverifikasi end-to-end di server
+produksi** (kirim pesan asli ke Telegram) — baru verifikasi source code.
+
+### 18. Web Form "Tiket Saya" untuk Role Requester (PR #6)
+**Status:** ✅ Merged ke `main` (20 Agustus 2026) — **⚠️ belum dideploy ke `desk.ciptamebel.co.id`**
+
+- Web Form baru untuk role Requester bikin tiket sendiri tanpa akses Desk penuh
+- Field: `ticket_type`, `subject`, `description`, `category`, `service_catalog` (depends_on),
+  `affected_asset`, `attachments`
+- `requested_by` auto-terisi dari `frappe.session.user`
+- Ditambahkan ke fixture `hooks.py`
+- Sekaligus: semua string notifikasi Telegram dibungkus `frappe._()` untuk i18n, terjemahan
+  ditambahkan ke `id.csv`
+
+**Perlu dilakukan:** deploy ke server produksi (`bench migrate` + verifikasi Web Form muncul
+dan bisa dipakai role Requester).
+
+### 19. Dedup 21 Workflow Transition Duplikat
+**Status:** ✅ Selesai (20 Agustus 2026)
+
+Ditemukan 21 workflow transition dengan `idx=0` yang terduplikasi di 3 workflow (Ticket,
+Problem, Change Request) — kemungkinan besar sisa dari insiden re-import yang sama dengan
+yang menyebabkan item #9 (transisi "Convert to Known Error" muncul lagi tanpa disengaja,
+lihat Update 15 Agustus). Dibersihkan via SQL, di-export ulang ke fixture (`docfield.json`,
+`property_setter.json`, `workflow_transition.json` — regenerasi penuh, +4929/-121 baris).
+Regression test `apply_workflow()` dijalankan ulang, semua lulus.
+
+**Catatan:** karena root cause pastinya belum dikonfirmasi (dugaan re-import), sama seperti
+item #9, kemungkinan bisa muncul lagi kalau proses import/migrate yang sama terulang. Belum
+ada guard permanen untuk cegah duplikasi ini terjadi lagi.
+
+## ✅ SELESAI & TERVERIFIKASI (21 Agustus)
+
+### 20. Fix Dashboard: Number Card Tidak Muncul
+**Status:** ✅ Selesai (21 Agustus 2026)
+
+Root cause: field di `nexthd.json` (workspace) pakai nama lama `card_name`, seharusnya
+`number_card_name` di Frappe v16. Diperbaiki + sync ulang `web_form.json`, `workflow.json`,
+`workflow_transition.json` sekaligus (kemungkinan reekspor fixture rutin, bukan perubahan
+logic).
+
+### 21. Fix Shortcut `doc_view` NextHD Settings
+**Status:** ✅ Selesai (21 Agustus 2026)
+
+Value `doc_view: "Form"` pada shortcut NextHD Settings di workspace **invalid** di Frappe v16
+(bukan opsi valid untuk field ini) — dikosongkan. Perbaikan 1 baris, kemungkinan gejala yang
+sama dengan pola bug value-usang lain yang pernah ditemukan sebelumnya (lihat item 5 di
+Update 19 Agustus: `naming_rule` juga sempat berisi value usang tidak valid).
+
+## ⚠️ VERIFIKASI SILANG — SLA MASIH BELUM SESUAI KEPUTUSAN 19 AGUSTUS
+
+**Penting:** sempat ada asumsi bahwa item SLA (Open Items #1–7 di Update 19 Agustus) sudah
+selesai dikerjakan di sesi 20–21 Agustus. **Setelah membaca langsung kode saat ini di repo
+(21 Agustus, sesi ini), ternyata belum** — tidak ada satupun commit 20–21 Agustus yang
+menyentuh file terkait SLA/business hours. Detail temuan:
+
+| Item (dari Open Items 19 Agustus) | Status Aktual (dicek dari kode 21 Agustus) |
+|---|---|
+| #1 `business_hours.py` ditulis ulang jadi all-or-nothing | ❌ **Belum**. Kode saat ini (`add_working_time`) masih logic **partial carry-over**: kalau durasi tidak muat hari ini, sisa menit dikurangi lalu dilanjutkan ke hari kerja berikutnya — persis pola lama yang menurut keputusan A (19 Agustus) seharusnya diganti "seluruh durasi diulang dari awal jam kerja berikutnya" |
+| #5 Logic `nexthd_ticket.py` (priority matrix, tombol "Mulai Kerjakan", pause/resume) | ❌ **Belum ada sama sekali**. Isi `nexthd_ticket.py` saat ini: `calculate_sla()` masih dipanggil langsung di `validate()` saat dokumen baru dibuat (pakai `now_datetime()` sebagai titik mulai) — **belum** dipindah ke titik "Mulai Kerjakan" sesuai Keputusan D. Tidak ada field `impact`/`urgency` dipakai untuk hitung `priority` otomatis |
+| #6 Tombol workflow "Mulai Kerjakan" | ❓ Belum dicek langsung ke `workflow.json`/`workflow_transition.json` terbaru — perlu verifikasi manual |
+| #2, #3, #4, #7 (field tidak muncul di form, halaman 404, Holiday di sidebar, permission level) | ❓ Belum ada bukti dari commit manapun bahwa ini sudah ditangani |
+
+**Kesimpulan:** SLA sadar jam kerja (all-or-nothing, prioritas otomatis, titik mulai
+"Mulai Kerjakan", pause saat Menunggu User) **masih dalam kondisi yang sama seperti akhir
+19 Agustus** — bukan sudah selesai. File `business_hours.py` yang berjalan sekarang di
+produksi kemungkinan masih pakai logic draft/partial carry-over yang menurut catatan 19
+Agustus sendiri **"BELUM ditulis ulang sesuai keputusan final"**.
+
+➡️ **Rekomendasi:** jangan anggap Open Items SLA (19 Agustus) sudah tertutup. Perlu sesi
+khusus terpisah untuk benar-benar mengerjakan: (1) tulis ulang `business_hours.py` jadi
+all-or-nothing, (2) tulis logic priority matrix + hook "Mulai Kerjakan" + pause/resume di
+`nexthd_ticket.py`/`nexthd_ticket.json` field_order, (3) cek halaman SLA Policy 404, (4) cek
+Holiday di sidebar.
+
+## ❌ OPEN ITEMS (Update 21 Agustus — Menggantikan Daftar 16 Agustus, Menambahkan ke SLA 19 Agustus)
+
+1. **Semua Open Items SLA dari 19 Agustus (#1–7) — MASIH TERBUKA**, lihat tabel verifikasi
+   di atas. Ini prioritas tertinggi untuk sesi berikutnya.
+2. **Deploy PR #6 (Web Form Requester + Telegram i18n) ke server produksi** — sudah merged
+   ke `main` sejak 20 Agustus tapi belum di-`bench migrate` di `desk.ciptamebel.co.id`
+   (perlu konfirmasi status ini di sesi berikutnya, bisa saja sudah dideploy manual tanpa
+   tercatat di sini).
+3. **Verifikasi end-to-end Telegram di server produksi** — source code sudah benar, tapi
+   belum ada bukti tertulis kirim-terima pesan Telegram nyata berhasil setelah semua fix.
+4. **File `HANDOFF_SLA_NextHD_2026-08-19.md`** yang disebut di Update 19 Agustus **tidak
+   pernah ter-commit ke repo** (dicek via riwayat commit path, hasil kosong). Kalau file itu
+   masih ada di server (belum di-`git add`), sebaiknya di-commit supaya tidak hilang.
+5. **Guard permanen untuk cegah duplikasi workflow transition terulang** (root cause dugaan
+   re-import di item #9/#19 belum dikonfirmasi pasti, jadi belum ada guard).
+6. Item lama yang belum tersentuh dari Update 16 Agustus: fitur Attach Image + kompresi
+   foto, skenario test data D/E/F, generalisasi domain non-IT (masih wacana, tidak mendesak).
+
+---
