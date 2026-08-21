@@ -3,7 +3,7 @@
 > State machine untuk Ticket, Problem, Change Request + sistem notifikasi Telegram.
 > File ini paling sering dirujuk saat debugging workflow.
 >
-> **Last updated:** 2026-08-15 WIB
+> **Last updated:** 2026-08-22 00:45 WIB
 
 ---
 
@@ -37,6 +37,10 @@
 > selain baris terakhir di atas (approval CR). Dicatat sebagai kandidat fitur tambahan
 > di `HANDOFF.md` sesi 2026-08-15.
 
+> ⚠️ **Pesan "Peringatan SLA Response"** di `check_sla_response_breach()` (`tasks.py`) masih pakai
+> f-string mentah — belum dibungkus `frappe._()`. Luput dari scope PR #6 karena ada di `tasks.py`,
+> bukan `telegram.py`. Dicatat sebagai open item prioritas rendah.
+
 ### Implementasi Teknis
 
 - File: `nexthd/next_helpdesk/utils/telegram.py`
@@ -45,15 +49,16 @@
 - Guard `is_telegram_enabled()` ada di semua fungsi publik
 - Webhook URL: `POST /api/method/nexthd.next_helpdesk.api.telegram_webhook.telegram_webhook`
 
+### Catatan i18n
+
+✅ **Sudah dikerjakan (PR #6, merged 2026-08-20):** semua string notifikasi di `telegram.py` sudah dibungkus `frappe._()`, terjemahan ditambahkan ke `id.csv`. **Belum di-deploy ke server produksi** — perlu `git pull` + `bench migrate` terlebih dulu.
+
 ### Bug yang Sudah Difix di telegram.py
 
 1. `frappe.requests.post()` → `requests.post()` (`frappe.requests` tidak ada)
 2. `frappe.enqueue("_send_ticket_created_notification")` → wajib full path: `"nexthd.next_helpdesk.utils.telegram._send_ticket_created_notification"` (berlaku untuk 6 fungsi)
 3. Parameter `link_telegram_account(user, telegram_username, verification_code)` → renamed ke `chat_id`
-
-### Catatan i18n (belum dikerjakan, prioritas rendah)
-
-Pesan Telegram saat ini **hardcoded Bahasa Indonesia** di `telegram.py`. Untuk multi-bahasa, perlu dibungkus `frappe._("...")` + file terjemahan `en.csv`. Field `preferred_language` di NextHD User Profile sudah ada tapi belum dipakai.
+4. `frappe.db.get_single_value("NextHD Settings", ...)` → `frappe.db.get_value("NextHD Settings", {}, ...)` karena `NextHD Settings` bukan Single DocType (`issingle=0`) — fix di-commit `fb9369c`
 
 ---
 
@@ -62,16 +67,24 @@ Pesan Telegram saat ini **hardcoded Bahasa Indonesia** di `telegram.py`. Untuk m
 ### Workflow 1: NextHD Ticket
 
 ```
-Baru → Sedang Dikerjakan → [Menunggu User ⇄ Sedang Dikerjakan] → Selesai → Ditutup
-                                                                       ↓
-                                                             (User bisa Buka Kembali)
+Baru → [Mulai Kerjakan] → Sedang Dikerjakan → [Tunggu User] → Menunggu User
+                                │                                    │
+                                │ [Lanjut Kerjakan] ←────────────────┘
+                                │
+                                ↓ [Selesaikan]
+                              Selesai → [Konfirmasi Selesai] → Ditutup
+                                ↑           │
+                                │           └→ [Buka Kembali] → Baru
 ```
 
 | Role | Aksi yang Diizinkan |
 |---|---|
-| Agent | Baru → Sedang Dikerjakan, → Menunggu User, → Selesai |
-| Requester | Selesai → Ditutup (konfirmasi) ATAU Selesai → Baru (buka kembali) |
+| Agent | Mulai Kerjakan, Tunggu User, Lanjut Kerjakan, Selesaikan |
+| Requester | Konfirmasi Selesai (→ Ditutup) ATAU Buka Kembali (→ Baru) |
 | Agent Manager | Bisa override semua transisi |
+
+> ✅ **Diverifikasi dari kode repo (2026-08-22):** Semua 7 transisi ada di `nexthd_ticket_workflow.json`,
+> termasuk "Mulai Kerjakan" (Baru → Sedang Dikerjakan). State "Ditutup" memiliki `doc_status: "1"`.
 
 > **Ticket tidak wajib berhubungan dengan Problem.** Kebanyakan tiket (misal reset password,
 > permintaan layanan rutin) selesai dan ditutup langsung tanpa pernah melalui alur Problem.
@@ -247,7 +260,7 @@ Setelah diimport manual, ketemu 7 bug field berlapis:
 
 **Catatan penting:** Master data (`Workflow State`, `Workflow Action Master`) **tidak** masuk fixtures (ini master global Frappe, bukan per-app). Kalau install di server baru, harus dibuat ulang manual.
 
-**Status akhir:** 3 Workflow live, `is_active=1`, transitions lengkap (Ticket 7, Problem 5, Change Request 11).
+**Status akhir:** 3 Workflow live, `is_active=1`, transitions lengkap (Ticket 7, Problem 6+1cond, Change Request 8).
 
 ### ✅ RESOLVED (2026-08-11) — Bug `update_field` Overwrite Status jadi `None`
 
@@ -331,6 +344,10 @@ frappe.db.commit()
 `known_error` sudah terisi. Diverifikasi manual di browser — field kosong = tombol tidak
 muncul, field terisi = tombol muncul.
 
+### ✅ RESOLVED (2026-08-19 & 2026-08-20) — Dedup Workflow Transition (Dua Kali)
+
+Ditemukan dua kali: pertama 2026-08-19 (prefix `ai9*`, filter per-nama), kedua 2026-08-20 (pola konsisten `idx = 0` di semua 3 workflow). Keduanya difix via SQL DELETE dan fixture di-export ulang. Regression test `apply_workflow()` lulus setelah fix kedua. Detail di `POLA_KERJA_DAN_BUG.md §4`.
+
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-15 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 00:45 WIB.*
