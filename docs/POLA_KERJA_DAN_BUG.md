@@ -3,7 +3,7 @@
 > Frappe quirks, aturan wajib saat coding/debug, dan riwayat bug per sesi.
 > File ini yang paling sering bertambah tiap sesi baru.
 >
-> **Last updated:** 2026-08-20 15:30 WIB
+> **Last updated:** 2026-08-22 00:35 WIB
 
 ---
 
@@ -271,13 +271,12 @@ Root cause awal: `calculate_sla()` lama pakai `add_to_date()` mentah, sama sekal
 
 **Yang dikerjakan:**
 - `business_hours.py` (utils) — bug lama: `WEEKDAY_MAP` pakai nama Inggris (Monday dst) padahal `tabNextHD Business Hours` isinya nama Indonesia (Senin dst), jadi `get_business_hours()` selalu `None`. Diperbaiki ke nama Indonesia.
-- `add_working_time()` ditulis ulang jadi versi loop (mengurangi sisa menit per hari kerja, lompat ke hari kerja berikutnya) — menangani durasi multi-hari (Sedang 2 hari, Rendah 1 minggu).
+- `add_working_time()` ditulis ulang jadi versi loop all-or-nothing (kalau durasi tidak muat sebelum jam pulang, seluruh durasi diulang dari jam kerja berikutnya) — menangani durasi multi-hari (Sedang 2 hari, Rendah 1 minggu).
 - `NextHD SLA Policy` — field diubah jadi `response_value`+`response_unit` dan `resolution_value`+`resolution_unit` (Menit/Jam/Hari), auto-terhitung ke `response_time_minutes`/`resolution_time_minutes` via controller `validate()`.
-- Data SOP final (semua business hours): Kritis response 15 menit/resolusi 1 jam, Tinggi response 30 menit/resolusi 4 jam, Sedang response 60 menit/resolusi 2 hari kerja, Rendah response 120 menit/resolusi 7 hari kerja. `is_24x7 = 0` untuk semua priority.
-- **Root cause kenapa fix sebelumnya "belum jalan":** `calculate_sla()` di `nexthd_ticket.py` ternyata **belum pernah benar-benar diarahkan** memanggil `add_working_time()` — masih memanggil `add_to_date()` mentah. Klaim sesi sebelumnya bahwa fungsi "sudah ditulis ulang" tidak akurat; diverifikasi langsung via `grep` di file disk.
-- Fix final: tambah import `from nexthd.next_helpdesk.utils.business_hours import add_working_time`, replace body `calculate_sla()` agar memanggil `add_working_time(now, minutes, is_24x7=...)` untuk `sla_response_by` dan `sla_resolution_by`.
+- Data SOP final: Kritis response 15 menit/resolusi 1 jam, Tinggi response 30 menit/resolusi 4 jam, Sedang response 60 menit/resolusi 2 hari kerja, Rendah response 120 menit/resolusi 7 hari kerja. `is_24x7 = 0` untuk semua priority.
+- Fix final: tambah import `from nexthd.next_helpdesk.utils.business_hours import add_working_time`, replace body `calculate_sla()` agar memanggil `add_working_time(now, minutes, is_24x7=...)`.
 
-**Verifikasi test 1 — Insert ticket individual (2026-08-20 05:32 WIB):**
+**Verifikasi test (2026-08-20 05:32 WIB):**
 
 | Field | Hasil | Status |
 |---|---|---|
@@ -287,21 +286,11 @@ Root cause awal: `calculate_sla()` lama pakai `add_to_date()` mentah, sama sekal
 
 Ticket test: `TKT-2608-0004`. Sudah di-commit (`8d3f26d`) dan push ke `origin/main`.
 
-**Verifikasi test 2 — Report "Tiket per Prioritas" produksi (2026-08-20 11:10 WIB):**
+> ✅ **Diverifikasi ulang dari kode di repo (2026-08-22):** `business_hours.py` dan `nexthd_ticket.py` dikonfirmasi sudah sesuai — `add_working_time()` dengan loop per-hari, dan `calculate_sla()` sudah memanggil `add_working_time()` dengan benar.
 
-Dari 3 custom report (`Tiket per Bulan`, `Tiket per Kategori`, `Tiket per Prioritas`), hanya **Tiket per Prioritas** yang memakai kolom `sla_resolution_by` (untuk hitung breach SLA) — 2 report lain tidak terdampak bug ini. Dijalankan via `frappe.desk.query_report.run(...)` filter `2026-01-01` s/d `2026-12-31`:
+### ✅ SELESAI — Bug Session 2026-08-20 (Dedup Transisi Workflow — Kedua Kalinya) & Regression Test
 
-| Prioritas | Jumlah Tiket | Rata-rata Resolusi (jam) | Breach SLA |
-|---|---|---|---|
-| Kritis | 1 | — (belum resolved) | 0 |
-| Sedang | 9 | 5.5 | 0 |
-| **Total** | **10** | **5.5** | **0** |
-
-Query jalan tanpa error, kolom breach SLA terhitung normal (0 karena belum ada tiket yang lewat SLA di data testing). **Backlog SLA — SELESAI 100%, tidak ada item tersisa.**
-
-### ✅ SELESAI — Bug Session 2026-08-20 (Dedup Transisi Workflow — Kedua Kalinya) & Regression Test — DITUTUP TOTAL
-
-**Temuan:** Saat menyiapkan regression test `apply_workflow()`, ditemukan **seluruh 21 transisi di 3 workflow terduplikasi 2x** (total 42 baris di `tabWorkflow Transition`) — mirip pola bug 2026-08-19, tapi kali ini polanya konsisten: semua baris duplikat punya **`idx = 0`**, sementara baris asli punya `idx` berurutan 1 s/d N. Kemungkinan besar muncul kembali lewat mekanisme yang sama seperti kasus sebelumnya (re-import/edit tidak tercatat).
+**Temuan:** Seluruh 21 transisi di 3 workflow terduplikasi 2x (total 42 baris) — semua baris duplikat punya **`idx = 0`**.
 
 **Fix:**
 ```python
@@ -310,9 +299,7 @@ frappe.db.commit()
 ```
 Hasil: 42 → 21 baris. Breakdown final: Ticket 7, Problem 6, Change Request 8. Fixture di-export ulang dan di-push ke `main`.
 
-**Bug turunan yang ketemu saat testing — Counter `tabSeries` tidak sinkron:** Saat regression test coba insert `NextHD Problem` baru, kena `DuplicateEntryError: PRB-2608-0003` padahal filter `title LIKE 'REGTEST%'` kosong. Investigasi: `tabSeries` untuk `PRB-2608-` nyangkut di `current=2`, padahal data fisik (dari sesi testing 15-16 Agustus, bukan data REGTEST) sudah sampai `PRB-2608-0005`. Disinkronkan manual: `UPDATE tabSeries SET current = (SELECT MAX nomor dari data fisik)`. Dicatat sebagai aturan wajib baru di §3.
-
-**Regression test `apply_workflow()` — hasil akhir, semua LULUS:**
+**Regression test `apply_workflow()` — semua LULUS:**
 
 | Workflow | Jalur Ditest | Hasil |
 |---|---|---|
@@ -322,52 +309,23 @@ Hasil: 42 → 21 baris. Breakdown final: Ticket 7, Problem 6, Change Request 8. 
 | NextHD Change Request | Draft → Diajukan → Direview → Disetujui → Implementasi → Selesai → Ditutup | ✅ |
 | Transisi tidak valid (skip step) | Ditolak dengan `WorkflowTransitionError` sesuai harapan | ✅ |
 
-Data test (`TKT-2608-0004`, `TKT-2608-0005`, `PRB-2608-0006`, `PRB-2608-0007`, `CHG-2608-0002`) sudah dibersihkan setelah verifikasi. **Ketiga workflow terverifikasi bersih dari transisi ambigu, tidak ada bug `update_field`, dan validasi jalur tidak valid tetap ketat.**
+### ✅ SELESAI (FIX DI-COMMIT) — Bug Session 2026-08-20 (Bot Telegram Tidak Balas)
 
-### 🔴 SEDANG DIKERJAKAN — Bug Session 2026-08-20 (Bot Telegram Tidak Balas) — BELUM SELESAI, LANJUTKAN SESI BERIKUTNYA
+**Root cause #1 (kritis) — sudah difix, sudah di-commit (`fb9369c`):**
+`get_bot_token()` dan `is_telegram_enabled()` di `telegram.py` pakai `frappe.db.get_single_value("NextHD Settings", ...)`. Tapi `NextHD Settings` `issingle=0` (BUKAN Single DocType) — `get_single_value()` selalu return `None`. Fix: ganti ke `frappe.db.get_value("NextHD Settings", {}, field)`.
 
-**Konteks:** Bot Telegram `@cmlhelpdesk_bot` sudah dibuat (via @BotFather), token sudah diisi & disave di **NextHD Settings**, webhook sudah di-set dan terverifikasi OK via `getWebhookInfo` (tidak ada `last_error_message`, `pending_update_count: 0` — Telegram berhasil kirim update & dapat respons 200). **TAPI bot tidak pernah balas** ke `/start` maupun `/link <username>` yang dikirim berkali-kali dari Telegram (semua centang biru terkirim, nol balasan dari bot).
+**Root cause #2 (flooding error log) — sudah difix bersamaan:**
+`frappe.logger.info(...)` (kurang kurung) di `check_sla_response_breach()` → `tasks.py`. Fix ke `frappe.logger().info(...)`.
 
-**Root cause #1 — DITEMUKAN & sudah difix di file, TERKONFIRMASI via `grep` (2026-08-20):**
-`get_bot_token()` dan `is_telegram_enabled()` di `nexthd/next_helpdesk/utils/telegram.py` pakai `frappe.db.get_single_value("NextHD Settings", ...)`. Tapi `NextHD Settings` **`issingle: 0`** (BUKAN Single DocType, cuma 1 record biasa bernama `3jn1jihj28`, dikonfirmasi via console). `get_single_value()` baca dari tabel `tabSingles` yang kosong untuk DocType non-Single, jadi selalu return `None` walau token sudah diisi di UI.
+**Bug ke-3 (prioritas rendah, belum difix):**
+Pesan "Peringatan SLA Response" di `tasks.py` masih pakai f-string mentah (bukan `frappe._()`). Luput dari scope PR #6 karena ada di `tasks.py`, bukan `telegram.py`.
 
-Fix diterapkan (dikonfirmasi via `grep` line 19 & 370 sudah versi baru):
-```python
-# telegram.py line 19
-return frappe.db.get_value("NextHD Settings", {}, "telegram_bot_token")
-# telegram.py line 370
-enabled = frappe.db.get_value("NextHD Settings", {}, "enable_telegram_notification")
-```
+**⚠️ STATUS AKHIR:** Fix sudah di-commit ke repo. **Belum ada konfirmasi retest end-to-end** (bot balas `/start` di Telegram nyata setelah `bench restart`). Lihat item E di `SUMMARY.md §2` untuk next steps verifikasi.
 
-**Root cause #2 — bug terpisah (tidak menghalangi Telegram langsung, tapi flooding Error Log tiap 4 menit):**
-`check_sla_response_breach()` di `tasks.py` pakai `frappe.logger.info(...)` (kurang kurung — lihat aturan baru di §3). Fix sudah ditulis di script yang sama dengan fix #1, **BELUM dikonfirmasi ulang via grep apakah masuk ke `tasks.py`** — perlu dicek ulang sesi berikutnya.
-
-**Bug ke-3 ditemukan, BELUM difix, prioritas rendah:**
-Pesan Telegram "Peringatan SLA Response" di `check_sla_response_breach()` (`tasks.py`) masih pakai f-string mentah, bukan `frappe._()` — event ini luput dari scope i18n PR #6 (Devin cuma cover 6 event di `telegram.py`, event ini ada di `tasks.py` jadi tidak ke-cover).
-
-**STATUS TERAKHIR:** Fix #1 sudah dikonfirmasi ada di file, tapi bot MASIH belum balas setelah fix ini. Kemungkinan besar `bench restart` belum dijalankan setelah fix (user tidak yakin sudah restart atau belum) — proses Frappe worker mungkin masih load kode versi lama di memory. Belum ada retest setelah `bench restart` dipastikan jalan.
-
-**NEXT STEPS untuk sesi berikutnya (urutan):**
-1. `grep -n "frappe.logger" nexthd/next_helpdesk/tasks.py` — pastikan fix #2 juga masuk
-2. **WAJIB:** `bench --site desk.ciptamebel.co.id clear-cache` + `bench restart`
-3. Retest: kirim `/start` ke @cmlhelpdesk_bot dari Telegram, tunggu balasan
-4. Kalau masih tidak balas: cek Error Log lagi (script sama seperti sebelumnya) — kalau error BEDA dari "token not configured", ada root cause baru
-5. Kalau sudah balas: `/link test.requester`, cek `NextHD User Profile` untuk `test.requester@ciptamebel.co.id` — field `telegram_chat_id` harus OTOMATIS terisi angka numerik (bukan diisi manual)
-6. Commit + push fix `telegram.py` dan `tasks.py` ke GitHub (BELUM di-push sama sekali — perubahan baru ada di disk server):
-   ```bash
-   cd /home/it/frappe/apps/nexthd
-   git add nexthd/next_helpdesk/utils/telegram.py nexthd/next_helpdesk/tasks.py
-   git commit -m "fix: get_bot_token/is_telegram_enabled tidak pakai get_single_value (NextHD Settings bukan Single doctype); fix frappe.logger().info() di check_sla_response_breach"
-   git push origin main
-   ```
-7. Setelah Telegram jalan: lanjut testing Web Form `/tiket-saya` (PR #6, belum sempat ditest — tertunda karena dialihkan ke debug Telegram). Checklist: field yang tampil/tersembunyi sesuai spek Issue #4, `requested_by` auto-fill dari session user, isolasi data antar Requester
-8. Setelah semua lolos: update tabel status di §2 `SUMMARY.md` (item #1 dan #4 → SELESAI), tambahkan entri bug baru ini (get_single_value + frappe.logger) sebagai closed di sini
-
-**Catatan tambahan:**
-- User sempat isi manual field `Telegram Chat ID`/`Telegram Username` di NextHD User Profile dengan username (`@Silver_efendy`, SALAH — field itu harus numeric chat_id) — sudah dihapus total (record NextHD User Profile untuk test.requester dihapus, dikonfirmasi list kosong)
-- User test `test.requester@ciptamebel.co.id` (role Requester, format email dummy baru — lihat `ARSITEKTUR.md §5`) sudah ada, password sudah di-set manual
-- **Token bot Telegram tidak pernah dicatat di dokumentasi/GitHub ini** — hanya ada di NextHD Settings di server, sesuai praktik keamanan project
+**Catatan penting:**
+- User test `test.requester@ciptamebel.co.id` (role Requester) sudah ada, password sudah di-set
+- **Token bot Telegram tidak dicatat di dokumentasi/GitHub** — hanya ada di NextHD Settings di server
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-20 15:30 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 00:35 WIB.*
