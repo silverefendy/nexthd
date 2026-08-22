@@ -6,6 +6,8 @@ from nexthd.next_helpdesk.utils.business_hours import add_working_time
 
 class NextHDTicket(Document):
 	def validate(self):
+		self._priority_set_by_matrix_this_save = False
+		self.set_priority_from_matrix()
 		self.validate_assigned_user()
 		if self.is_new():
 			self.calculate_sla()
@@ -17,6 +19,32 @@ class NextHDTicket(Document):
 		if self.assigned_to:
 			if not frappe.db.exists("User", self.assigned_to):
 				frappe.throw(f"User {self.assigned_to} tidak ditemukan")
+
+	def set_priority_from_matrix(self):
+		# Check if priority was manually set by a manager (permlevel-1 write)
+		if not self.is_new() and self.has_value_changed("priority") and not self._priority_set_by_matrix_this_save:
+			self.priority_manually_set = 1
+		
+		# If manually set, skip auto-calculation
+		if self.priority_manually_set:
+			return
+		
+		# Only calculate if both impact and urgency are set
+		if not self.impact or not self.urgency:
+			return
+		
+		# Priority matrix
+		matrix = {
+			("Tinggi", "Tinggi"): "Kritis",
+			("Tinggi", "Rendah"): "Tinggi",
+			("Rendah", "Tinggi"): "Sedang",
+			("Rendah", "Rendah"): "Rendah"
+		}
+		
+		matrix_priority = matrix.get((self.impact, self.urgency))
+		if matrix_priority:
+			self.priority = matrix_priority
+			self._priority_set_by_matrix_this_save = True
 
 	def on_update(self):
 		self.update_timestamps()
