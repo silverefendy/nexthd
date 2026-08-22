@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-22 16:15 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
+> **Last updated:** 2026-08-22 19:15 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
 
 ---
 
@@ -10,6 +10,7 @@
 
 | File | Isi |
 |---|---|
+| `docs/FAQ.md` | **Wajib dibaca Devin pertama kali** — kurasi masalah berulang (Workspace/Desktop Icon pasca-migrate) + hal yang tidak boleh diubah tanpa izin |
 | `docs/SUMMARY.md` | **File ini** — index + project overview + status item belum dikerjakan |
 | `docs/ARSITEKTUR.md` | Infrastruktur, struktur app, DocType/field lengkap, permissions, schema tabel, label ID |
 | `docs/WORKFLOW.md` | Notifikasi Telegram + semua state machine + riwayat bug workflow |
@@ -44,6 +45,7 @@
 - Priority otomatis dari matriks Impact × Urgency, dengan override manual untuk Agent Manager/IT Manager (PR #7) — **✅ live + terverifikasi**
 - Multi-tim dengan assignment agent
 - Custom reports: Tiket per Bulan, Tiket per Kategori, Tiket per Prioritas (breach SLA)
+- Foto/gambar reusable & bisa di-link antar Ticket/Problem/Asset/Known Error — **🔶 status belum bisa dikonfirmasi**, lihat item W di §2
 
 ---
 
@@ -51,9 +53,15 @@
 
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `POLA_KERJA_DAN_BUG.md`.
 >
-> **Update 2026-08-22 16:15 WIB** — Item D, E, F, H (deploy PR #6, Telegram, permission reply, sidebar Holiday) sudah **diverifikasi live** via `bench console` di server produksi. **Backlog SLA/priority/deploy sejak 19 Agustus dinyatakan TUNTAS 100%.** Sisa open items sekarang murni fitur baru/usulan (kategori 🟢), tidak ada lagi bug atau item setengah-jadi.
+> **Update 2026-08-22 19:15 WIB** — Item D, E, F, H (deploy PR #6, Telegram, permission reply, sidebar Holiday) sudah **diverifikasi live** via `bench console` di server produksi. **Backlog SLA/priority/deploy sejak 19 Agustus dinyatakan TUNTAS 100%.** Ditambahkan `docs/FAQ.md` (kurasi masalah berulang untuk Devin). Item baru **W** (fitur foto) ditambahkan — prompt sudah diberikan ke Devin, status pengerjaan belum bisa dikonfirmasi karena server Devin offline (pemadaman listrik lokasi).
 
-### ✅ Semua Item Utama SUDAH Live & Terverifikasi (Update Sesi Ini)
+### 🔶 Sedang Menunggu Konfirmasi
+
+| # | Item | Keterangan | PIC |
+|---|---|---|---|
+| W | Fitur foto reusable (Ticket/Problem/Asset/Known Error) | Prompt lengkap sudah diberikan ke Devin (DocType `NextHD Photo` + `NextHD Photo Link`, galeri swipe, kompresi otomatis, auto-copy saat convert Ticket→Problem/Problem→Known Error). **Dicek langsung ke repo `main` (22 Agustus) — DocType belum ada, tidak ada PR baru terbuka.** Kemungkinan Devin belum sempat push sebelum server-nya padam. Perlu dicek ulang begitu Devin online kembali | Efendy |
+
+### ✅ Semua Item Utama SUDAH Live & Terverifikasi
 
 | # | Fitur | Bukti Verifikasi | PIC |
 |---|---|---|---|
@@ -77,7 +85,6 @@
 | K | Role assignment ke user spesifik | `support@ciptamebel.co.id` → role IT Manager. Keputusan: sementara 1 akun shared dulu | Efendy |
 | L | File `HANDOFF_SLA_NextHD_2026-08-19.md` | Disebut di HANDOFF.md tapi tidak ada di repo. Kalau masih ada di server, perlu `git add` + commit sebelum hilang | Efendy |
 | M | Guard permanen duplikasi workflow transition | Root cause re-import belum dikonfirmasi pasti, belum ada mekanisme pencegahan | Claude |
-| N | Fitur Attach Image + kompresi otomatis | Direncanakan tapi belum dikerjakan — perlu sesi tersendiri | Devin |
 | O | Dashboard "Aset Bermasalah" (Number Card) | Usulan, belum dikerjakan | - |
 | P | SLA otomatis untuk Problem/Change Request | Saat ini SLA hanya untuk Ticket | - |
 | Q | Notifikasi Telegram untuk Problem/CR | Sengaja ditunda, fokus ke fitur lain dulu | - |
@@ -94,6 +101,7 @@
 | [PR #6](https://github.com/silverefendy/nexthd/pull/6) | feat: Add Web Form for Requester role and Telegram i18n | Merged 2026-08-20 — **✅ dideploy & terverifikasi live 22 Agustus** |
 | [PR #7](https://github.com/silverefendy/nexthd/pull/7) | Task 1: Priority matrix otomatis + override permission | Merged 2026-08-22 10:13 WIB — **✅ live + terverifikasi** |
 | [PR #8](https://github.com/silverefendy/nexthd/pull/8) | Task 2: SLA resolution timing — mulai "Mulai Kerjakan", pause "Menunggu User" | Merged 2026-08-22 10:31 WIB, bugfix `76ce3e9` — **✅ live + terverifikasi** |
+| PR fitur foto (belum ada nomor) | Prompt diberikan ke Devin untuk `NextHD Photo` + `NextHD Photo Link` + galeri swipe | **🔶 Belum terkonfirmasi ada PR** — dicek 22 Agustus, DocType belum ada di `main`, server Devin offline |
 
 ---
 
@@ -120,7 +128,8 @@
 | Number Card dashboard (kolom `number_card_name`) | ✅ 2026-08-21 |
 | Shortcut `doc_view` NextHD Settings | ✅ 2026-08-21 |
 | Naming series seragam YY.MM semua DocType | ✅ 2026-08-19 |
+| `docs/FAQ.md` dibuat — kurasi masalah berulang untuk Devin | ✅ 2026-08-22 |
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 16:15 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 19:15 WIB.*
