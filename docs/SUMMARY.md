@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-22 01:20 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
+> **Last updated:** 2026-08-22 10:35 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
 
 ---
 
@@ -40,7 +40,8 @@
 - Workflow approval untuk Change Request (state machine terverifikasi via regression test, 2026-08-20)
 - Manajemen Problem dan Known Error (ITIL-lite)
 - Notifikasi real-time via Telegram Bot (string sudah i18n-ready via `frappe._()`, PR #6)
-- SLA monitoring otomatis berbasis jam kerja (warning 30 menit sebelum breach) — **verifikasi kode: sudah benar di repo, TAPI lihat item T untuk gap titik-mulai resolution**
+- SLA monitoring otomatis berbasis jam kerja (warning 30 menit sebelum breach), termasuk **titik-mulai resolution saat "Mulai Kerjakan" + pause/resume saat "Menunggu User"** (PR #8, merged 2026-08-22) — **kode sudah di `main`, belum di-deploy ke server produksi**
+- Priority otomatis dari matriks Impact × Urgency, dengan override manual untuk Agent Manager/IT Manager (PR #7, merged 2026-08-22) — **kode sudah di `main`, belum di-deploy ke server produksi**
 - Multi-tim dengan assignment agent
 - Custom reports: Tiket per Bulan, Tiket per Kategori, Tiket per Prioritas (breach SLA)
 
@@ -50,26 +51,23 @@
 
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `POLA_KERJA_DAN_BUG.md`.
 >
-> **Verifikasi kode langsung ke repo dilakukan 2026-08-22** — status di bawah mencerminkan kondisi aktual kode, bukan catatan sesi sebelumnya.
+> **Update 2026-08-22 10:35 WIB** — PR #7 dan PR #8 dari Devin sudah **merged ke `main`**. Item A, B, C, T (dan U, yang sebelumnya sudah dicommit langsung 2026-08-22 02:48 WIB) kini berstatus "kode selesai, menunggu deploy + test manual di server produksi", BUKAN lagi "belum ada di kode". Lihat §3 di bawah untuk cara test.
 
 ### 🔴 Prioritas Tinggi — Belum Ada di Kode
 
-| # | Fitur | Keterangan | PIC |
-|---|---|---|---|
-| A | Logic priority otomatis (Impact × Urgency) | Field `impact` & `urgency` sudah ada di `nexthd_ticket.json`, tapi `nexthd_ticket.py` **belum punya logic matriks sama sekali** — `priority` saat ini `read_only=1` tapi tidak pernah diisi otomatis. Desain: Tinggi+Tinggi=Kritis, Tinggi+Rendah=Tinggi, Rendah+Tinggi=Sedang, Rendah+Rendah=Rendah | Devin / Claude |
-| B | Pause/resume SLA saat "Menunggu User" | Child table `NextHD Ticket Waiting Log` sudah ada di JSON, tapi **tidak ada hook** di `nexthd_ticket.py` yang menghitung durasi pause dan menambahkannya ke `sla_resolution_by` saat transisi "Lanjut Kerjakan". Diverifikasi 2026-08-22: transisi "Lanjut Kerjakan" di `nexthd_ticket_workflow.json` juga polos, tidak ada `condition`/action pendukung apa pun | Devin / Claude |
-| C | Override permission `priority` untuk Agent Manager / IT Manager | Field `priority` di `nexthd_ticket.json` `read_only=1` di level field (bukan `permlevel`) — berlaku SAMA untuk semua role termasuk Agent Manager/IT Manager, tidak ada pengecualian. Perlu diubah ke `permlevel=1` + tambah baris permission `permlevel:1, write:1` untuk role Agent Manager & IT Manager di DocType permissions | Devin / Claude |
-| T | `sla_resolution_by` tidak recalculate saat "Mulai Kerjakan" diklik | Keputusan desain 19 Agustus: titik mulai `sla_resolution_by` seharusnya saat tombol "Mulai Kerjakan" diklik, bukan saat tiket dibuat. Tapi `calculate_sla()` di kode HANYA dipanggil di `validate()` saat `self.is_new()` — dihitung sekali dari `now_datetime()` saat insert, dan TIDAK ada hook `on_update`/workflow transition yang recalculate saat status berubah ke "Sedang Dikerjakan". Terkait erat dengan item B — sebaiknya dikerjakan sekaligus | Devin / Claude |
-| U | `NextHD SLA Policy` & `NextHD Business Hours` — `"permissions": []` kosong total | **BARU DITEMUKAN 2026-08-22.** Kedua DocType ini punya array `permissions` benar-benar kosong di JSON — dibandingkan dengan DocType master lain (`NextHD Team`, `NextHD Holiday`) yang semuanya punya baris permission eksplisit untuk `System Manager`/`Agent Manager`/`IT Manager`. DocType tanpa baris permission sama sekali membuatnya **hanya bisa diakses oleh Administrator** — role apa pun lainnya (termasuk System Manager/Agent Manager) akan kena `PermissionError` saat akses. **Ini kemungkinan besar akar masalah item G (404 di halaman NextHD SLA Policy)** — bukan soal cache/build seperti dugaan sebelumnya. Fix: tambah baris `permissions` (minimal System Manager + Agent Manager/IT Manager, read+write) ke kedua file JSON, lalu `bench migrate` | Devin / Claude |
+_Tidak ada item di kategori ini saat ini — seluruh item A, B, C, T, U sudah punya implementasi di `main` (lihat tabel Prioritas Sedang di bawah untuk status deploy)._
 
 ### 🟡 Prioritas Sedang — Kode Sudah Ada, Perlu Deploy/Verifikasi
 
 | # | Fitur | Keterangan | PIC |
 |---|---|---|---|
+| A+C | Priority matrix otomatis + override permission | **Merged via [PR #7](https://github.com/silverefendy/nexthd/pull/7)** (2026-08-22 10:13 WIB). `set_priority_from_matrix()` di `validate()`: Tinggi+Tinggi=Kritis, Tinggi+Rendah=Tinggi, Rendah+Tinggi=Sedang, Rendah+Rendah=Rendah. Field `priority` diubah dari `read_only=1` ke `permlevel=1` + permission `write:1` untuk Agent Manager & IT Manager di permlevel itu. Field baru `priority_manually_set` (Check, hidden) mencegah override manual tertimpa matrix lagi. 8 test case baru, semua skenario matrix + override tercover. **Belum di-`bench migrate`+test manual di server produksi** | Efendy |
+| B+T | Pause/resume SLA + recalculate saat "Mulai Kerjakan" | **Merged via [PR #8](https://github.com/silverefendy/nexthd/pull/8)** (2026-08-22 10:31 WIB). `on_update()` memanggil `handle_workflow_sla_transitions()`, deteksi `has_value_changed("status")` + `get_doc_before_save()`, 4 skenario: Baru→Sedang Dikerjakan (recalculate `sla_resolution_by` + set `responded_on`), Sedang Dikerjakan→Menunggu User (buat `waiting_log` entry), Menunggu User→Sedang Dikerjakan (tutup `waiting_log` + extend `sla_resolution_by` sebesar durasi pause), Menunggu User→Selesai (tutup `waiting_log` tanpa extend). Pakai `self.db_set(...)` (bukan `self.save()`) di dalam `on_update()` — risiko infinite recursion yang diwanti-wanti sebelumnya sudah ditangani dengan benar, ada test khusus `test_workflow_sla_no_infinite_recursion`. 6 test case baru. **Belum di-`bench migrate`+test manual di server produksi** | Efendy |
+| U | `NextHD SLA Policy` & `NextHD Business Hours` — permission kosong (root cause 404 item G) | Sudah di-commit & push langsung ke `main` 2026-08-22 09:48 WIB (commit `31f35da`, sebelum PR #7/#8): tambah baris `permissions` untuk kedua DocType. **Belum diverifikasi ulang diff-nya secara detail sebelumnya oleh Claude** (catatan sesi lama) — sudah dicek ulang sesi ini via commit history, konsisten dengan yang dimaksud. **Belum di-`bench migrate` di server produksi** | Efendy |
 | D | Deploy PR #6 ke server produksi | Web Form `/tiket-saya` + Telegram i18n sudah merged ke `main` (2026-08-20). **Belum di-`bench migrate`** di `desk.ciptamebel.co.id` — perlu `git pull` + `bench migrate` + testing manual (Web Form muncul, bisa dipakai role Requester, isolasi data antar Requester benar) | Claude / Efendy |
 | E | Verifikasi end-to-end Telegram di produksi | Source code sudah benar (`get_bot_token()` & `is_telegram_enabled()` sudah pakai `frappe.db.get_value()`, bukan `get_single_value()`), sudah di-commit. **Belum ada bukti retest setelah `bench restart`** — perlu dikonfirmasi apakah bot sudah balas `/start` di Telegram nyata | Efendy |
 | F | Permission `reply` di Waiting Log | Diverifikasi 2026-08-22: `nexthd_ticket_waiting_log.json` sudah benar — `reply` field `permlevel=1`, ada baris permission `Requester, permlevel:1, write:1` terpisah dari baris `permlevel:0`. Konfigurasi JSON sudah tepat. **Masih belum pernah ditest end-to-end di UI produksi** | Efendy |
-| G | Halaman NextHD SLA Policy 404 | **Root cause kemungkinan besar ditemukan 2026-08-22 — lihat item U** (`permissions: []` kosong di JSON). Sebelumnya diduga cache/build, sekarang ada kandidat penyebab konkret. Setelah item U difix, coba akses ulang halaman ini | Efendy |
+| G | Halaman NextHD SLA Policy 404 | Root cause kemungkinan besar sudah difix via item U (commit `31f35da`, 2026-08-22 09:48 WIB). **Belum di-deploy (`bench migrate`) ke server produksi** — setelah deploy, coba akses ulang halaman ini untuk konfirmasi 404 hilang | Efendy |
 | H | `NextHD Holiday` di sidebar Workspace | Sudah ada di fixture `workspace_sidebar.json` (difix 2026-08-19), tapi belum dikonfirmasi tampil di sidebar UI produksi setelah deploy | Efendy |
 
 ### 🟢 Prioritas Rendah — Belum Mendesak / Masih Wacana
@@ -95,6 +93,8 @@
 | [Issue #4](https://github.com/silverefendy/nexthd/issues/4) | User Portal Requester via Frappe Web Form | Selesai via PR #6 |
 | [Issue #5](https://github.com/silverefendy/nexthd/issues/5) | Telegram Notification — i18n (`frappe._()`) | Selesai via PR #6 |
 | [PR #6](https://github.com/silverefendy/nexthd/pull/6) | feat: Add Web Form for Requester role and Telegram i18n | **Merged ke main** 2026-08-20 06:59 UTC — **belum dideploy ke server produksi** |
+| [PR #7](https://github.com/silverefendy/nexthd/pull/7) | Task 1: Implement automatic priority calculation (Impact × Urgency) and role-based override permission | **Merged ke main** 2026-08-22 03:13 UTC (10:13 WIB) — **belum dideploy ke server produksi** |
+| [PR #8](https://github.com/silverefendy/nexthd/pull/8) | Task 2: Fix SLA resolution timing — start clock at "Mulai Kerjakan", pause during "Menunggu User" | **Merged ke main** 2026-08-22 03:31 UTC (10:31 WIB) — **belum dideploy ke server produksi** |
 
 ---
 
@@ -108,7 +108,10 @@
 | Tombol workflow "Mulai Kerjakan" (Baru → Sedang Dikerjakan) | ✅ Ada di `nexthd_ticket_workflow.json` (diverifikasi 2026-08-22) — total 7 transisi terverifikasi sesuai `WORKFLOW.md` |
 | Field `impact`, `urgency`, `waiting_log` di form Ticket | ✅ Sudah ada di `field_order` dan `fields` di `nexthd_ticket.json` (diverifikasi 2026-08-22) |
 | Permission `reply` di Waiting Log (JSON) | ✅ Konfigurasi `permlevel` sudah benar (diverifikasi 2026-08-22) — lihat item F untuk status test produksi |
-| SLA enforcement jam kerja (`calculate_sla()` + `add_working_time()`) | ✅ 2026-08-20, ditest manual (TKT-2608-0004) — **titik mulai resolution masih dari insert, bukan "Mulai Kerjakan", lihat item T** |
+| SLA enforcement jam kerja (`calculate_sla()` + `add_working_time()`) | ✅ 2026-08-20, ditest manual (TKT-2608-0004) — titik mulai resolution kini sudah direcalculate saat "Mulai Kerjakan" via PR #8 (lihat §2, belum di-deploy) |
+| Priority matrix otomatis + override manual (item A+C) | ✅ Kode merged via PR #7 (2026-08-22) — lihat §2 untuk status deploy |
+| Pause/resume SLA saat "Menunggu User" (item B+T) | ✅ Kode merged via PR #8 (2026-08-22) — lihat §2 untuk status deploy |
+| Permission `NextHD SLA Policy` & `NextHD Business Hours` (item U) | ✅ Commit `31f35da` (2026-08-22) — lihat §2 untuk status deploy |
 | Regression test workflow (Ticket, Problem, Change Request) | ✅ 2026-08-20, semua lulus |
 | Dedup 21 transisi workflow duplikat | ✅ 2026-08-20 |
 | Bug Telegram `get_single_value` | ✅ Fix di-commit, perlu retest di produksi (lihat item E) |
@@ -119,4 +122,4 @@
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 01:20 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 10:35 WIB.*

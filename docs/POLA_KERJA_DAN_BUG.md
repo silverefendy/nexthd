@@ -3,7 +3,7 @@
 > Frappe quirks, aturan wajib saat coding/debug, dan riwayat bug per sesi.
 > File ini yang paling sering bertambah tiap sesi baru.
 >
-> **Last updated:** 2026-08-22 02:10 WIB
+> **Last updated:** 2026-08-22 10:35 WIB
 
 ---
 
@@ -185,7 +185,8 @@ IPython punya automagic `%run` yang bisa "menangkap" pemanggilan `run()` sebagai
 | **Counter `tabSeries` bisa TIDAK SINKRON dari data fisik** | Kasus nyata (2026-08-20): `tabSeries` untuk `PRB-2608-` nyangkut di `current=2` padahal data fisik `NextHD Problem` sudah sampai `PRB-2608-0005` — insert baru selalu tabrakan `DuplicateEntryError`. Kemungkinan penyebab: insert manual/import yang tidak lewat jalur normal penomoran Frappe. **Kalau ketemu `DuplicateEntryError` saat insert padahal nomor "terlihat aman"**, cek dulu `SELECT MAX(...) FROM tabDocType` vs `SELECT current FROM tabSeries WHERE name = 'PREFIX-'` — kalau beda, sinkronkan `tabSeries.current` ke nilai `MAX()` data fisik sebelum lanjut |
 | **`frappe.db.get_single_value(doctype, field)` HANYA jalan untuk Single DocType** | Kasus nyata (2026-08-20): `NextHD Settings` `issingle=0` (BUKAN Single, punya nama record biasa spt `3jn1jihj28`), tapi kode lama pakai `get_single_value()` — selalu return `None` walau data sudah diisi & disave di UI, karena fungsi itu baca dari tabel khusus `tabSingles` yang kosong untuk DocType non-Single. **Sebelum pakai `get_single_value()`, cek dulu `frappe.db.get_value("DocType", "<nama>", "issingle")`** — kalau `0`, pakai `frappe.db.get_value(doctype, {}, field)` (ambil record pertama/satu-satunya) sebagai gantinya |
 | **`frappe.logger` vs `frappe.logger()`** | `frappe.logger` adalah fungsi, BUKAN objek logger — harus dipanggil dulu `frappe.logger()` baru bisa `.info(...)`/`.error(...)` dst. Salah tulis `frappe.logger.info(...)` (tanpa kurung) akan lolos saat ditulis tapi meledak saat dieksekusi: `AttributeError: 'function' object has no attribute 'info'`. Cek SEMUA pemakaian `frappe.logger` di file yang sama kalau nemu satu instance salah — kemungkinan ada yang lain juga ke-copy-paste dari pattern salah yang sama |
-| **DocType dengan `"permissions": []` kosong total di JSON** | **Ditemukan 2026-08-22 (lihat §4 bug session terbaru).** Kalau array `permissions` benar-benar kosong (bukan cuma minim), DocType HANYA bisa diakses Administrator — semua role lain (termasuk System Manager) kena `PermissionError`/404 saat akses UI. Selalu tambahkan minimal 1 baris permission (`System Manager` atau role relevan) untuk setiap DocType baru, walau cuma untuk data master yang jarang diedit |
+| **DocType dengan `"permissions": []` kosong total di JSON** | **Ditemukan 2026-08-22 (lihat §4 bug session terkait).** Kalau array `permissions` benar-benar kosong (bukan cuma minim), DocType HANYA bisa diakses Administrator — semua role lain (termasuk System Manager) kena `PermissionError`/404 saat akses UI. Selalu tambahkan minimal 1 baris permission (`System Manager` atau role relevan) untuk setiap DocType baru, walau cuma untuk data master yang jarang diedit. **Fix diterapkan (commit `31f35da`) untuk `NextHD SLA Policy` & `NextHD Business Hours`.** |
+| **Pola aman untuk logic side-effect di `on_update()`** | Kasus nyata (PR #8, 2026-08-22): logic pause/resume SLA + recalculate butuh update field di dalam `on_update()`. Devin menggunakan `self.db_set(...)` / `frappe.db.set_value(...)` langsung, BUKAN `self.save()`, sehingga tidak memicu infinite recursion (`on_update()` terpanggil lagi). Pola ini jadi referensi wajib untuk hook `on_update()`/`validate()` berikutnya yang butuh side-effect DB |
 
 ---
 
@@ -289,7 +290,7 @@ Ticket test: `TKT-2608-0004`. Sudah di-commit (`8d3f26d`) dan push ke `origin/ma
 
 > ✅ **Diverifikasi ulang dari kode di repo (2026-08-22):** `business_hours.py` dan `nexthd_ticket.py` dikonfirmasi sudah sesuai — `add_working_time()` dengan loop per-hari, dan `calculate_sla()` sudah memanggil `add_working_time()` dengan benar.
 >
-> ⚠️ **TAPI ditemukan gap baru (2026-08-22):** `calculate_sla()` hanya jalan sekali saat insert (`is_new()`), tidak recalculate saat status berubah ke "Sedang Dikerjakan" — bertentangan dengan keputusan desain 19 Agustus. Lihat item T di `SUMMARY.md §2`.
+> ✅ **Gap titik-mulai resolution (item T) sudah difix via PR #8** (2026-08-22, lihat entri di bawah) — `sla_resolution_by` kini direcalculate saat status pindah ke "Sedang Dikerjakan", bukan hanya sekali saat insert.
 
 ### ✅ SELESAI — Bug Session 2026-08-20 (Dedup Transisi Workflow — Kedua Kalinya) & Regression Test
 
@@ -329,21 +330,32 @@ Pesan "Peringatan SLA Response" di `tasks.py` masih pakai f-string mentah (bukan
 - User test `test.requester@ciptamebel.co.id` (role Requester) sudah ada, password sudah di-set
 - **Token bot Telegram tidak dicatat di dokumentasi/GitHub** — hanya ada di NextHD Settings di server
 
-### ⏳ BELUM DIFIX — Bug Session 2026-08-22 (Verifikasi Kode Kedua Putaran — Permission & SLA Recalc)
+### ✅ SELESAI (via Devin PR #7 & #8) — Bug Session 2026-08-22 (Verifikasi Kode Kedua Putaran — Permission & SLA Recalc)
 
 Sesi ini melakukan verifikasi tambahan (di luar 4 file yang sudah dicek sebelumnya): `nexthd_ticket_waiting_log.json`, `nexthd_ticket.json` (permissions), `nexthd_sla_policy.json`, `nexthd_business_hours.json`, `nexthd_holiday.json`, `nexthd_team.json`, `nexthd_ticket_workflow.json`.
 
 **Temuan 1 — `permissions: []` kosong total di 2 DocType master:**
-`NextHD SLA Policy` dan `NextHD Business Hours` sama-sama punya array `permissions` kosong di JSON — dibandingkan `NextHD Team` dan `NextHD Holiday` yang eksplisit kasih akses ke `System Manager`/`Agent Manager`/`IT Manager`. DocType tanpa baris permission apa pun secara default hanya bisa diakses Administrator. **Ini kandidat kuat root cause item G (404 halaman NextHD SLA Policy)** — bukan cuma soal cache/build seperti dugaan di catatan lama. Belum difix — perlu tambah baris permission ke kedua file JSON lalu `bench migrate`.
+`NextHD SLA Policy` dan `NextHD Business Hours` sama-sama punya array `permissions` kosong di JSON. **Fix: commit `31f35da` (2026-08-22 09:48 WIB), langsung push ke `main`** (dikerjakan manual, bukan lewat Devin). Ini kandidat kuat root cause item G (404 halaman NextHD SLA Policy). Belum di-`bench migrate` di server produksi — lihat `SUMMARY.md §2` item U dan G.
 
 **Temuan 2 — Permission `reply` Waiting Log dikonfirmasi BENAR di JSON:**
-`nexthd_ticket_waiting_log.json` sudah tepat: field `reply` punya `permlevel: 1`, dan ada baris permission terpisah `{"role": "Requester", "permlevel": 1, "read": 1, "write": 1}` di samping baris `permlevel: 0`. Tidak ada bug di level kode — status "belum ditest" di item F murni soal verifikasi UI produksi, bukan config yang salah.
+`nexthd_ticket_waiting_log.json` sudah tepat, tidak perlu fix kode. Status "belum ditest" di item F murni soal verifikasi UI produksi.
 
 **Temuan 3 — Field `priority` `read_only` di level field, bukan `permlevel`:**
-`nexthd_ticket.json` field `priority` diset `"read_only": 1` langsung di definisi field — ini berlaku sama untuk SEMUA role tanpa kecuali, termasuk Agent Manager/IT Manager. Supaya override bisa jalan, field ini perlu diubah pakai `permlevel` (misal `permlevel: 1`) plus baris permission tambahan yang kasih `write: 1` di permlevel itu untuk role yang boleh override. Detail di item C, `SUMMARY.md §2`.
+**Fix: [PR #7](https://github.com/silverefendy/nexthd/pull/7), merged 2026-08-22 10:13 WIB.** Devin mengimplementasikan:
+- `nexthd_ticket.json`: field `priority` diubah dari `"read_only": 1` ke `"permlevel": 1`, ditambah baris permission `{"role": "Agent Manager", "permlevel": 1, "read": 1, "write": 1}` dan sama untuk `IT Manager`.
+- Field baru `priority_manually_set` (Check, hidden, default 0) — dipakai `set_priority_from_matrix()` untuk mendeteksi kalau `priority` sudah diubah manual (`has_value_changed("priority")` di luar proses matrix), supaya matrix tidak menimpa override manual lagi di save berikutnya.
+- `nexthd_ticket.py`: `set_priority_from_matrix()` dipanggil di awal `validate()`. Logic matrix: Tinggi+Tinggi→Kritis, Tinggi+Rendah→Tinggi, Rendah+Tinggi→Sedang, Rendah+Rendah→Rendah. Hanya jalan kalau `impact` dan `urgency` dua-duanya terisi.
+- 8 test case baru di `test_nexthd_ticket.py`, mencakup semua kombinasi matrix, kasus blank, dan skenario override manual — sudah direview kode-nya oleh Claude, terlihat solid (belum dijalankan langsung di server oleh Claude, karena Claude tidak boleh eksekusi kode di server produksi).
 
-**Status:** Ketiganya ditambahkan ke `SUMMARY.md §2` (item U baru, item C & F diperbarui). Belum ada fix kode — masih tahap identifikasi.
+**Fix item B+T (SLA pause/resume): [PR #8](https://github.com/silverefendy/nexthd/pull/8), merged 2026-08-22 10:31 WIB.** Devin mengimplementasikan:
+- `on_update()` sekarang memanggil `handle_workflow_sla_transitions()`, yang mengecek `self.has_value_changed("status")` + `self.get_doc_before_save()` untuk menentukan transisi lama→baru.
+- 4 skenario: **Baru→Sedang Dikerjakan** (`_recalculate_sla_resolution_on_start()`: hitung ulang `sla_resolution_by` dari `now_datetime()` pakai `add_working_time()`, set `responded_on`), **Sedang Dikerjakan→Menunggu User** (`_create_waiting_log_entry()`: insert child table baru), **Menunggu User→Sedang Dikerjakan** (`_close_waiting_log_and_extend_sla()`: tutup log, hitung durasi pause dalam menit (dibulatkan ke atas), extend `sla_resolution_by` sebesar durasi pause — pakai penambahan waktu lurus, BUKAN `add_working_time()`), **Menunggu User→Selesai** (`_close_waiting_log_on_resolve()`: tutup log tanpa extend SLA).
+- **Risiko infinite recursion yang diwanti-wanti sebelumnya sudah ditangani dengan benar** — semua update pakai `self.db_set(...)` / `frappe.db.set_value(...)` langsung, BUKAN `self.save()` di dalam `on_update()`. Ada test khusus `test_workflow_sla_no_infinite_recursion` yang mengonfirmasi ini tidak macet.
+- 6 test case baru mencakup semua transisi + siklus pause berulang.
+- Catatan kecil dari Devin di komentar kode: field `question` di waiting log masih hardcoded placeholder ("Menunggu respons dari user") — UI prompt supaya agent bisa isi alasan custom adalah task terpisah di masa depan (belum ada di scope T/B).
+
+**Status akhir sesi ini:** Kedua PR sudah di-review levelnya kode oleh Claude (diff, logic, dan pola anti-recursion) dan terlihat sesuai spesifikasi yang diminta ke Devin. **Belum ada test end-to-end manual di server produksi** — itu jadi langkah berikutnya untuk Efendy (lihat panduan test CLI di pesan chat terkait / `SUMMARY.md §2`). Item A, B, C, T dipindah dari "belum ada di kode" ke "kode selesai, menunggu deploy" di `SUMMARY.md §2`.
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 02:10 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 10:35 WIB.*
