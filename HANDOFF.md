@@ -275,3 +275,57 @@ Untuk daftar lengkap dengan kategorisasi prioritas, lihat `docs/SUMMARY.md §2`.
 - Dashboard "Aset Bermasalah", SLA untuk Problem/CR, notifikasi Telegram Problem/CR, laporan bulanan, dll
 
 ---
+
+---
+
+# UPDATE — 22 Agustus 2026, Sesi Lanjutan (Fix Item B + Verifikasi Live A/B/C/T/U/G di Server)
+
+## Konteks
+
+Sesi ini melanjutkan dari update 22 Agustus sebelumnya (verifikasi kode dari repo). PR #7 dan PR #8 sudah di-cek dan ternyata **sudah merged**, kode item A, B, C, T, U sudah ada di `main`. Sesi ini melakukan **verifikasi live di server** (bukan cuma baca kode) dengan test manual lewat `bench console`, dan menemukan bug baru di item B yang tidak terdeteksi sebelumnya.
+
+## 🐛 Bug Baru Ditemukan & Difix: Item B (Waiting Log Hilang)
+
+**Root cause:** `_create_waiting_log_entry()` di `nexthd_ticket.py` (hasil PR #8 dari Devin) memakai `frappe.new_doc("NextHD Ticket Waiting Log").insert()` untuk membuat child row. Baris ini berhasil masuk ke DB, tapi **tidak ikut tersinkron ke in-memory `self.waiting_log`** milik dokumen parent. Akibatnya, saat `save()` dipanggil lagi pada transisi status berikutnya, mekanisme sinkronisasi child table bawaan Frappe menganggap `self.waiting_log` (kosong) sebagai sumber kebenaran dan **menghapus baris yang baru dibuat** sebelum sempat di-update `replied_on`-nya oleh `_close_waiting_log_and_extend_sla()`. Efeknya: SLA `extend` tidak pernah jalan sama sekali.
+
+**Fix (commit `76ce3e9`, di-push oleh Efendy):**
+1. `_create_waiting_log_entry()` diubah untuk insert row lewat `frappe.db.sql()` langsung (pola yang sama dengan `_close_waiting_log_and_extend_sla()` yang sudah benar), bukan lewat ORM `insert()`
+2. Ditambahkan `self.load_from_db()` di akhir method tersebut untuk resync in-memory child table, supaya `save()` berikutnya pada instance dokumen yang sama tidak menghapus row yang baru diinsert
+
+**Test setelah fix (bench console, live di server):**
+- Tiket dibuat dengan Impact=Tinggi, Urgency=Tinggi → `priority` otomatis jadi `Kritis` ✅
+- Status Baru → Sedang Dikerjakan → `responded_on` terisi, `sla_resolution_by` recalculate ✅
+- Status Sedang Dikerjakan → Menunggu User → 1 baris `waiting_log` dibuat (`replied_on: None`) ✅
+- Status Menunggu User → Sedang Dikerjakan → baris `waiting_log` **tetap ada** (tidak hilang lagi), `replied_on` terisi ✅
+- `sla_resolution_by` **ter-extend** sesuai durasi pause (dari `2026-08-22 14:07` jadi `2026-08-24 08:07`) ✅
+
+## ✅ Verifikasi Live Item G (404 SLA Policy)
+
+Dicek lewat `frappe.has_permission()` sebagai user dengan role Agent Manager (`ahmad.fauzi@ciptamebel.co.id`), bukan Administrator:
+- `has_permission("NextHD SLA Policy", "read")` → `True`
+- `has_permission("NextHD SLA Policy", "write")` → `True`
+- Meta permission tidak kosong lagi (3 baris DocPerm, sebelumnya `[]`)
+
+Root cause 404 (item U) terkonfirmasi sudah fix untuk role non-Administrator.
+
+## Status Setelah Sesi Ini
+
+Item A, C, T, U — sudah diverifikasi bekerja di server ini sebelumnya (kode dari PR #7/#8 + commit `31f35da`), **tidak ada perubahan kode baru** untuk item-item ini di sesi ini.
+
+Item B — **kode PR #8 punya bug tambahan yang baru ditemukan di sesi ini**, sudah difix dan diverifikasi ulang, commit `76ce3e9` sudah di-push ke `main`.
+
+**Catatan penting:** Server `it@erpnext` (`desk.ciptamebel.co.id`) yang dipakai sesi ini sudah di-`bench restart` beberapa kali selama proses debug — artinya kode terbaru (termasuk fix item B) **sudah live** di server ini. Kalau server ini sama dengan server produksi yang dimaksud di dokumentasi sebelumnya, maka item A, B, C, T, U bisa dianggap **sudah efektif di produksi**, bukan lagi "menunggu deploy".
+
+## ❌ Item yang Masih Perlu Dikerjakan (tidak berubah dari sebelumnya)
+
+| # | Item |
+|---|---|
+| D | Deploy PR #6 (Web Form + Telegram i18n) — belum di-`bench migrate` |
+| E | Retest Telegram end-to-end — kirim `/start` ke bot nyata |
+| F | Test permission `reply` di Waiting Log di UI produksi |
+| H | Konfirmasi `NextHD Holiday` tampil di sidebar UI produksi |
+
+## Catatan untuk Sesi Berikutnya
+
+- Heredoc multi-line lewat SSH/PowerShell di server ini **sangat rawan corrupt** (baris kosong dan triple-quote `'''` sering diinterpretasi ulang oleh shell/tab-completion). Untuk edit file `.py`, lebih aman pakai `sed` dengan line number atau python script base64-encoded daripada heredoc langsung dengan blok `try/except`/`if`/triple-quote string panjang.
+- `bench console` juga tidak menerima blok Python dengan indentasi (`def`, `try`, `if`) yang dikirim lewat stdin redirect — selalu tulis kode **flat tanpa nested block** kalau perlu dieksekusi lewat `bench console < file.py`.
