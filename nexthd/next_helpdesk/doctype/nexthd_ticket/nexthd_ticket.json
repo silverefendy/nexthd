@@ -89,8 +89,16 @@
    "in_list_view": 1,
    "label": "Priority",
    "options": "Kritis\nTinggi\nSedang\nRendah",
-   "read_only": 1,
+   "permlevel": 1,
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "priority_manually_set",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Priority Manually Set",
+   "read_only": 1
   },
   {
    "fieldname": "col_info2",
@@ -310,6 +318,18 @@
    "read": 1,
    "report": 1,
    "role": "IT Auditor"
+  },
+  {
+   "read": 1,
+   "role": "Agent Manager",
+   "permlevel": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "IT Manager",
+   "permlevel": 1,
+   "write": 1
   }
  ],
  "quick_entry": 1,
