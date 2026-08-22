@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-22 15:00 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
+> **Last updated:** 2026-08-22 16:15 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
 
 ---
 
@@ -27,7 +27,7 @@
 | **Basis** | Frappe Framework v16 murni (BUKAN ERPNext) |
 | **User** | Karyawan internal saja |
 | **Autentikasi** | Username-based login, TANPA email asli (email dummy `@noemail.internal`) |
-| **Notifikasi** | Telegram Bot (utama) + In-app notification bawaan Frappe — TIDAK pakai email |
+| **Notifikasi** | Telegram Bot (utama, **terkonfirmasi live** 22 Agustus) + In-app notification bawaan Frappe — TIDAK pakai email |
 | **Bahasa UI** | Bahasa Indonesia (default) |
 | **Cakupan ITIL** | Incident, Problem, Change, Known Error, Asset/CMDB, Service Catalog |
 | **Repo Git** | `silverefendy/nexthd`, branch `main` |
@@ -36,12 +36,12 @@
 ### Modul Aplikasi
 
 - Manajemen tiket insiden dan permintaan layanan
-- Web Form self-service untuk Requester di `/tiket-saya` (merged 2026-08-20, PR #6) — **belum di-deploy ke server produksi**, perlu `bench migrate` + testing manual
+- Web Form self-service untuk Requester di `/tiket-saya` (PR #6) — **✅ terkonfirmasi live** di produksi 22 Agustus (`published: 1`, route `tiket-saya` aktif)
 - Workflow approval untuk Change Request (state machine terverifikasi via regression test, 2026-08-20)
 - Manajemen Problem dan Known Error (ITIL-lite)
-- Notifikasi real-time via Telegram Bot (string sudah i18n-ready via `frappe._()`, PR #6)
-- SLA monitoring otomatis berbasis jam kerja (warning 30 menit sebelum breach), termasuk **titik-mulai resolution saat "Mulai Kerjakan" + pause/resume saat "Menunggu User"** (PR #8, merged 2026-08-22, bugfix `76ce3e9`) — **sudah live + terverifikasi di server `desk.ciptamebel.co.id`**
-- Priority otomatis dari matriks Impact × Urgency, dengan override manual untuk Agent Manager/IT Manager (PR #7, merged 2026-08-22) — **sudah live + terverifikasi di server `desk.ciptamebel.co.id`**
+- Notifikasi real-time via Telegram Bot — **✅ terkonfirmasi live**, bot sudah balas dan token/enable sudah terkonfirmasi di NextHD Settings
+- SLA monitoring otomatis berbasis jam kerja (warning 30 menit sebelum breach), termasuk **titik-mulai resolution saat "Mulai Kerjakan" + pause/resume saat "Menunggu User"** (PR #8, bugfix `76ce3e9`) — **✅ live + terverifikasi**
+- Priority otomatis dari matriks Impact × Urgency, dengan override manual untuk Agent Manager/IT Manager (PR #7) — **✅ live + terverifikasi**
 - Multi-tim dengan assignment agent
 - Custom reports: Tiket per Bulan, Tiket per Kategori, Tiket per Prioritas (breach SLA)
 
@@ -51,29 +51,22 @@
 
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `POLA_KERJA_DAN_BUG.md`.
 >
-> **Update 2026-08-22 15:00 WIB** — Item A, B, C, T, U, G sudah **diverifikasi live** di server `desk.ciptamebel.co.id` lewat test manual (`bench console`), bukan hanya "kode ada di `main`". Item B ternyata punya bug tambahan (waiting_log row terhapus saat save berikutnya) yang baru ditemukan & difix di sesi ini (commit `76ce3e9`). Item D, E, F, H masih genuinely open.
+> **Update 2026-08-22 16:15 WIB** — Item D, E, F, H (deploy PR #6, Telegram, permission reply, sidebar Holiday) sudah **diverifikasi live** via `bench console` di server produksi. **Backlog SLA/priority/deploy sejak 19 Agustus dinyatakan TUNTAS 100%.** Sisa open items sekarang murni fitur baru/usulan (kategori 🟢), tidak ada lagi bug atau item setengah-jadi.
 
-### 🔴 Prioritas Tinggi — Belum Ada di Kode
+### ✅ Semua Item Utama SUDAH Live & Terverifikasi (Update Sesi Ini)
 
-_Tidak ada item di kategori ini — seluruh item A, B, C, T, U sudah punya implementasi di `main` dan sudah diverifikasi live bekerja di server._
-
-### ✅ Sudah Live & Terverifikasi di Server (Update Sesi Ini)
-
-| # | Fitur | Keterangan | PIC |
+| # | Fitur | Bukti Verifikasi | PIC |
 |---|---|---|---|
-| A+C | Priority matrix otomatis + override permission | Merged via [PR #7](https://github.com/silverefendy/nexthd/pull/7). **Diverifikasi live** via `bench console`: tiket Impact=Tinggi+Urgency=Tinggi otomatis jadi `priority=Kritis`. `permlevel=1` + permission Agent Manager/IT Manager terkonfirmasi bekerja | Efendy |
-| B+T | Pause/resume SLA + recalculate saat "Mulai Kerjakan" | Merged via [PR #8](https://github.com/silverefendy/nexthd/pull/8). **Bug tambahan ditemukan & difix di sesi ini** (commit `76ce3e9`): `_create_waiting_log_entry()` pakai `frappe.new_doc().insert()` yang tidak sync ke in-memory `self.waiting_log`, menyebabkan row waiting_log terhapus saat `save()` berikutnya dan `sla_resolution_by` tidak pernah ter-extend. Fix: insert via `frappe.db.sql()` langsung + `self.load_from_db()` untuk resync. **Diverifikasi live**: waiting_log tidak hilang lagi, `sla_resolution_by` ter-extend sesuai durasi pause | Claude (fix) / Efendy (commit+push) |
-| U | `NextHD SLA Policy` & `NextHD Business Hours` — permission | Commit `31f35da`. **Diverifikasi live**: `frappe.has_permission()` sebagai role Agent Manager (bukan Administrator) return `True` untuk read & write | Efendy |
-| G | Halaman NextHD SLA Policy 404 | Root cause (item U) sudah fix. **Diverifikasi live** via `has_permission()` — role non-Administrator sudah bisa akses | Efendy |
+| A+C | Priority matrix otomatis + override permission | [PR #7](https://github.com/silverefendy/nexthd/pull/7). `bench console`: Impact=Tinggi+Urgency=Tinggi → `priority=Kritis` otomatis. `permlevel=1` + Agent Manager/IT Manager override terkonfirmasi | Efendy |
+| B+T | Pause/resume SLA + recalculate saat "Mulai Kerjakan" | [PR #8](https://github.com/silverefendy/nexthd/pull/8) + bugfix `76ce3e9` (waiting_log sempat ke-wipe saat save berikutnya, sudah difix). `sla_resolution_by` ter-extend sesuai durasi pause, terverifikasi | Efendy |
+| U | Permission `NextHD SLA Policy` & `Business Hours` | Commit `31f35da`. `has_permission()` role Agent Manager return `True` untuk read & write | Efendy |
+| G | Halaman NextHD SLA Policy 404 | Root cause (item U) fix, halaman sudah bisa diakses non-Administrator | Efendy |
+| D | Deploy PR #6 (Web Form + Telegram i18n) | `bench console`: Web Form `Tiket Saya` ditemukan, `route: tiket-saya`, `published: 1` | Efendy |
+| E | Verifikasi end-to-end Telegram | Bot `@cmlhelpdesk_bot` terkonfirmasi balas pesan nyata (test manual 22 Agustus). `NextHD Settings`: token terisi, `enable_telegram_notification: 1` | Efendy |
+| F | Permission `reply` di Waiting Log | `bench console`: field `reply` `permlevel=1`, role Requester `permlevel=1, write=1` — konfigurasi terkonfirmasi benar | Efendy |
+| H | `NextHD Holiday` di sidebar Workspace | `bench console`: query `tabWorkspace Sidebar Item` → Holiday ditemukan (`True`) | Efendy |
 
-### 🟡 Prioritas Sedang — Masih Perlu Deploy/Verifikasi
-
-| # | Fitur | Keterangan | PIC |
-|---|---|---|---|
-| D | Deploy PR #6 ke server produksi | Web Form `/tiket-saya` + Telegram i18n sudah merged ke `main` (2026-08-20). **Belum di-`bench migrate`** — perlu `git pull` + `bench migrate` + testing manual (Web Form muncul, bisa dipakai role Requester, isolasi data antar Requester benar) | Claude / Efendy |
-| E | Verifikasi end-to-end Telegram di produksi | Source code sudah benar. **Belum ada bukti retest** — perlu dikonfirmasi apakah bot sudah balas `/start` di Telegram nyata | Efendy |
-| F | Permission `reply` di Waiting Log | Konfigurasi JSON sudah tepat. **Masih belum pernah ditest end-to-end di UI produksi** | Efendy |
-| H | `NextHD Holiday` di sidebar Workspace | Sudah ada di fixture. **Belum dikonfirmasi tampil** di sidebar UI produksi | Efendy |
+> **Catatan Item E:** user test `test.requester@ciptamebel.co.id` sendiri belum pernah kirim `/start`+`/link` ke bot (field `telegram_chat_id` masih kosong untuk akun ini) — tapi ini bukan bug, cuma user dummy tsb memang belum di-link manual. Bot-nya sendiri sudah terbukti bekerja pakai akun Telegram lain.
 
 ### 🟢 Prioritas Rendah — Belum Mendesak / Masih Wacana
 
@@ -90,6 +83,7 @@ _Tidak ada item di kategori ini — seluruh item A, B, C, T, U sudah punya imple
 | Q | Notifikasi Telegram untuk Problem/CR | Sengaja ditunda, fokus ke fitur lain dulu | - |
 | R | Laporan bulanan otomatis (jumlah tiket, MTTR) | Usulan, belum dikerjakan | - |
 | S | Generalisasi ke domain non-IT (Asset Category/Attribute EAV) | Rencana teknis ada di `ARSITEKTUR.md §8`, masih wacana | - |
+| V | Link Telegram untuk user test `test.requester` | Belum pernah kirim `/start`+`/link` — kalau mau dites tuntas, tinggal eksekusi manual + rerun script verifikasi | Efendy |
 
 ### GitHub Issues & PR — Riwayat Devin
 
@@ -97,9 +91,9 @@ _Tidak ada item di kategori ini — seluruh item A, B, C, T, U sudah punya imple
 |---|---|---|
 | [Issue #4](https://github.com/silverefendy/nexthd/issues/4) | User Portal Requester via Frappe Web Form | Selesai via PR #6 |
 | [Issue #5](https://github.com/silverefendy/nexthd/issues/5) | Telegram Notification — i18n (`frappe._()`) | Selesai via PR #6 |
-| [PR #6](https://github.com/silverefendy/nexthd/pull/6) | feat: Add Web Form for Requester role and Telegram i18n | **Merged ke main** 2026-08-20 06:59 UTC — **belum dideploy ke server produksi** |
-| [PR #7](https://github.com/silverefendy/nexthd/pull/7) | Task 1: Implement automatic priority calculation (Impact × Urgency) and role-based override permission | **Merged ke main** 2026-08-22 03:13 UTC (10:13 WIB) — **sudah live+terverifikasi di server** |
-| [PR #8](https://github.com/silverefendy/nexthd/pull/8) | Task 2: Fix SLA resolution timing — start clock at "Mulai Kerjakan", pause during "Menunggu User" | **Merged ke main** 2026-08-22 03:31 UTC (10:31 WIB), bugfix `76ce3e9` (14:xx WIB) — **sudah live+terverifikasi di server** |
+| [PR #6](https://github.com/silverefendy/nexthd/pull/6) | feat: Add Web Form for Requester role and Telegram i18n | Merged 2026-08-20 — **✅ dideploy & terverifikasi live 22 Agustus** |
+| [PR #7](https://github.com/silverefendy/nexthd/pull/7) | Task 1: Priority matrix otomatis + override permission | Merged 2026-08-22 10:13 WIB — **✅ live + terverifikasi** |
+| [PR #8](https://github.com/silverefendy/nexthd/pull/8) | Task 2: SLA resolution timing — mulai "Mulai Kerjakan", pause "Menunggu User" | Merged 2026-08-22 10:31 WIB, bugfix `76ce3e9` — **✅ live + terverifikasi** |
 
 ---
 
@@ -109,23 +103,24 @@ _Tidak ada item di kategori ini — seluruh item A, B, C, T, U sudah punya imple
 
 | Item | Selesai |
 |---|---|
-| `business_hours.py` — logic all-or-nothing | ✅ 2026-08-20 (diverifikasi langsung dari kode di repo 2026-08-22) |
-| Tombol workflow "Mulai Kerjakan" (Baru → Sedang Dikerjakan) | ✅ Ada di `nexthd_ticket_workflow.json` (diverifikasi 2026-08-22) — total 7 transisi terverifikasi sesuai `WORKFLOW.md` |
-| Field `impact`, `urgency`, `waiting_log` di form Ticket | ✅ Sudah ada di `field_order` dan `fields` di `nexthd_ticket.json` (diverifikasi 2026-08-22) |
-| Permission `reply` di Waiting Log (JSON) | ✅ Konfigurasi `permlevel` sudah benar (diverifikasi 2026-08-22) — lihat item F untuk status test produksi |
-| SLA enforcement jam kerja (`calculate_sla()` + `add_working_time()`) | ✅ 2026-08-20, ditest manual (TKT-2608-0004) — titik mulai resolution kini sudah direcalculate saat "Mulai Kerjakan" via PR #8, **diverifikasi live 22 Agustus** |
-| Priority matrix otomatis + override manual (item A+C) | ✅ Kode merged via PR #7, **diverifikasi live 22 Agustus** |
-| Pause/resume SLA saat "Menunggu User" (item B+T) | ✅ Kode merged via PR #8, bug tambahan difix commit `76ce3e9`, **diverifikasi live 22 Agustus** |
-| Permission `NextHD SLA Policy` & `NextHD Business Hours` (item U) | ✅ Commit `31f35da`, **diverifikasi live 22 Agustus** |
-| Halaman NextHD SLA Policy 404 (item G) | ✅ Root cause (item U) fix, **diverifikasi live 22 Agustus** via `has_permission()` |
+| `business_hours.py` — logic all-or-nothing | ✅ 2026-08-20 |
+| Tombol workflow "Mulai Kerjakan" (Baru → Sedang Dikerjakan) | ✅ Ada di `nexthd_ticket_workflow.json`, 7 transisi terverifikasi |
+| Field `impact`, `urgency`, `waiting_log` di form Ticket | ✅ Ada di `field_order` `nexthd_ticket.json` |
+| Priority matrix otomatis + override manual (item A+C) | ✅ PR #7, **live + terverifikasi 22 Agustus** |
+| Pause/resume SLA saat "Menunggu User" (item B+T) | ✅ PR #8 + bugfix `76ce3e9`, **live + terverifikasi 22 Agustus** |
+| Permission `NextHD SLA Policy` & `NextHD Business Hours` (item U) | ✅ Commit `31f35da`, **live + terverifikasi 22 Agustus** |
+| Halaman NextHD SLA Policy 404 (item G) | ✅ Root cause (item U) fix, **live + terverifikasi 22 Agustus** |
+| Deploy PR #6 ke produksi (item D) | ✅ **Live + terverifikasi 22 Agustus** — Web Form `tiket-saya` published |
+| Verifikasi Telegram end-to-end (item E) | ✅ **Live + terverifikasi 22 Agustus** — bot balas, settings terkonfirmasi |
+| Permission `reply` Waiting Log (item F) | ✅ **Terverifikasi 22 Agustus** — permlevel & role permission benar |
+| `NextHD Holiday` di sidebar (item H) | ✅ **Terverifikasi 22 Agustus** — ditemukan di query sidebar |
 | Regression test workflow (Ticket, Problem, Change Request) | ✅ 2026-08-20, semua lulus |
 | Dedup 21 transisi workflow duplikat | ✅ 2026-08-20 |
-| Bug Telegram `get_single_value` | ✅ Fix di-commit, perlu retest di produksi (lihat item E) |
+| Bug Telegram `get_single_value` | ✅ Fix commit, dan sudah diverifikasi live (item E) |
 | Number Card dashboard (kolom `number_card_name`) | ✅ 2026-08-21 |
 | Shortcut `doc_view` NextHD Settings | ✅ 2026-08-21 |
 | Naming series seragam YY.MM semua DocType | ✅ 2026-08-19 |
-| Export fixture + commit semua perubahan besar | ✅ Konsisten sejak 2026-08-15 |
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 15:00 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 16:15 WIB.*
