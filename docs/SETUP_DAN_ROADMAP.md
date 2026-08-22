@@ -3,7 +3,7 @@
 > Instalasi, setup Telegram/SLA, alur deploy, pembagian kerja, dan referensi.
 > Dipakai sekali di awal atau saat butuh reinstall.
 >
-> **Last updated:** 2026-08-22 00:40 WIB
+> **Last updated:** 2026-08-22 19:10 WIB
 
 ---
 
@@ -70,15 +70,23 @@ bench restart   # wajib kalau ada perubahan hooks.py, logic Python, atau utils
 
 ## 2. Urutan Baca untuk Devin (Handover)
 
-1. `docs/SUMMARY.md` ← entry point, termasuk daftar open items terkini
-2. `docs/ARSITEKTUR.md` ← DocType, field, permission, schema DB
-3. `docs/WORKFLOW.md` ← state machine + notifikasi Telegram
-4. `docs/POLA_KERJA_DAN_BUG.md` ← aturan wajib + riwayat bug
-5. `nexthd/next_helpdesk/doctype/*/README.md` (spek per-doctype)
-6. `nexthd/next_helpdesk/utils/email_helper.py` & `telegram.py`
-7. `nexthd/next_helpdesk/api/telegram_webhook.py`
-8. `nexthd/next_helpdesk/tasks.py`
-9. `nexthd/next_helpdesk/workflow/`
+> ⚠️ **`docs/FAQ.md` WAJIB dibaca PALING PERTAMA**, sebelum menyentuh file apapun —
+> berisi kurasi masalah yang sudah berulang kali terjadi (Workspace rusak pasca-migrate,
+> Desktop Icon hilang, dll) dan aturan navigasi yang terkunci (tidak boleh diubah tanpa
+> izin eksplisit dari Efendy). Kalau task menyentuh `hooks.py`, fixture JSON, Workspace,
+> atau Desktop Icon, ini bacaan yang paling menentukan apakah task berhasil atau malah
+> merusak hal lain yang tidak terkait.
+
+1. **`docs/FAQ.md`** ← **BACA DULU** — kurasi masalah berulang + hal yang tidak boleh diubah
+2. `docs/SUMMARY.md` ← entry point, termasuk daftar open items terkini
+3. `docs/ARSITEKTUR.md` ← DocType, field, permission, schema DB
+4. `docs/WORKFLOW.md` ← state machine + notifikasi Telegram
+5. `docs/POLA_KERJA_DAN_BUG.md` ← aturan wajib + riwayat bug (versi lengkap, FAQ.md cuma kurasi)
+6. `nexthd/next_helpdesk/doctype/*/README.md` (spek per-doctype)
+7. `nexthd/next_helpdesk/utils/email_helper.py` & `telegram.py`
+8. `nexthd/next_helpdesk/api/telegram_webhook.py`
+9. `nexthd/next_helpdesk/tasks.py`
+10. `nexthd/next_helpdesk/workflow/`
 
 ---
 
@@ -109,4 +117,4 @@ bench restart   # wajib kalau ada perubahan hooks.py, logic Python, atau utils
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 00:40 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 19:10 WIB.*
