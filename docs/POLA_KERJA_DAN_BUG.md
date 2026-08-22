@@ -3,7 +3,7 @@
 > Frappe quirks, aturan wajib saat coding/debug, dan riwayat bug per sesi.
 > File ini yang paling sering bertambah tiap sesi baru.
 >
-> **Last updated:** 2026-08-22 00:35 WIB
+> **Last updated:** 2026-08-22 02:10 WIB
 
 ---
 
@@ -185,6 +185,7 @@ IPython punya automagic `%run` yang bisa "menangkap" pemanggilan `run()` sebagai
 | **Counter `tabSeries` bisa TIDAK SINKRON dari data fisik** | Kasus nyata (2026-08-20): `tabSeries` untuk `PRB-2608-` nyangkut di `current=2` padahal data fisik `NextHD Problem` sudah sampai `PRB-2608-0005` — insert baru selalu tabrakan `DuplicateEntryError`. Kemungkinan penyebab: insert manual/import yang tidak lewat jalur normal penomoran Frappe. **Kalau ketemu `DuplicateEntryError` saat insert padahal nomor "terlihat aman"**, cek dulu `SELECT MAX(...) FROM tabDocType` vs `SELECT current FROM tabSeries WHERE name = 'PREFIX-'` — kalau beda, sinkronkan `tabSeries.current` ke nilai `MAX()` data fisik sebelum lanjut |
 | **`frappe.db.get_single_value(doctype, field)` HANYA jalan untuk Single DocType** | Kasus nyata (2026-08-20): `NextHD Settings` `issingle=0` (BUKAN Single, punya nama record biasa spt `3jn1jihj28`), tapi kode lama pakai `get_single_value()` — selalu return `None` walau data sudah diisi & disave di UI, karena fungsi itu baca dari tabel khusus `tabSingles` yang kosong untuk DocType non-Single. **Sebelum pakai `get_single_value()`, cek dulu `frappe.db.get_value("DocType", "<nama>", "issingle")`** — kalau `0`, pakai `frappe.db.get_value(doctype, {}, field)` (ambil record pertama/satu-satunya) sebagai gantinya |
 | **`frappe.logger` vs `frappe.logger()`** | `frappe.logger` adalah fungsi, BUKAN objek logger — harus dipanggil dulu `frappe.logger()` baru bisa `.info(...)`/`.error(...)` dst. Salah tulis `frappe.logger.info(...)` (tanpa kurung) akan lolos saat ditulis tapi meledak saat dieksekusi: `AttributeError: 'function' object has no attribute 'info'`. Cek SEMUA pemakaian `frappe.logger` di file yang sama kalau nemu satu instance salah — kemungkinan ada yang lain juga ke-copy-paste dari pattern salah yang sama |
+| **DocType dengan `"permissions": []` kosong total di JSON** | **Ditemukan 2026-08-22 (lihat §4 bug session terbaru).** Kalau array `permissions` benar-benar kosong (bukan cuma minim), DocType HANYA bisa diakses Administrator — semua role lain (termasuk System Manager) kena `PermissionError`/404 saat akses UI. Selalu tambahkan minimal 1 baris permission (`System Manager` atau role relevan) untuk setiap DocType baru, walau cuma untuk data master yang jarang diedit |
 
 ---
 
@@ -287,6 +288,8 @@ Root cause awal: `calculate_sla()` lama pakai `add_to_date()` mentah, sama sekal
 Ticket test: `TKT-2608-0004`. Sudah di-commit (`8d3f26d`) dan push ke `origin/main`.
 
 > ✅ **Diverifikasi ulang dari kode di repo (2026-08-22):** `business_hours.py` dan `nexthd_ticket.py` dikonfirmasi sudah sesuai — `add_working_time()` dengan loop per-hari, dan `calculate_sla()` sudah memanggil `add_working_time()` dengan benar.
+>
+> ⚠️ **TAPI ditemukan gap baru (2026-08-22):** `calculate_sla()` hanya jalan sekali saat insert (`is_new()`), tidak recalculate saat status berubah ke "Sedang Dikerjakan" — bertentangan dengan keputusan desain 19 Agustus. Lihat item T di `SUMMARY.md §2`.
 
 ### ✅ SELESAI — Bug Session 2026-08-20 (Dedup Transisi Workflow — Kedua Kalinya) & Regression Test
 
@@ -326,6 +329,21 @@ Pesan "Peringatan SLA Response" di `tasks.py` masih pakai f-string mentah (bukan
 - User test `test.requester@ciptamebel.co.id` (role Requester) sudah ada, password sudah di-set
 - **Token bot Telegram tidak dicatat di dokumentasi/GitHub** — hanya ada di NextHD Settings di server
 
+### ⏳ BELUM DIFIX — Bug Session 2026-08-22 (Verifikasi Kode Kedua Putaran — Permission & SLA Recalc)
+
+Sesi ini melakukan verifikasi tambahan (di luar 4 file yang sudah dicek sebelumnya): `nexthd_ticket_waiting_log.json`, `nexthd_ticket.json` (permissions), `nexthd_sla_policy.json`, `nexthd_business_hours.json`, `nexthd_holiday.json`, `nexthd_team.json`, `nexthd_ticket_workflow.json`.
+
+**Temuan 1 — `permissions: []` kosong total di 2 DocType master:**
+`NextHD SLA Policy` dan `NextHD Business Hours` sama-sama punya array `permissions` kosong di JSON — dibandingkan `NextHD Team` dan `NextHD Holiday` yang eksplisit kasih akses ke `System Manager`/`Agent Manager`/`IT Manager`. DocType tanpa baris permission apa pun secara default hanya bisa diakses Administrator. **Ini kandidat kuat root cause item G (404 halaman NextHD SLA Policy)** — bukan cuma soal cache/build seperti dugaan di catatan lama. Belum difix — perlu tambah baris permission ke kedua file JSON lalu `bench migrate`.
+
+**Temuan 2 — Permission `reply` Waiting Log dikonfirmasi BENAR di JSON:**
+`nexthd_ticket_waiting_log.json` sudah tepat: field `reply` punya `permlevel: 1`, dan ada baris permission terpisah `{"role": "Requester", "permlevel": 1, "read": 1, "write": 1}` di samping baris `permlevel: 0`. Tidak ada bug di level kode — status "belum ditest" di item F murni soal verifikasi UI produksi, bukan config yang salah.
+
+**Temuan 3 — Field `priority` `read_only` di level field, bukan `permlevel`:**
+`nexthd_ticket.json` field `priority` diset `"read_only": 1` langsung di definisi field — ini berlaku sama untuk SEMUA role tanpa kecuali, termasuk Agent Manager/IT Manager. Supaya override bisa jalan, field ini perlu diubah pakai `permlevel` (misal `permlevel: 1`) plus baris permission tambahan yang kasih `write: 1` di permlevel itu untuk role yang boleh override. Detail di item C, `SUMMARY.md §2`.
+
+**Status:** Ketiganya ditambahkan ke `SUMMARY.md §2` (item U baru, item C & F diperbarui). Belum ada fix kode — masih tahap identifikasi.
+
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 00:35 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 02:10 WIB.*
