@@ -115,24 +115,43 @@ class NextHDTicket(Document):
 		self.db_set("responded_on", now)
 
 	def _create_waiting_log_entry(self):
-		"""Create a new waiting_log entry when waiting for user"""
-		# Note: question field is currently hardcoded to a placeholder.
-		# A proper UI (client script prompt asking the agent for a reason before
-		# allowing the "Tunggu User" transition) is a separate future task.
-		waiting_log = frappe.new_doc("NextHD Ticket Waiting Log")
-		waiting_log.parent = self.name
-		waiting_log.parenttype = "NextHD Ticket"
-		waiting_log.parentfield = "waiting_log"
-		waiting_log.asked_on = now_datetime()
-		waiting_log.asked_by = frappe.session.user
-		waiting_log.question = "Menunggu respons dari user"
-		
-		# Calculate idx for the child table
-		max_idx = frappe.db.get_value("NextHD Ticket Waiting Log", 
-			{"parent": self.name}, "idx", order_by="idx desc")
-		waiting_log.idx = (max_idx or 0) + 1
-		
-		waiting_log.insert()
+		"""Create a new waiting_log entry when waiting for user.
+		Uses frappe.db.sql instead of frappe.new_doc().insert() to avoid
+		Frappe child-table sync wiping this row on the next save() call.
+		"""
+		now = now_datetime()
+		max_idx = frappe.db.get_value(
+			"NextHD Ticket Waiting Log",
+			{"parent": self.name},
+			"idx",
+			order_by="idx desc"
+		) or 0
+
+		frappe.db.sql("""
+			INSERT INTO `tabNextHD Ticket Waiting Log`
+				(name, parent, parenttype, parentfield, idx,
+				 asked_on, asked_by, question,
+				 creation, modified, owner, modified_by)
+			VALUES
+				(%s, %s, 'NextHD Ticket', 'waiting_log', %s,
+				 %s, %s, %s,
+				 %s, %s, %s, %s)
+		""", (
+			frappe.generate_hash(length=10),
+			self.name,
+			max_idx + 1,
+			now,
+			frappe.session.user,
+			"Menunggu respons dari user",
+			now,
+			now,
+			frappe.session.user,
+			frappe.session.user,
+		))
+		# Refresh in-memory child table so subsequent save() calls on this
+		# same document instance do not wipe the row we just inserted via SQL.
+		self.load_from_db()
+
 
 	def _close_waiting_log_and_extend_sla(self):
 		"""Close the latest waiting_log entry and extend sla_resolution_by"""
