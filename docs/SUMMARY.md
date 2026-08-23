@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-22 19:15 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
+> **Last updated:** 2026-08-23 16:50 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
 
 ---
 
@@ -16,6 +16,7 @@
 | `docs/WORKFLOW.md` | Notifikasi Telegram + semua state machine + riwayat bug workflow |
 | `docs/POLA_KERJA_DAN_BUG.md` | Frappe quirks (Desktop/Workspace), aturan wajib saat coding/debug, riwayat bug lengkap |
 | `docs/SETUP_DAN_ROADMAP.md` | Instalasi, setup Telegram/SLA, alur deploy, pembagian kerja, referensi |
+| `docs/AUDIT_SISTEM.md` | **Baru** — script audit lengkap (schema drift, Workspace, Workflow master data, SLA, fixtures). Dipakai on-demand untuk cek kesehatan server atau sebelum install ke server baru |
 
 ---
 
@@ -33,6 +34,7 @@
 | **Cakupan ITIL** | Incident, Problem, Change, Known Error, Asset/CMDB, Service Catalog |
 | **Repo Git** | `silverefendy/nexthd`, branch `main` |
 | **Alur Development** | Claude (kerangka & spesifikasi) → Devin (implementasi) → Claude (finishing, bugfix, review) |
+| **Instalasi ke server baru** | TIDAK pakai Alembic — Frappe pakai skema deklaratif dari file DocType JSON, `bench migrate` otomatis sync struktur DB. Yang perlu manual: data master (Team/Category/Holiday), Workflow State & Action Master (global), NextHD Settings (token Telegram). Lihat `docs/AUDIT_SISTEM.md` untuk verifikasi kesiapan sebelum install |
 
 ### Modul Aplikasi
 
@@ -53,13 +55,19 @@
 
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `POLA_KERJA_DAN_BUG.md`.
 >
-> **Update 2026-08-22 19:15 WIB** — Item D, E, F, H (deploy PR #6, Telegram, permission reply, sidebar Holiday) sudah **diverifikasi live** via `bench console` di server produksi. **Backlog SLA/priority/deploy sejak 19 Agustus dinyatakan TUNTAS 100%.** Ditambahkan `docs/FAQ.md` (kurasi masalah berulang untuk Devin). Item baru **W** (fitur foto) ditambahkan — prompt sudah diberikan ke Devin, status pengerjaan belum bisa dikonfirmasi karena server Devin offline (pemadaman listrik lokasi).
+> **Update 2026-08-23 16:50 WIB** — Ditambahkan `docs/AUDIT_SISTEM.md` (script audit lengkap: schema drift, Workspace, Workflow, SLA, fixtures — dipakai sebelum rencana install ke server baru). Ditemukan **bug baru (item X)**: `install.py` masih pakai nilai SLA versi lama (pra-redesign 19 Agustus), belum diperbaiki — perbaikan sudah disiapkan Claude, menunggu Efendy jalankan via git.
+
+### 🔴 Baru Ditemukan — Perlu Diperbaiki
+
+| # | Item | Keterangan | PIC |
+|---|---|---|---|
+| X | `install.py` — nilai SLA default sudah usang | Fungsi `create_default_sla_policies()` masih pakai angka SLA versi lama (Kritis 30/240, Tinggi 120/480, Sedang 480/1440, Rendah 1440/4320 menit) — seharusnya Kritis 15/60 (is_24x7=1), Tinggi 30/240, Sedang 60/2880, Rendah 120/10080 sesuai SOP final 19 Agustus. `is_24x7` juga tidak pernah di-set di script ini. **Dampak:** instalasi baru ke server manapun sekarang akan dapat SLA yang salah tanpa sadar. Perbaikan kode sudah disiapkan Claude, tinggal di-commit lewat git (tidak perlu akses server) | Efendy |
 
 ### 🔶 Sedang Menunggu Konfirmasi
 
 | # | Item | Keterangan | PIC |
 |---|---|---|---|
-| W | Fitur foto reusable (Ticket/Problem/Asset/Known Error) | Prompt lengkap sudah diberikan ke Devin (DocType `NextHD Photo` + `NextHD Photo Link`, galeri swipe, kompresi otomatis, auto-copy saat convert Ticket→Problem/Problem→Known Error). **Dicek langsung ke repo `main` (22 Agustus) — DocType belum ada, tidak ada PR baru terbuka.** Kemungkinan Devin belum sempat push sebelum server-nya padam. Perlu dicek ulang begitu Devin online kembali | Efendy |
+| W | Fitur foto reusable (Ticket/Problem/Asset/Known Error) | Prompt lengkap sudah diberikan ke Devin (DocType `NextHD Photo` + `NextHD Photo Link`, galeri swipe, kompresi otomatis, auto-copy saat convert Ticket→Problem/Problem→Known Error). **Dicek langsung ke repo `main` (22 Agustus) — DocType belum ada, tidak ada PR baru terbuka.** Kemungkinan Devin belum sempat push sebelum server-nya padam. Perlu dicek ulang begitu Devin online kembali — `docs/AUDIT_SISTEM.md §14` bisa dipakai untuk verifikasi cepat | Efendy |
 
 ### ✅ Semua Item Utama SUDAH Live & Terverifikasi
 
@@ -129,7 +137,8 @@
 | Shortcut `doc_view` NextHD Settings | ✅ 2026-08-21 |
 | Naming series seragam YY.MM semua DocType | ✅ 2026-08-19 |
 | `docs/FAQ.md` dibuat — kurasi masalah berulang untuk Devin | ✅ 2026-08-22 |
+| `docs/AUDIT_SISTEM.md` dibuat — script audit lengkap kesehatan server/repo | ✅ 2026-08-23 |
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 19:15 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-23 16:50 WIB.*
