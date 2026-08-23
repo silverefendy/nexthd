@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-23 16:50 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
+> **Last updated:** 2026-08-23 17:20 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
 
 ---
 
@@ -11,12 +11,13 @@
 | File | Isi |
 |---|---|
 | `docs/FAQ.md` | **Wajib dibaca Devin pertama kali** — kurasi masalah berulang (Workspace/Desktop Icon pasca-migrate) + hal yang tidak boleh diubah tanpa izin |
-| `docs/SUMMARY.md` | **File ini** — index + project overview + status item belum dikerjakan |
+| `docs/SUMMARY.md` | **File ini** — index + project overview + status item belum dikerjakan (operasional harian) |
+| `docs/ROADMAP_FITUR.md` | **Baru** — rencana fitur jangka menengah-panjang (Knowledge Article publik/internal, tag, CSAT, merge tiket, dll), belum jadi task konkret |
 | `docs/ARSITEKTUR.md` | Infrastruktur, struktur app, DocType/field lengkap, permissions, schema tabel, label ID |
 | `docs/WORKFLOW.md` | Notifikasi Telegram + semua state machine + riwayat bug workflow |
 | `docs/POLA_KERJA_DAN_BUG.md` | Frappe quirks (Desktop/Workspace), aturan wajib saat coding/debug, riwayat bug lengkap |
 | `docs/SETUP_DAN_ROADMAP.md` | Instalasi, setup Telegram/SLA, alur deploy, pembagian kerja, referensi |
-| `docs/AUDIT_SISTEM.md` | **Baru** — script audit lengkap (schema drift, Workspace, Workflow master data, SLA, fixtures). Dipakai on-demand untuk cek kesehatan server atau sebelum install ke server baru |
+| `docs/AUDIT_SISTEM.md` | Script audit lengkap (schema drift, Workspace, Workflow master data, SLA, fixtures). Dipakai on-demand untuk cek kesehatan server atau sebelum install ke server baru |
 
 ---
 
@@ -48,14 +49,19 @@
 - Multi-tim dengan assignment agent
 - Custom reports: Tiket per Bulan, Tiket per Kategori, Tiket per Prioritas (breach SLA)
 - Foto/gambar reusable & bisa di-link antar Ticket/Problem/Asset/Known Error — **🔶 status belum bisa dikonfirmasi**, lihat item W di §2
+- **Rencana ke depan:** Knowledge Base publik (self-service), tag di tiket, CSAT — lihat `docs/ROADMAP_FITUR.md`
 
 ---
 
 ## 2. Status Item Belum Dikerjakan
 
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `POLA_KERJA_DAN_BUG.md`.
+> Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/ROADMAP_FITUR.md`.
 >
-> **Update 2026-08-23 16:50 WIB** — Ditambahkan `docs/AUDIT_SISTEM.md` (script audit lengkap: schema drift, Workspace, Workflow, SLA, fixtures — dipakai sebelum rencana install ke server baru). Ditemukan **bug baru (item X)**: `install.py` masih pakai nilai SLA versi lama (pra-redesign 19 Agustus), belum diperbaiki — perbaikan sudah disiapkan Claude, menunggu Efendy jalankan via git.
+> **Update 2026-08-23 17:20 WIB** — Ditambahkan `docs/ROADMAP_FITUR.md` (rencana Knowledge
+> Article publik/internal, tag, CSAT, merge tiket, dashboard trend, dll — hasil diskusi
+> arah pengembangan setelah backlog inti selesai). Ditemukan **bug baru (item X)**:
+> `install.py` masih pakai nilai SLA versi lama, belum diperbaiki.
 
 ### 🔴 Baru Ditemukan — Perlu Diperbaiki
 
@@ -100,6 +106,10 @@
 | S | Generalisasi ke domain non-IT (Asset Category/Attribute EAV) | Rencana teknis ada di `ARSITEKTUR.md §8`, masih wacana | - |
 | V | Link Telegram untuk user test `test.requester` | Belum pernah kirim `/start`+`/link` — kalau mau dites tuntas, tinggal eksekusi manual + rerun script verifikasi | Efendy |
 
+> **Catatan:** rencana fitur besar (Knowledge Base publik, tag, CSAT, merge tiket, eskalasi
+> otomatis, dst) dipindahkan ke `docs/ROADMAP_FITUR.md` supaya tidak bercampur dengan open
+> items operasional di atas.
+
 ### GitHub Issues & PR — Riwayat Devin
 
 | # | Judul | Status |
@@ -138,7 +148,8 @@
 | Naming series seragam YY.MM semua DocType | ✅ 2026-08-19 |
 | `docs/FAQ.md` dibuat — kurasi masalah berulang untuk Devin | ✅ 2026-08-22 |
 | `docs/AUDIT_SISTEM.md` dibuat — script audit lengkap kesehatan server/repo | ✅ 2026-08-23 |
+| `docs/ROADMAP_FITUR.md` dibuat — rencana fitur jangka menengah-panjang | ✅ 2026-08-23 |
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-23 16:50 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-23 17:20 WIB.*
