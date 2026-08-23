@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-23 17:20 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
+> **Last updated:** 2026-08-23 18:30 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
 
 ---
 
@@ -10,13 +10,13 @@
 
 | File | Isi |
 |---|---|
-| `docs/FAQ.md` | **Wajib dibaca Devin pertama kali** — kurasi masalah berulang (Workspace/Desktop Icon pasca-migrate) + hal yang tidak boleh diubah tanpa izin |
+| `docs/FAQ_DEVELOPER.md` | **Wajib dibaca Devin pertama kali** — kurasi masalah berulang (Workspace/Desktop Icon pasca-migrate) + pembagian kerja Claude/Devin/Efendy + hal yang tidak boleh diubah tanpa izin |
 | `docs/SUMMARY.md` | **File ini** — index + project overview + status item belum dikerjakan (operasional harian) |
-| `docs/ROADMAP_FITUR.md` | **Baru** — rencana fitur jangka menengah-panjang (Knowledge Article publik/internal, tag, CSAT, merge tiket, dll), belum jadi task konkret |
+| `docs/DAFTAR_FITUR.md` | Checklist lengkap semua fitur (selesai/dikerjakan/rencana) dalam satu tabel, termasuk desain Generalisasi Non-IT & Wipe Data Tool (sebelumnya di `ARSITEKTUR.md §8/§9`) |
 | `docs/ARSITEKTUR.md` | Infrastruktur, struktur app, DocType/field lengkap, permissions, schema tabel, label ID |
 | `docs/WORKFLOW.md` | Notifikasi Telegram + semua state machine + riwayat bug workflow |
 | `docs/POLA_KERJA_DAN_BUG.md` | Frappe quirks (Desktop/Workspace), aturan wajib saat coding/debug, riwayat bug lengkap |
-| `docs/SETUP_DAN_ROADMAP.md` | Instalasi, setup Telegram/SLA, alur deploy, pembagian kerja, referensi |
+| `docs/PANDUAN_INSTALASI.md` | Instalasi, setup Telegram/SLA, alur deploy, referensi |
 | `docs/AUDIT_SISTEM.md` | Script audit lengkap (schema drift, Workspace, Workflow master data, SLA, fixtures). Dipakai on-demand untuk cek kesehatan server atau sebelum install ke server baru |
 
 ---
@@ -49,16 +49,16 @@
 - Multi-tim dengan assignment agent
 - Custom reports: Tiket per Bulan, Tiket per Kategori, Tiket per Prioritas (breach SLA)
 - Foto/gambar reusable & bisa di-link antar Ticket/Problem/Asset/Known Error — **🔶 status belum bisa dikonfirmasi**, lihat item W di §2
-- **Rencana ke depan:** Knowledge Base publik (self-service), tag di tiket, CSAT — lihat `docs/ROADMAP_FITUR.md`
+- **Rencana ke depan:** Knowledge Base publik (self-service), tag di tiket, CSAT — lihat `docs/DAFTAR_FITUR.md`
 
 ---
 
 ## 2. Status Item Belum Dikerjakan
 
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `POLA_KERJA_DAN_BUG.md`.
-> Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/ROADMAP_FITUR.md`.
+> Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/DAFTAR_FITUR.md`.
 >
-> **Update 2026-08-23 17:20 WIB** — Ditambahkan `docs/ROADMAP_FITUR.md` (rencana Knowledge
+> **Update 2026-08-23 17:20 WIB** — Ditambahkan `docs/DAFTAR_FITUR.md` (rencana Knowledge
 > Article publik/internal, tag, CSAT, merge tiket, dashboard trend, dll — hasil diskusi
 > arah pengembangan setelah backlog inti selesai). Ditemukan **bug baru (item X)**:
 > `install.py` masih pakai nilai SLA versi lama, belum diperbaiki.
@@ -103,11 +103,11 @@
 | P | SLA otomatis untuk Problem/Change Request | Saat ini SLA hanya untuk Ticket | - |
 | Q | Notifikasi Telegram untuk Problem/CR | Sengaja ditunda, fokus ke fitur lain dulu | - |
 | R | Laporan bulanan otomatis (jumlah tiket, MTTR) | Usulan, belum dikerjakan | - |
-| S | Generalisasi ke domain non-IT (Asset Category/Attribute EAV) | Rencana teknis ada di `ARSITEKTUR.md §8`, masih wacana | - |
+| S | Generalisasi ke domain non-IT (Asset Category/Attribute EAV) | Rencana teknis ada di `DAFTAR_FITUR.md`, masih wacana | - |
 | V | Link Telegram untuk user test `test.requester` | Belum pernah kirim `/start`+`/link` — kalau mau dites tuntas, tinggal eksekusi manual + rerun script verifikasi | Efendy |
 
 > **Catatan:** rencana fitur besar (Knowledge Base publik, tag, CSAT, merge tiket, eskalasi
-> otomatis, dst) dipindahkan ke `docs/ROADMAP_FITUR.md` supaya tidak bercampur dengan open
+> otomatis, dst) dipindahkan ke `docs/DAFTAR_FITUR.md` supaya tidak bercampur dengan open
 > items operasional di atas.
 
 ### GitHub Issues & PR — Riwayat Devin
@@ -146,10 +146,11 @@
 | Number Card dashboard (kolom `number_card_name`) | ✅ 2026-08-21 |
 | Shortcut `doc_view` NextHD Settings | ✅ 2026-08-21 |
 | Naming series seragam YY.MM semua DocType | ✅ 2026-08-19 |
-| `docs/FAQ.md` dibuat — kurasi masalah berulang untuk Devin | ✅ 2026-08-22 |
+| `docs/FAQ_DEVELOPER.md` dibuat — kurasi masalah berulang untuk Devin + pembagian kerja | ✅ 2026-08-22, digabung 2026-08-23 |
 | `docs/AUDIT_SISTEM.md` dibuat — script audit lengkap kesehatan server/repo | ✅ 2026-08-23 |
-| `docs/ROADMAP_FITUR.md` dibuat — rencana fitur jangka menengah-panjang | ✅ 2026-08-23 |
+| `docs/DAFTAR_FITUR.md` dibuat — checklist lengkap semua fitur dalam satu tabel | ✅ 2026-08-23 |
+| Restrukturisasi dokumentasi — rename `PANDUAN_INSTALASI.md`, hapus file lama, potong §8/§9 dari `ARSITEKTUR.md` | ✅ 2026-08-23 |
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-23 17:20 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-23 18:30 WIB.*
