@@ -1,12 +1,12 @@
 # NextHD — Daftar Fitur (Checklist Lengkap)
 
 > **Satu tempat untuk cek semua fitur** — sudah selesai, sedang dikerjakan, atau masih
-> rencana. Menggantikan `ROADMAP_FITUR.md` (sekarang termasuk juga desain yang sebelumnya
+> rencana. (Sebelumnya `ROADMAP_FITUR.md`, sekarang termasuk juga desain yang sebelumnya
 > nyasar di `ARSITEKTUR.md §8` dan `§9`).
 >
 > Status: ✅ Selesai & Live | 🔶 Sedang Dikerjakan/Menunggu Konfirmasi | ⬜ Belum Dikerjakan (Rencana)
 >
-> **Last updated:** 2026-08-23 18:00 WIB
+> **Last updated:** 2026-08-23 18:30 WIB
 
 ---
 
