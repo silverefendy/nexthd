@@ -15,6 +15,22 @@
    "wildcard_filter": 0
   },
   {
+   "fieldname": "agent",
+   "fieldtype": "Link",
+   "label": "Agent",
+   "mandatory": 0,
+   "options": "User",
+   "wildcard_filter": 0
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "mandatory": 0,
+   "options": "Kritis\nTinggi\nSedang\nRendah",
+   "wildcard_filter": 0
+  },
+  {
    "fieldname": "team",
    "fieldtype": "Link",
    "label": "Team",
@@ -37,7 +53,7 @@
  "query": "SELECT\n\tDATE_FORMAT(`tabNextHD Ticket`.creation, '%%Y-%%m') AS \"Bulan:Data:150\",\n\tCOUNT(`tabNextHD Ticket`.name) AS \"Tiket Baru:Int:100\",\n\tSUM(CASE WHEN `tabNextHD Ticket`.status = 'Selesai' AND YEAR(`tabNextHD Ticket`.resolved_on) = %(year)s THEN 1 ELSE 0 END) AS \"Tiket Selesai:Int:100\",\n\tSUM(CASE WHEN `tabNextHD Ticket`.status = 'Ditutup' AND YEAR(`tabNextHD Ticket`.closed_on) = %(year)s THEN 1 ELSE 0 END) AS \"Tiket Ditutup:Int:100\"\nFROM\n\t`tabNextHD Ticket`\nWHERE\n\tYEAR(`tabNextHD Ticket`.creation) = %(year)s\n\tAND (%(team)s IS NULL OR `tabNextHD Ticket`.team = %(team)s)\nGROUP BY\n\tDATE_FORMAT(`tabNextHD Ticket`.creation, '%%Y-%%m')\nORDER BY\n\tDATE_FORMAT(`tabNextHD Ticket`.creation, '%%Y-%%m')",
  "ref_doctype": "NextHD Ticket",
  "report_name": "Tiket per Bulan",
- "report_type": "Query Report",
+ "report_type": "Script Report",
  "roles": [
   {
    "role": "IT Manager"

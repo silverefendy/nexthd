@@ -27,6 +27,14 @@
    "mandatory": 0,
    "options": "Insiden\nPermintaan Layanan",
    "wildcard_filter": 0
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "mandatory": 0,
+   "options": "NextHD Team",
+   "wildcard_filter": 0
   }
  ],
  "idx": 0,
@@ -43,7 +51,7 @@
  "query": "SELECT\n\t`tabNextHD Ticket`.category AS \"Kategori:Link/NextHD Category:200\",\n\tCOUNT(`tabNextHD Ticket`.name) AS \"Jumlah Tiket:Int:100\",\n\tSUM(CASE WHEN `tabNextHD Ticket`.status = 'Selesai' THEN 1 ELSE 0 END) AS \"Jumlah Selesai:Int:100\",\n\tSUM(CASE WHEN `tabNextHD Ticket`.status IN ('Baru', 'Sedang Dikerjakan', 'Menunggu User') THEN 1 ELSE 0 END) AS \"Jumlah Masih Terbuka:Int:150\"\nFROM\n\t`tabNextHD Ticket`\nWHERE\n\t`tabNextHD Ticket`.creation >= %(from_date)s\n\tAND `tabNextHD Ticket`.creation <= %(to_date)s\n\tAND (%(ticket_type)s IS NULL OR `tabNextHD Ticket`.ticket_type = %(ticket_type)s)\nGROUP BY\n\t`tabNextHD Ticket`.category\nORDER BY\n\t`tabNextHD Ticket`.category",
  "ref_doctype": "NextHD Ticket",
  "report_name": "Tiket per Kategori",
- "report_type": "Query Report",
+ "report_type": "Script Report",
  "roles": [
   {
    "role": "IT Manager"
