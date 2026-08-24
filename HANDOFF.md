@@ -47,6 +47,7 @@ Konfigurasi navigasi berikut sudah dikunci dan **tidak boleh diubah** kecuali ad
 9. **Field baru jangan ditempatkan (idx) langsung setelah field bertipe Table** tanpa Column Break — kadang tidak ter-render di UI meski data valid
 10. **`bench console` (IPython) yang dipipe via `<<EOF` sangat rawan memecah blok kode secara prematur**, khususnya `if/else`/`for` dengan baris kosong di tengah, atau saat script diketik manual dengan tab-completion aktif (menghasilkan baris duplikat/corrupt seperti listing direktori nyasar masuk ke heredoc). **Solusi paling aman:** bungkus seluruh logic dalam satu `exec("""...""")` — karena itu satu string literal panjang, IPython tidak memecahnya per baris kosong, dan generator expression/comprehension di dalamnya tetap harus dihindari (scope terpisah, lihat poin 11)
 11. **Hindari generator expression/list comprehension yang mereferensikan variabel di scope `exec()` sekitarnya** — genexpr punya scope sendiri yang terisolasi dari `exec()`, menyebabkan `NameError` meski variabelnya "kelihatan" terdefinisi tepat di atasnya. Pakai `for` loop biasa sebagai gantinya kalau kode dijalankan lewat `exec()`
+12. **Sebelum edit dokumen apa pun by `frappe.db.sql(... LIMIT 1)` atau `rows[0]`, SELALU filter eksplisit pakai `WHERE name = '...'` yang tepat** — jangan asumsikan hasil pertama query tanpa filter adalah record yang dimaksud. Lihat insiden sesi 24 Agustus (Sesi Sidebar Report) di bawah: `SELECT name FROM tabWorkspace Sidebar` tanpa filter mengembalikan `"Build"` (bawaan Frappe) di posisi pertama, bukan `"NextHD"`, dan item sempat nyasar ke sana sebelum ketahuan dan diperbaiki
 
 ---
 
@@ -111,6 +112,12 @@ Nama kolom beberapa tabel berbeda dari dokumentasi umum — selalu `DESCRIBE` du
 | `tabDocField` | `insert_after` (tidak ada — urutan field murni via `idx`) |
 
 **Workspace NextHD:** didefinisikan dari file JSON di repo (`nexthd/next_helpdesk/workspace/nexthd/nexthd.json`), di-load ke DB saat `bench migrate`. Child records (Shortcut, Sidebar Item) tidak selalu ter-sync otomatis — selalu verifikasi via SQL setelah migrate.
+
+> ⚠️ **PENTING (dikoreksi 24 Agustus 2026, lihat section terbawah "Arsitektur Sidebar"):**
+> file `nexthd.json` ini mengontrol ISI HALAMAN Workspace (cards, shortcut, quick list) —
+> **bukan** sidebar navigasi kiri. Sidebar kiri dikontrol doctype terpisah `Workspace Sidebar`.
+> Jangan disamakan lagi — baca section "Arsitektur Sidebar NextHD" di bagian bawah dokumen ini
+> sebelum menyentuh apa pun terkait sidebar.
 
 **Lokasi file penting:**
 ```
@@ -354,6 +361,13 @@ tapi item sidebar "NextHD Photo" tetap tidak ada di DB meski sudah ada di file J
 **Fix:** append manual lewat ORM — `frappe.get_doc("Workspace", "NextHD")`, `ws.append("links", {...})`, `ws.save(ignore_permissions=True)`. Ini mem-bypass keterbatasan `import_file_by_path`
 di atas.
 
+**⚠️ KOREKSI 24 Agustus, sesi lanjutan (lihat section terbawah):** analisis ini TERNYATA SALAH
+ALAMAT. `Workspace.links` (field yang di-append di sini) **bukan** yang merender sidebar kiri
+navigasi — field ini mengontrol bagian lain (kemungkinan referensi internal/cards di halaman
+Workspace). Sidebar kiri navigasi yang sebenarnya dikontrol oleh doctype terpisah bernama
+**`Workspace Sidebar`**. Fix di atas kemungkinan besar tidak benar-benar menyelesaikan masalah
+"Photo hilang dari sidebar" — hanya kebetulan terlihat solved sesaat karena reload cache.
+
 **Ditemukan juga (bukan bug, tapi drift):** sidebar production punya item "NextHD Business
 Hours" yang **tidak ada** di `nexthd.json` repo — kemungkinan ditambahkan manual via UI di
 suatu waktu. **Belum diputuskan** apakah perlu disinkronkan ke repo atau dibiarkan.
@@ -459,9 +473,6 @@ untracked itu dihapus, `git pull origin main` berhasil fast-forward, disusul
 `tiket_per_agent`, `tiket_per_bulan`, `tiket_per_kategori`, `tiket_per_prioritas`) sudah
 terverifikasi ada di server dan migrate sukses tanpa error fatal.
 
-> ⚠️ **Belum ada verifikasi UI end-to-end** — Efendy belum konfirmasi apakah kolom yang
-> tadinya tidak clickable sekarang sudah berfungsi setelah dibuka di browser.
-
 ## Catatan untuk Sesi Berikutnya
 
 - **Kalau file report/DocType "hilang" di server padahal ada di GitHub, cek `git log
@@ -475,3 +486,92 @@ terverifikasi ada di server dan migrate sukses tanpa error fatal.
   (`.py`, `.json`, `.js`, atau tipe lain) ke repo `silverefendy/nexthd` — hanya file `.md`
   (dokumentasi) yang boleh di-push langsung oleh Claude via GitHub API. Perubahan kode tetap
   lewat jalur PR (Devin) atau dieksekusi langsung oleh Efendy di server.
+
+---
+
+# UPDATE — 24 Agustus 2026, Sesi Lanjutan #2 (Arsitektur Sidebar NextHD — DITEMUKAN & DILURUSKAN)
+
+## Konteks
+
+Efendy melaporkan 2 hal: (1) tidak ada menu Report gabungan di sidebar kiri untuk mengakses
+6 report NextHD sekaligus, dan (2) item "NextHD Photo" hilang lagi dari sidebar kiri
+(padahal sempat "diperbaiki" di sesi 24 Agustus sebelumnya). Sesi ini akhirnya menemukan
+**akar masalah sesungguhnya**: pemahaman sebelumnya tentang komponen mana yang mengontrol
+sidebar kiri navigasi **salah**, sudah 2 sesi berturut-turut mengedit tempat yang keliru.
+
+## 🎯 Arsitektur Sidebar NextHD — SUMBER KEBENARAN YANG BENAR (baca ini dulu sebelum sentuh sidebar apa pun)
+
+Ada **3 komponen berbeda** yang sekilas terlihat mirip tapi punya fungsi terpisah total. Jangan
+tertukar lagi:
+
+| Komponen | Fungsi Sebenarnya | Lokasi Sumber |
+|---|---|---|
+| **`Workspace Sidebar`** (doctype) + child **`Workspace Sidebar Item`** | **INI yang benar-benar merender sidebar kiri navigasi** yang terlihat user (Dashboard, NextHD Ticket, NextHD Problem, dst). Satu record per app/module — nama record app ini adalah **`"NextHD"`** (BUKAN nama lain) | Live di database, DIAKSES via `frappe.get_doc("Workspace Sidebar", "NextHD")` |
+| `Workspace.links` (child table `links` di doctype `Workspace`) | **BUKAN sidebar kiri.** Fungsi sebenarnya belum sepenuhnya dikonfirmasi, kemungkinan referensi internal/related links di halaman workspace itu sendiri — **JANGAN edit ini untuk masalah sidebar** | Live di database, `frappe.get_doc("Workspace", "NextHD")` |
+| `nexthd/next_helpdesk/workspace/nexthd/nexthd.json` (`workspace_json` hook) | Mengontrol **ISI HALAMAN** Workspace saat diklik — cards, number card, shortcut button, quick list. **Bukan sidebar kiri** | File repo, di-load via `bench migrate` |
+| `nexthd/fixtures/workspace_sidebar.json` | Skema-nya **benar** (cocok dengan `Workspace Sidebar Item`), TAPI **sengaja dinonaktifkan** dari fixtures di `hooks.py` (alasan: mencegah bug "orphan workspace" saat migrate). Mengedit file ini **TIDAK BERPENGARUH** ke server — murni arsip/dokumentasi | File repo, TIDAK di-load otomatis |
+
+## 🐛 Kronologi Kesalahan Sesi Ini (supaya tidak terulang)
+
+1. **Percobaan 1:** edit `Workspace.links` (nambah "NextHD Report") → gagal dengan
+   `MandatoryError: [Workspace, NextHD]: type` — field `type` di record `NextHD` ternyata
+   `NULL` di database (anomali data lama, entah kenapa bisa lolos selama ini karena hanya
+   fixture reimport yang bypass validasi `save()` biasa yang pernah menyentuhnya)
+2. **Percobaan 2:** field `type` diisi ulang `"Workspace"`, `Workspace.links` berhasil di-save
+   dengan item baru — **tapi sidebar kiri tetap tidak berubah**. Ini seharusnya jadi sinyal
+   bahwa `Workspace.links` memang bukan sumber yang benar
+3. **Percobaan 3:** ditemukan doctype `Workspace Sidebar` (terkonfirmasi juga di
+   `ARSITEKTUR.md §6` sebagai `tabWorkspace Sidebar` + `tabWorkspace Sidebar Item` — sudah
+   lama terdokumentasi skemanya, tapi belum ada yang menyadari inilah yang aktif dipakai)
+4. **Kesalahan fatal:** query `SELECT name FROM tabWorkspace Sidebar` **tanpa filter**,
+   lalu ambil `rows[0].name` — mengira hasil pertama otomatis adalah `"NextHD"`. Ternyata
+   hasil pertama adalah **`"Build"`** (workspace bawaan Frappe developer tools). Item
+   "NextHD Photo" dan "NextHD Report" sempat ke-append ke `Workspace Sidebar` record
+   **"Build"**, bukan **"NextHD"**
+5. **Fix final:** hapus 2 item yang nyasar dari `Build`, tambahkan ke record `NextHD` yang
+   benar. **Dikonfirmasi Efendy: sudah muncul di sidebar.**
+
+## ✅ Status Setelah Sesi Ini
+
+- Item **"NextHD Photo"** dan **"NextHD Report"** sudah live di `Workspace Sidebar` record
+  `"NextHD"` di database production, **terkonfirmasi tampil di browser**
+- "NextHD Report" saat ini link ke `Report` DocType filtered by `module = "Next Helpdesk"`
+  (menampilkan semua 6 report NextHD dalam satu list saat diklik)
+
+## ❌ Belum Beres — PENTING untuk Sesi Berikutnya
+
+**Perubahan di atas HANYA ADA DI DATABASE, belum di-export/commit ke repo dalam bentuk apa
+pun.** Karena `Workspace Sidebar` **sengaja dikeluarkan dari mekanisme fixtures** (lihat
+komentar di `hooks.py`), TIDAK ADA jalur otomatis untuk membuatnya permanen lewat cara yang
+sudah dipakai sejauh ini. Risiko: kalau ada proses lain yang someday mereset/reimport
+`Workspace Sidebar` (misal reinstall app, restore dari backup lama), 2 item baru ini bisa
+hilang lagi tanpa jejak di repo.
+
+**Belum diputuskan** cara permanen terbaiknya — opsi yang perlu dipertimbangkan Efendy/Devin:
+- (a) Re-enable `Workspace Sidebar` di `fixtures` list `hooks.py` — TAPI ini yang justru
+  sengaja dimatikan karena pernah menyebabkan bug "orphan workspace hilang" saat migrate,
+  jadi perlu investigasi ulang kenapa itu terjadi sebelum diaktifkan lagi
+- (b) Simpan snapshot manual (export JSON) ke `nexthd/fixtures/workspace_sidebar.json`
+  sebagai **dokumentasi/arsip saja** (bukan otomatis ter-load), lalu punya SOP manual re-apply
+  item ini tiap kali ada indikasi sidebar reset
+- (c) Bikin patch/migration script Python kustom yang dijalankan sekali di `after_migrate`
+  hook untuk memastikan item sidebar penting selalu ada — pendekatan lebih robust tapi
+  perlu effort development
+
+## Catatan Wajib untuk Sesi Berikutnya
+
+- **JANGAN PERNAH** ambil hasil pertama dari query tanpa `WHERE name = '...'` yang eksplisit
+  saat mengedit dokumen apa pun via `bench console` — selalu filter nama spesifik dulu, dan
+  `print()` hasil query sebelum melakukan `.save()` apa pun, supaya kesalahan ketahuan
+  sebelum tersimpan, bukan sesudah
+- **Untuk masalah SIDEBAR KIRI navigasi** (bukan isi halaman Workspace): satu-satunya
+  sumber kebenaran adalah `frappe.get_doc("Workspace Sidebar", "NextHD")`, child table
+  `items`. JANGAN sentuh `Workspace.links` atau `nexthd.json` untuk masalah ini
+- Field-field valid di child `Workspace Sidebar Item` (dari `frappe.get_meta`):
+  `type` (Select: Link/Card Break), `label`, `icon`, `description`, `hidden`, `link_type`
+  (Select: DocType/Page/Report), `link_to` (Dynamic Link), `report_ref_doctype`,
+  `dependencies`, `only_for`, `onboard`, `is_query_report`, `link_count`
+- Sesi 24 Agustus sebelumnya (section di atas, "Sidebar Photo Fix") **analisisnya keliru** —
+  root cause yang diklaim sudah fix di situ (`Workspace.links` + `import_file_by_path`)
+  ternyata bukan penyebab sebenarnya. Jangan jadikan referensi solusi untuk masalah sidebar
+  serupa di masa depan
