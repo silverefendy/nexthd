@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-24 (sesi lanjutan — sidebar Photo fix, dedup workflow round 2)
+> **Last updated:** 2026-08-24 (sesi lanjutan — Business Hours Sabtu + fix install.py)
 
 ---
 
@@ -35,6 +35,7 @@
 | **Cakupan ITIL** | Incident, Problem, Change, Known Error, Asset/CMDB, Service Catalog |
 | **Repo Git** | `silverefendy/nexthd`, branch `main` |
 | **Alur Development** | Claude (kerangka & spesifikasi) → Devin (implementasi) → Claude (finishing, bugfix, review) |
+| **Jam Kerja** | Senin–Jumat 08:00–17:00, **Sabtu 08:00–15:00** (hari kerja), Minggu libur |
 | **Instalasi ke server baru** | TIDAK pakai Alembic — Frappe pakai skema deklaratif dari file DocType JSON, `bench migrate` otomatis sync struktur DB. Yang perlu manual: data master (Team/Category/Holiday), Workflow State & Action Master (global), NextHD Settings (token Telegram). Lihat `docs/AUDIT_SISTEM.md` untuk verifikasi kesiapan sebelum install |
 
 ### Modul Aplikasi
@@ -58,21 +59,20 @@
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `POLA_KERJA_DAN_BUG.md`.
 > Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/DAFTAR_FITUR.md`.
 >
-> **Update 2026-08-24** — Sesi lanjutan menyelesaikan item W (fitur foto, sekarang live +
-> terverifikasi penuh termasuk sidebar) dan item X (`install.py` SLA usang, sudah di-commit
-> `b3a24b2`→`2d795b9`). Ditemukan & diperbaiki 2 bug baru: sidebar "NextHD Photo" tidak
-> sync dari reimport JSON (root cause: `import_file_by_path` tidak sync child table
-> `links`), dan duplikasi Workflow Transition muncul lagi 4× di ketiga workflow (root
-> cause: `Workflow Action Master` yang hilang). Ditambahkan Cuti Bersama 2026 (8 hari).
-> Ditemukan **anomali baru (item Y)**: Business Hours Sabtu `is_working_day=1` di
-> production, tidak konsisten dengan default `install.py` — belum diputuskan mana yang
-> benar.
+> **Update 2026-08-24 (lanjutan)** — Item Y (Business Hours Sabtu) **sudah diputuskan
+> Efendy**: Sabtu memang hari kerja, jam 08:00–15:00. Data production + `install.py`
+> diselaraskan. Ditemukan **bug tambahan (item Z)**: commit `b3a24b2` untuk `install.py`
+> ternyata kehilangan seluruh indentasi (kemungkinan tab hilang saat heredoc/paste di
+> sesi sebelumnya), membuat file itu `IndentationError` kalau dijalankan — diperbaiki
+> bersamaan dengan fix Sabtu, kali ini diverifikasi syntax-nya dengan `python3 -c
+> "import ast; ast.parse(...)"` sebelum commit.
 
-### 🔴 Baru Ditemukan — Perlu Keputusan/Perbaikan
+### ✅ Item Y & Z — Baru Saja Diselesaikan (24 Agustus)
 
 | # | Item | Keterangan | PIC |
 |---|---|---|---|
-| Y | Business Hours "Sabtu" — production vs `install.py` tidak konsisten | Production: `is_working_day=1` (hari kerja). `install.py` (setelah patch 24 Agustus): default `0` (bukan hari kerja). Perlu diputuskan mana yang benar, lalu selaraskan yang satunya | Efendy (keputusan) |
+| Y | Business Hours "Sabtu" | **Keputusan Efendy:** Sabtu hari kerja, 08:00–15:00. Data production diupdate via `bench console`, `install.py` diselaraskan (Sabtu beda jam dari Senin-Jumat, `is_working_day=1`) | Efendy |
+| Z | `install.py` kehilangan indentasi (bug baru, dari commit `b3a24b2`) | File jadi `IndentationError` jika dijalankan — root cause: tab kemungkinan hilang saat heredoc/paste ke terminal sesi sebelumnya. Ditulis ulang dengan indentasi tab, diverifikasi via `python3 -c "import ast; ast.parse(...)"` sebelum commit | Efendy |
 
 ### ✅ Semua Item Utama SUDAH Live & Terverifikasi
 
@@ -87,7 +87,7 @@
 | F | Permission `reply` di Waiting Log | `bench console`: field `reply` `permlevel=1`, role Requester `permlevel=1, write=1` — konfigurasi terkonfirmasi benar | Efendy |
 | H | `NextHD Holiday` di sidebar Workspace | `bench console`: query `tabWorkspace Sidebar Item` → Holiday ditemukan (`True`) | Efendy |
 | W | Fitur foto reusable (Ticket/Problem/Asset/Known Error) | [PR #9](https://github.com/silverefendy/nexthd/pull/9), commit `03a3c5d`, merged 24 Agustus. DocType `NextHD Photo`/`NextHD Photo Link` aktif, sidebar + Number Card "Total Foto Terupload" terverifikasi live via `bench console` 24 Agustus | Efendy |
-| X | `install.py` — nilai SLA default usang | Diperbaiki ke nilai SOP final 19 Agustus, di-commit `b3a24b2` → `2d795b9`, 24 Agustus | Efendy |
+| X | `install.py` — nilai SLA default usang | Diperbaiki ke nilai SOP final 19 Agustus, di-commit `b3a24b2` → `2d795b9`, 24 Agustus. **Lihat juga item Z** — commit ini sempat merusak indentasi file, sudah diperbaiki ulang | Efendy |
 
 > **Catatan Item E:** user test `test.requester@ciptamebel.co.id` sendiri belum pernah kirim `/start`+`/link` ke bot (field `telegram_chat_id` masih kosong untuk akun ini) — tapi ini bukan bug, cuma user dummy tsb memang belum di-link manual. Bot-nya sendiri sudah terbukti bekerja pakai akun Telegram lain.
 
@@ -158,6 +158,8 @@
 | Duplikasi Workflow Transition round 2 (Ticket/Problem/Change Request) | ✅ Root cause: `Workflow Action Master` hilang. Dedup ulang + master dibuat, 24 Agustus |
 | Cuti Bersama 2026 — 8 hari ditambahkan ke `NextHD Holiday` | ✅ 24 Agustus (total 25 record) |
 | Script verifikasi ringan pasca-perbaikan ditambahkan ke `AUDIT_SISTEM.md` | ✅ 24 Agustus |
+| Business Hours Sabtu — dikonfirmasi hari kerja 08:00–15:00 (item Y) | ✅ Keputusan Efendy, 24 Agustus. Data production + `install.py` diselaraskan |
+| `install.py` kehilangan indentasi akibat commit sebelumnya (item Z) | ✅ Ditulis ulang + diverifikasi syntax-nya sebelum commit, 24 Agustus |
 
 ---
 
