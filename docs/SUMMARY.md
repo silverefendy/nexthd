@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-23 18:30 WIB | **Repo:** `silverefendy/nexthd` | **Branch:** `main`
+> **Last updated:** 2026-08-24 (sesi lanjutan — Business Hours Sabtu + fix install.py)
 
 ---
 
@@ -17,7 +17,7 @@
 | `docs/WORKFLOW.md` | Notifikasi Telegram + semua state machine + riwayat bug workflow |
 | `docs/POLA_KERJA_DAN_BUG.md` | Frappe quirks (Desktop/Workspace), aturan wajib saat coding/debug, riwayat bug lengkap |
 | `docs/PANDUAN_INSTALASI.md` | Instalasi, setup Telegram/SLA, alur deploy, referensi |
-| `docs/AUDIT_SISTEM.md` | Script audit lengkap (schema drift, Workspace, Workflow master data, SLA, fixtures). Dipakai on-demand untuk cek kesehatan server atau sebelum install ke server baru |
+| `docs/AUDIT_SISTEM.md` | Script audit lengkap (schema drift, Workspace, Workflow master data, SLA, fixtures) + script verifikasi ringan pasca-perbaikan. Dipakai on-demand untuk cek kesehatan server atau sebelum install ke server baru |
 
 ---
 
@@ -35,20 +35,21 @@
 | **Cakupan ITIL** | Incident, Problem, Change, Known Error, Asset/CMDB, Service Catalog |
 | **Repo Git** | `silverefendy/nexthd`, branch `main` |
 | **Alur Development** | Claude (kerangka & spesifikasi) → Devin (implementasi) → Claude (finishing, bugfix, review) |
+| **Jam Kerja** | Senin–Jumat 08:00–17:00, **Sabtu 08:00–15:00** (hari kerja), Minggu libur |
 | **Instalasi ke server baru** | TIDAK pakai Alembic — Frappe pakai skema deklaratif dari file DocType JSON, `bench migrate` otomatis sync struktur DB. Yang perlu manual: data master (Team/Category/Holiday), Workflow State & Action Master (global), NextHD Settings (token Telegram). Lihat `docs/AUDIT_SISTEM.md` untuk verifikasi kesiapan sebelum install |
 
 ### Modul Aplikasi
 
 - Manajemen tiket insiden dan permintaan layanan
 - Web Form self-service untuk Requester di `/tiket-saya` (PR #6) — **✅ terkonfirmasi live** di produksi 22 Agustus (`published: 1`, route `tiket-saya` aktif)
-- Workflow approval untuk Change Request (state machine terverifikasi via regression test, 2026-08-20)
+- Workflow approval untuk Change Request (state machine terverifikasi via regression test, 2026-08-20; dedup ulang 24 Agustus)
 - Manajemen Problem dan Known Error (ITIL-lite)
 - Notifikasi real-time via Telegram Bot — **✅ terkonfirmasi live**, bot sudah balas dan token/enable sudah terkonfirmasi di NextHD Settings
 - SLA monitoring otomatis berbasis jam kerja (warning 30 menit sebelum breach), termasuk **titik-mulai resolution saat "Mulai Kerjakan" + pause/resume saat "Menunggu User"** (PR #8, bugfix `76ce3e9`) — **✅ live + terverifikasi**
 - Priority otomatis dari matriks Impact × Urgency, dengan override manual untuk Agent Manager/IT Manager (PR #7) — **✅ live + terverifikasi**
 - Multi-tim dengan assignment agent
 - Custom reports: Tiket per Bulan, Tiket per Kategori, Tiket per Prioritas (breach SLA)
-- Foto/gambar reusable & bisa di-link antar Ticket/Problem/Asset/Known Error — **🔶 status belum bisa dikonfirmasi**, lihat item W di §2
+- Foto/gambar reusable & bisa di-link antar Ticket/Problem/Asset/Known Error (PR #9) — **✅ live + terverifikasi 24 Agustus**, termasuk sidebar & dashboard Number Card
 - **Rencana ke depan:** Knowledge Base publik (self-service), tag di tiket, CSAT — lihat `docs/DAFTAR_FITUR.md`
 
 ---
@@ -58,22 +59,20 @@
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `POLA_KERJA_DAN_BUG.md`.
 > Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/DAFTAR_FITUR.md`.
 >
-> **Update 2026-08-23 17:20 WIB** — Ditambahkan `docs/DAFTAR_FITUR.md` (rencana Knowledge
-> Article publik/internal, tag, CSAT, merge tiket, dashboard trend, dll — hasil diskusi
-> arah pengembangan setelah backlog inti selesai). Ditemukan **bug baru (item X)**:
-> `install.py` masih pakai nilai SLA versi lama, belum diperbaiki.
+> **Update 2026-08-24 (lanjutan)** — Item Y (Business Hours Sabtu) **sudah diputuskan
+> Efendy**: Sabtu memang hari kerja, jam 08:00–15:00. Data production + `install.py`
+> diselaraskan. Ditemukan **bug tambahan (item Z)**: commit `b3a24b2` untuk `install.py`
+> ternyata kehilangan seluruh indentasi (kemungkinan tab hilang saat heredoc/paste di
+> sesi sebelumnya), membuat file itu `IndentationError` kalau dijalankan — diperbaiki
+> bersamaan dengan fix Sabtu, kali ini diverifikasi syntax-nya dengan `python3 -c
+> "import ast; ast.parse(...)"` sebelum commit.
 
-### 🔴 Baru Ditemukan — Perlu Diperbaiki
-
-| # | Item | Keterangan | PIC |
-|---|---|---|---|
-| X | `install.py` — nilai SLA default sudah usang | Fungsi `create_default_sla_policies()` masih pakai angka SLA versi lama (Kritis 30/240, Tinggi 120/480, Sedang 480/1440, Rendah 1440/4320 menit) — seharusnya Kritis 15/60 (is_24x7=1), Tinggi 30/240, Sedang 60/2880, Rendah 120/10080 sesuai SOP final 19 Agustus. `is_24x7` juga tidak pernah di-set di script ini. **Dampak:** instalasi baru ke server manapun sekarang akan dapat SLA yang salah tanpa sadar. Perbaikan kode sudah disiapkan Claude, tinggal di-commit lewat git (tidak perlu akses server) | Efendy |
-
-### 🔶 Sedang Menunggu Konfirmasi
+### ✅ Item Y & Z — Baru Saja Diselesaikan (24 Agustus)
 
 | # | Item | Keterangan | PIC |
 |---|---|---|---|
-| W | Fitur foto reusable (Ticket/Problem/Asset/Known Error) | Prompt lengkap sudah diberikan ke Devin (DocType `NextHD Photo` + `NextHD Photo Link`, galeri swipe, kompresi otomatis, auto-copy saat convert Ticket→Problem/Problem→Known Error). **Dicek langsung ke repo `main` (22 Agustus) — DocType belum ada, tidak ada PR baru terbuka.** Kemungkinan Devin belum sempat push sebelum server-nya padam. Perlu dicek ulang begitu Devin online kembali — `docs/AUDIT_SISTEM.md §14` bisa dipakai untuk verifikasi cepat | Efendy |
+| Y | Business Hours "Sabtu" | **Keputusan Efendy:** Sabtu hari kerja, 08:00–15:00. Data production diupdate via `bench console`, `install.py` diselaraskan (Sabtu beda jam dari Senin-Jumat, `is_working_day=1`) | Efendy |
+| Z | `install.py` kehilangan indentasi (bug baru, dari commit `b3a24b2`) | File jadi `IndentationError` jika dijalankan — root cause: tab kemungkinan hilang saat heredoc/paste ke terminal sesi sebelumnya. Ditulis ulang dengan indentasi tab, diverifikasi via `python3 -c "import ast; ast.parse(...)"` sebelum commit | Efendy |
 
 ### ✅ Semua Item Utama SUDAH Live & Terverifikasi
 
@@ -87,6 +86,8 @@
 | E | Verifikasi end-to-end Telegram | Bot `@cmlhelpdesk_bot` terkonfirmasi balas pesan nyata (test manual 22 Agustus). `NextHD Settings`: token terisi, `enable_telegram_notification: 1` | Efendy |
 | F | Permission `reply` di Waiting Log | `bench console`: field `reply` `permlevel=1`, role Requester `permlevel=1, write=1` — konfigurasi terkonfirmasi benar | Efendy |
 | H | `NextHD Holiday` di sidebar Workspace | `bench console`: query `tabWorkspace Sidebar Item` → Holiday ditemukan (`True`) | Efendy |
+| W | Fitur foto reusable (Ticket/Problem/Asset/Known Error) | [PR #9](https://github.com/silverefendy/nexthd/pull/9), commit `03a3c5d`, merged 24 Agustus. DocType `NextHD Photo`/`NextHD Photo Link` aktif, sidebar + Number Card "Total Foto Terupload" terverifikasi live via `bench console` 24 Agustus | Efendy |
+| X | `install.py` — nilai SLA default usang | Diperbaiki ke nilai SOP final 19 Agustus, di-commit `b3a24b2` → `2d795b9`, 24 Agustus. **Lihat juga item Z** — commit ini sempat merusak indentasi file, sudah diperbaiki ulang | Efendy |
 
 > **Catatan Item E:** user test `test.requester@ciptamebel.co.id` sendiri belum pernah kirim `/start`+`/link` ke bot (field `telegram_chat_id` masih kosong untuk akun ini) — tapi ini bukan bug, cuma user dummy tsb memang belum di-link manual. Bot-nya sendiri sudah terbukti bekerja pakai akun Telegram lain.
 
@@ -98,7 +99,8 @@
 | J | Workflow — testing end-to-end di UI browser | Regression test backend sudah lulus 100% (2026-08-20). Belum ditest klik manual di browser untuk verifikasi tombol Actions & permission per role tampil benar | Efendy |
 | K | Role assignment ke user spesifik | `support@ciptamebel.co.id` → role IT Manager. Keputusan: sementara 1 akun shared dulu | Efendy |
 | L | File `HANDOFF_SLA_NextHD_2026-08-19.md` | Disebut di HANDOFF.md tapi tidak ada di repo. Kalau masih ada di server, perlu `git add` + commit sebelum hilang | Efendy |
-| M | Guard permanen duplikasi workflow transition | Root cause re-import belum dikonfirmasi pasti, belum ada mekanisme pencegahan | Claude |
+| M | Guard permanen duplikasi workflow transition | Root cause **sekarang terkonfirmasi** (24 Agustus): `Workflow Action Master` yang hilang membuat proses save/reimport gagal di tengah jalan dan meninggalkan baris duplikat. Sudah dedup ulang 2×, tapi belum ada mekanisme pencegahan otomatis | Claude |
+| N | Pemetaan tanggal Cuti Bersama 2026 belum dicek silang ke SKB asli | Data ditambahkan berdasar asumsi pola umum kalender cuti bersama Indonesia, bukan dibaca langsung dari teks SKB 3 Menteri | Efendy |
 | O | Dashboard "Aset Bermasalah" (Number Card) | Usulan, belum dikerjakan | - |
 | P | SLA otomatis untuk Problem/Change Request | Saat ini SLA hanya untuk Ticket | - |
 | Q | Notifikasi Telegram untuk Problem/CR | Sengaja ditunda, fokus ke fitur lain dulu | - |
@@ -119,7 +121,7 @@
 | [PR #6](https://github.com/silverefendy/nexthd/pull/6) | feat: Add Web Form for Requester role and Telegram i18n | Merged 2026-08-20 — **✅ dideploy & terverifikasi live 22 Agustus** |
 | [PR #7](https://github.com/silverefendy/nexthd/pull/7) | Task 1: Priority matrix otomatis + override permission | Merged 2026-08-22 10:13 WIB — **✅ live + terverifikasi** |
 | [PR #8](https://github.com/silverefendy/nexthd/pull/8) | Task 2: SLA resolution timing — mulai "Mulai Kerjakan", pause "Menunggu User" | Merged 2026-08-22 10:31 WIB, bugfix `76ce3e9` — **✅ live + terverifikasi** |
-| PR fitur foto (belum ada nomor) | Prompt diberikan ke Devin untuk `NextHD Photo` + `NextHD Photo Link` + galeri swipe | **🔶 Belum terkonfirmasi ada PR** — dicek 22 Agustus, DocType belum ada di `main`, server Devin offline |
+| [PR #9](https://github.com/silverefendy/nexthd/pull/9) | Fitur foto reusable — `NextHD Photo` + `NextHD Photo Link`, galeri swipe, kompresi otomatis | Merged 24 Agustus, commit `03a3c5d` — **✅ live + terverifikasi (termasuk sidebar) 24 Agustus** |
 
 ---
 
@@ -150,7 +152,15 @@
 | `docs/AUDIT_SISTEM.md` dibuat — script audit lengkap kesehatan server/repo | ✅ 2026-08-23 |
 | `docs/DAFTAR_FITUR.md` dibuat — checklist lengkap semua fitur dalam satu tabel | ✅ 2026-08-23 |
 | Restrukturisasi dokumentasi — rename `PANDUAN_INSTALASI.md`, hapus file lama, potong §8/§9 dari `ARSITEKTUR.md` | ✅ 2026-08-23 |
+| Fitur foto reusable (item W) — DocType, galeri, kompresi, sidebar, dashboard | ✅ PR #9, commit `03a3c5d` + `a69df61`, **live + terverifikasi penuh 24 Agustus** |
+| `install.py` — nilai SLA default usang (item X) | ✅ Commit `b3a24b2` → `2d795b9`, 24 Agustus |
+| Sidebar "NextHD Photo" tidak sync dari reimport JSON | ✅ Root cause: `import_file_by_path` tidak sync child table `links`. Fix manual via ORM `doc.save()`, 24 Agustus |
+| Duplikasi Workflow Transition round 2 (Ticket/Problem/Change Request) | ✅ Root cause: `Workflow Action Master` hilang. Dedup ulang + master dibuat, 24 Agustus |
+| Cuti Bersama 2026 — 8 hari ditambahkan ke `NextHD Holiday` | ✅ 24 Agustus (total 25 record) |
+| Script verifikasi ringan pasca-perbaikan ditambahkan ke `AUDIT_SISTEM.md` | ✅ 24 Agustus |
+| Business Hours Sabtu — dikonfirmasi hari kerja 08:00–15:00 (item Y) | ✅ Keputusan Efendy, 24 Agustus. Data production + `install.py` diselaraskan |
+| `install.py` kehilangan indentasi akibat commit sebelumnya (item Z) | ✅ Ditulis ulang + diverifikasi syntax-nya sebelum commit, 24 Agustus |
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-23 18:30 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-24.*
