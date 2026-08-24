@@ -6,7 +6,7 @@
 >
 > Status: ✅ Selesai & Live | 🔶 Sedang Dikerjakan/Menunggu Konfirmasi | ⬜ Belum Dikerjakan (Rencana)
 >
-> **Last updated:** 2026-08-24 09:50 WIB
+> **Last updated:** 2026-08-24 (sesi lanjutan — verifikasi & dedup workflow)
 
 ---
 
@@ -26,16 +26,21 @@
 | Permission `reply` di Waiting Log | ✅ | Requester bisa isi reply sendiri | Terverifikasi `bench console`, 22 Agustus |
 | Sidebar Holiday di Workspace | ✅ | Terverifikasi via query | 22 Agustus |
 | Regression test 3 workflow | ✅ | Ticket, Problem, Change Request semua lulus | 20 Agustus |
-| Dedup transisi workflow duplikat | ✅ | 42 → 21 baris bersih | 20 Agustus |
+| Dedup transisi workflow duplikat | ✅ | 42 → 21 baris bersih (dedup pertama, 20 Agustus). **Duplikasi muncul lagi dan dibersihkan ulang 24 Agustus — lihat baris terpisah di bawah** | 20 Agustus |
 | Number Card dashboard | ✅ | Fix `number_card_name` | 21 Agustus |
 | Naming series seragam YY.MM | ✅ | Semua 6 DocType | 19 Agustus |
 | `FAQ_DEVELOPER.md` | ✅ | Kurasi masalah berulang untuk Devin | 22 Agustus |
 | `AUDIT_SISTEM.md` | ✅ | Script audit lengkap kesehatan server/repo | 23 Agustus |
 | Fitur foto reusable (Ticket/Problem/Asset/Known Error) | ✅ | DocType `NextHD Photo` + `NextHD Photo Link`, galeri swipe, kompresi otomatis (Pillow), auto-copy saat convert Ticket→Problem/Problem→Known Error | PR #9, commit `03a3c5d`, merged 24 Agustus |
-| NextHD Photo di sidebar Workspace + dashboard Number Card | ✅ | Link sidebar setelah Known Error, card "Total Foto Terupload" di dashboard, fixture Number Card lengkap (9 card, sebelumnya 0 ter-fixture) | Commit `a69df61`, 24 Agustus |
+| NextHD Photo di sidebar Workspace + dashboard Number Card | ✅ | Link sidebar setelah Known Error, card "Total Foto Terupload" di dashboard, fixture Number Card lengkap (9 card, sebelumnya 0 ter-fixture). **Sempat tidak muncul di UI meski data sudah benar — root cause & fix di bawah** | Commit `a69df61`, 24 Agustus |
 | Bug SLA Kritis `is_24x7` tidak sesuai SOP | ✅ | Diperbaiki langsung di DB via `bench console`, `is_24x7` Kritis: 0→1 | 24 Agustus |
 | Business Hours Minggu (hari libur) | ✅ | Record ke-7 dibuat, `is_working_day=0` | 24 Agustus |
 | NextHD Holiday 2026 — 17 hari libur nasional | ✅ | Diisi sesuai SKB 3 Menteri No. 1497/2025, 2/2025, 5/2025 (resmi Setneg) | 24 Agustus |
+| `install.py` — nilai SLA default diperbaiki | ✅ | `create_default_sla_policies()` diupdate ke nilai SOP final 19 Agustus (Kritis 15/60 `is_24x7=1`, Tinggi 30/240, Sedang 60/2880, Rendah 120/10080) — instalasi baru sekarang otomatis dapat nilai benar | Commit `b3a24b2` → `2d795b9`, 24 Agustus |
+| Sidebar "NextHD Photo" tidak muncul di UI meski data sudah live | ✅ | **Root cause:** `import_file_by_path(force=True)` berhasil sync field `number_cards`/`content` tapi TIDAK sync child table `links` (sidebar). **Fix:** append manual via `Workspace` doc ORM (`doc.append("links", ...)` + `doc.save()`), bukan reimport JSON | 24 Agustus |
+| Duplikasi Workflow Transition (round 2) — Ticket/Problem/Change Request | ✅ | Ditemukan tiap transisi terduplikasi persis 4× (Ticket 28→7, Problem 24→6, CR 32→8). **Root cause:** `Workflow Action Master` "Convert to Known Error" tidak pernah dibuat, membuat `wf.save()` gagal validasi di tengah proses dedup sebelumnya (data lama sempat masuk lewat jalur yang bypass validasi ORM). Master dibuat ulang, lalu dedup by-value (bukan cuma by-idx) berhasil untuk ketiganya. Backup tersimpan di `/home/it/workflow_transitions_backup.json` di server | 24 Agustus |
+| Cuti Bersama 2026 — 8 hari | ✅ | Ditambahkan ke `NextHD Holiday` (total jadi 25 record: 17 nasional + 8 cuti bersama). **⚠️ Pemetaan tanggal↔nama event asumsi Claude berdasar pola umum, belum dicek silang ke teks SKB asli** | 24 Agustus |
+| Script verifikasi ringan pasca-perbaikan | ✅ | Ditambahkan ke `AUDIT_SISTEM.md` — smoke test 9 titik spesifik (workflow, sidebar, number card, SLA, business hours, holiday, roles, photo doctype) | 24 Agustus |
 
 ---
 
@@ -43,7 +48,7 @@
 
 | Bug | Status | Keterangan | PIC |
 |---|---|---|---|
-| `install.py` — nilai SLA default usang | 🔴 | `create_default_sla_policies()` masih pakai angka SLA versi lama (pra-19 Agustus) — mempengaruhi instalasi BARU ke server lain, bukan produksi saat ini (produksi sudah diperbaiki langsung 24 Agustus). Perbaikan kode belum di-commit | Efendy |
+| Business Hours "Sabtu" — `is_working_day=1` tidak konsisten dengan default `install.py` | 🔴 | Audit 24 Agustus menemukan production punya Sabtu sebagai hari kerja (`is_working_day=1`), padahal `install.py` (setelah patch hari yang sama) men-set default Sabtu **bukan** hari kerja (`0`). Belum diketahui mana yang benar — kalau Sabtu memang sengaja jadi hari kerja, `install.py` perlu disesuaikan lagi; kalau tidak, data production perlu dikoreksi ke `0`. **Belum ada tindakan diambil, menunggu keputusan Efendy** | Efendy (keputusan) → Claude (eksekusi) |
 
 ---
 
@@ -190,9 +195,10 @@ tidak sinkron, 20 Agustus).
 | Testing end-to-end workflow di UI browser | ⬜ | Backend sudah lulus 100% (20 Agustus), belum ditest klik manual | Efendy |
 | Role assignment `support@ciptamebel.co.id` → IT Manager | ⬜ | Keputusan: sementara 1 akun shared dulu | Efendy |
 | File `HANDOFF_SLA_NextHD_2026-08-19.md` belum ter-commit | ⬜ | Cek di server, `git add` kalau masih ada | Efendy |
-| Guard permanen duplikasi workflow transition | ⬜ | Root cause re-import belum dikonfirmasi pasti — ditemukan indikasi duplikat 50% transisi (idx=0) di audit 24 Agustus, belum diinvestigasi lanjut | Claude |
+| Guard permanen duplikasi workflow transition | 🔶 | Root cause **sekarang terkonfirmasi**: master data (`Workflow Action Master`) yang hilang membuat proses save/reimport sebelumnya gagal di tengah jalan dan meninggalkan baris duplikat. Dedup manual sudah dilakukan 2× (20 Agustus, 24 Agustus) — tapi belum ada mekanisme pencegahan otomatis supaya tidak terulang lagi di masa depan | Claude |
 | Link Telegram untuk user test `test.requester` | ⬜ | Belum pernah kirim `/start`+`/link`, bukan bug | Efendy |
-| Konfirmasi `bench migrate` + `bench restart` sudah jalan pasca commit `a69df61` | ⬜ | Menunggu konfirmasi Efendy | Efendy |
+| Konfirmasi `bench migrate` + `bench restart` sudah jalan pasca commit `a69df61` | ✅ | Terkonfirmasi 24 Agustus — sidebar & number card foto sudah muncul di production setelah fix tambahan (lihat root cause di tabel fitur di atas) | Efendy |
+| Pemetaan tanggal Cuti Bersama 2026 belum dicek silang ke SKB asli | ⬜ | Data ditambahkan berdasar asumsi pola umum kalender cuti bersama Indonesia, bukan dibaca langsung dari teks SKB 3 Menteri | Efendy |
 
 ---
 
