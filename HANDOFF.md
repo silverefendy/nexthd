@@ -45,6 +45,8 @@ Konfigurasi navigasi berikut sudah dikunci dan **tidak boleh diubah** kecuali ad
 7. Setelah perubahan field/meta yang tidak muncul di UI meski data sudah benar di database, coba `bench clear-cache` + `bench restart` di server sebelum curiga ada bug data
 8. **Kolom `action` di `tabWorkflow Transition` adalah Link ke `Workflow Action Master`** — tidak bisa diganti bebas via `doc.save()` tanpa master record-nya ada dulu. Kalau cuma perlu ubah `condition`, pakai raw SQL UPDATE
 9. **Field baru jangan ditempatkan (idx) langsung setelah field bertipe Table** tanpa Column Break — kadang tidak ter-render di UI meski data valid
+10. **`bench console` (IPython) yang dipipe via `<<EOF` sangat rawan memecah blok kode secara prematur**, khususnya `if/else`/`for` dengan baris kosong di tengah, atau saat script diketik manual dengan tab-completion aktif (menghasilkan baris duplikat/corrupt seperti listing direktori nyasar masuk ke heredoc). **Solusi paling aman:** bungkus seluruh logic dalam satu `exec("""...""")` — karena itu satu string literal panjang, IPython tidak memecahnya per baris kosong, dan generator expression/comprehension di dalamnya tetap harus dihindari (scope terpisah, lihat poin 11)
+11. **Hindari generator expression/list comprehension yang mereferensikan variabel di scope `exec()` sekitarnya** — genexpr punya scope sendiri yang terisolasi dari `exec()`, menyebabkan `NameError` meski variabelnya "kelihatan" terdefinisi tepat di atasnya. Pakai `for` loop biasa sebagai gantinya kalau kode dijalankan lewat `exec()`
 
 ---
 
@@ -329,3 +331,100 @@ Item B — **kode PR #8 punya bug tambahan yang baru ditemukan di sesi ini**, su
 
 - Heredoc multi-line lewat SSH/PowerShell di server ini **sangat rawan corrupt** (baris kosong dan triple-quote `'''` sering diinterpretasi ulang oleh shell/tab-completion). Untuk edit file `.py`, lebih aman pakai `sed` dengan line number atau python script base64-encoded daripada heredoc langsung dengan blok `try/except`/`if`/triple-quote string panjang.
 - `bench console` juga tidak menerima blok Python dengan indentasi (`def`, `try`, `if`) yang dikirim lewat stdin redirect — selalu tulis kode **flat tanpa nested block** kalau perlu dieksekusi lewat `bench console < file.py`.
+
+---
+
+# UPDATE — 24 Agustus 2026 (Sidebar Photo Fix, Dedup Workflow Round 2, Cuti Bersama, install.py)
+
+## Konteks
+
+Sesi ini melanjutkan verifikasi item W (fitur foto, PR #9 sudah merged sebelumnya) dan
+membereskan sejumlah temuan audit dari sesi 24 Agustus sebelumnya: sidebar "NextHD Photo"
+tidak muncul di UI meski data sudah live, duplikasi Workflow Transition yang muncul lagi,
+Cuti Bersama 2026 yang belum diinput, dan bug `install.py` SLA usang.
+
+## 🐛 Bug Baru Ditemukan & Difix: Sidebar "NextHD Photo" Tidak Sync
+
+**Root cause:** `import_file_by_path(force=True, ignore_version=True)` (dipakai untuk
+force-reimport `nexthd.json` ke Workspace) berhasil menimpa field top-level seperti
+`number_cards` dan `content`, tapi **tidak menyentuh child table `links`** (yang me-render
+sidebar). Akibatnya, Number Card "Total Foto Terupload" langsung muncul setelah reimport,
+tapi item sidebar "NextHD Photo" tetap tidak ada di DB meski sudah ada di file JSON.
+
+**Fix:** append manual lewat ORM — `frappe.get_doc("Workspace", "NextHD")`, `ws.append("links", {...})`, `ws.save(ignore_permissions=True)`. Ini mem-bypass keterbatasan `import_file_by_path`
+di atas.
+
+**Ditemukan juga (bukan bug, tapi drift):** sidebar production punya item "NextHD Business
+Hours" yang **tidak ada** di `nexthd.json` repo — kemungkinan ditambahkan manual via UI di
+suatu waktu. **Belum diputuskan** apakah perlu disinkronkan ke repo atau dibiarkan.
+
+## 🐛 Bug Baru Ditemukan & Difix: Duplikasi Workflow Transition (Round 2)
+
+**Temuan:** setiap transisi di ketiga workflow terduplikasi persis 4× (Ticket 28→7 unik,
+Problem 24→6, Change Request 32→8) — bukan cuma masalah `idx`, tapi baris child table
+benar-benar berulang identik.
+
+**Root cause:** `Workflow Action Master` untuk action "Convert to Known Error" tidak pernah
+dibuat sebagai record — ini membuat validasi Link gagal setiap kali proses dedup/reimport
+sebelumnya mencoba `wf.save()` di tengah jalan, meninggalkan data dalam kondisi tidak
+konsisten (sebagian ter-dedup, sebagian tidak, atau reimport berulang tanpa pembersihan).
+
+**Fix:**
+1. `Workflow Action Master` "Convert to Known Error" dibuat
+2. Dedup ulang by-value (bandingkan seluruh field transisi, bukan cuma `idx`) untuk Problem
+   dan Change Request (Ticket sudah berhasil di percobaan pertama)
+3. Backup transisi lama tersimpan di `/home/it/workflow_transitions_backup.json` di server
+   sebelum dedup dijalankan, untuk jaga-jaga
+
+**Belum ada mekanisme pencegahan otomatis** supaya duplikasi tidak muncul lagi di masa
+depan — dicatat sebagai item M (guard permanen) di `docs/SUMMARY.md`.
+
+## ✅ Selesai: Cuti Bersama 2026
+
+8 record ditambahkan ke `NextHD Holiday` (total 25: 17 nasional + 8 cuti bersama). Schema
+`NextHD Holiday` cuma punya `holiday_date` + `description` (tidak ada field pembeda tipe
+libur), jadi dibedakan lewat teks description saja.
+
+**⚠️ Pemetaan tanggal↔nama event cuti bersama adalah asumsi Claude** berdasar pola umum
+kalender cuti bersama Indonesia — belum dicek silang langsung ke teks SKB 3 Menteri
+No. 1497/2025, 2/2025, 5/2025 yang jadi rujukan resmi.
+
+## ✅ Selesai: `install.py` — SLA Default Diperbaiki
+
+`create_default_sla_policies()` diupdate ke nilai SOP final 19 Agustus (Kritis 15/60
+`is_24x7=1`, Tinggi 30/240, Sedang 60/2880, Rendah 120/10080). Commit `b3a24b2`, sempat
+`rejected` saat push karena `main` sudah maju (merge PR #9 + update dokumentasi lain) —
+di-`pull`/merge otomatis tanpa konflik, lalu berhasil push ke `2d795b9`.
+
+## 🔴 Anomali Baru Ditemukan, BELUM Ditindaklanjuti: Business Hours "Sabtu"
+
+Audit verifikasi akhir sesi menemukan **Business Hours Sabtu tercatat `is_working_day=1`**
+(hari kerja) di production — padahal `install.py` yang baru diperbaiki di atas men-set
+default Sabtu **`0`** (bukan hari kerja). Tidak jelas mana yang benar: apakah production
+sengaja dibuat Sabtu jadi hari kerja (lalu `install.py` perlu disesuaikan lagi), atau ini
+data lama yang salah dan perlu dikoreksi ke `0`. **Tidak ada perubahan dilakukan terhadap
+ini — murni dilaporkan, menunggu keputusan Efendy.**
+
+## Dokumentasi Terkini
+
+Semua perubahan sesi ini sudah disinkronkan ke `main`:
+- `docs/AUDIT_SISTEM.md` — ditambahkan script verifikasi ringan pasca-perbaikan (commit `7dc4c23`)
+- `docs/DAFTAR_FITUR.md` — semua item selesai sesi ini dipindah ke tabel "Sudah Selesai & Live", ditambahkan bug Business Hours Sabtu (commit `a1d46f6`)
+- `docs/SUMMARY.md` — item W & X dipindah ke "Live & Terverifikasi", item Y (Business Hours Sabtu) ditambahkan sebagai open item baru (commit `6988046`)
+- `HANDOFF.md` — section ini
+
+Instance Claude berikutnya tinggal baca `docs/SUMMARY.md` → `docs/DAFTAR_FITUR.md` →
+bagian ini untuk konteks penuh sesi 24 Agustus.
+
+## Catatan Teknis Tambahan untuk Sesi Berikutnya
+
+- **`bench console` via `exec("""...""")` masih bisa gagal** kalau isinya pakai generator
+  expression/comprehension yang mereferensikan variabel di scope `exec()` luar — scope
+  genexpr terisolasi, hasilnya `NameError` meski variabel "kelihatan" terdefinisi. Selalu
+  pakai `for` loop biasa di dalam blok `exec()`, lihat aturan wajib #11 di atas.
+- **`doc.save()` bisa gagal dengan `LinkValidationError`** kalau child table (mis. Workflow
+  Transition) mereferensikan master record (mis. Workflow Action Master) yang ternyata
+  belum ada — meski data lama "tampak normal" di database (kemungkinan besar masuk lewat
+  jalur yang bypass validasi ORM, seperti fixture/raw SQL). Kalau ketemu error ini saat
+  hendak `save()` ulang data lama, cek dulu semua Link field-nya benar-benar py punya master
+  record, jangan asumsikan data lama otomatis valid.
