@@ -41,7 +41,9 @@
   "related_problem",
   "attachments",
   "section_waiting",
-  "waiting_log"
+  "waiting_log",
+  "section_photos",
+  "photos"
  ],
  "fields": [
   {
@@ -250,6 +252,17 @@
    "fieldtype": "Table",
    "label": "Riwayat Menunggu User",
    "options": "NextHD Ticket Waiting Log"
+  },
+  {
+   "fieldname": "section_photos",
+   "fieldtype": "Section Break",
+   "label": "Foto/Gambar"
+  },
+  {
+   "fieldname": "photos",
+   "fieldtype": "Table",
+   "label": "Foto/Gambar",
+   "options": "NextHD Photo Link"
   }
  ],
  "links": [],

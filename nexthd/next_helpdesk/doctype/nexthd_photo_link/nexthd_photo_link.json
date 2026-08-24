@@ -1,0 +1,49 @@
+{
+ "actions": [],
+ "creation": "2026-08-22 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "photo",
+  "photo_preview",
+  "caption"
+ ],
+ "fields": [
+  {
+   "fieldname": "photo",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Foto",
+   "options": "NextHD Photo",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "photo.image",
+   "fieldname": "photo_preview",
+   "fieldtype": "Attach Image",
+   "in_list_view": 1,
+   "label": "Preview",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "photo.caption",
+   "fieldname": "caption",
+   "fieldtype": "Data",
+   "label": "Keterangan",
+   "read_only": 1
+  }
+ ],
+ "idx_unique": [],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-22 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Next Helpdesk",
+ "name": "NextHD Photo Link",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

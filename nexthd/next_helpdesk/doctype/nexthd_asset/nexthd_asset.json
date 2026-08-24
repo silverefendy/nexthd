@@ -44,7 +44,9 @@
   "printer_type",
   "printer_notes",
   "section_lainnya",
-  "other_description"
+  "other_description",
+  "section_photos",
+  "photos"
  ],
  "fields": [
   {
@@ -273,6 +275,17 @@
    "fieldtype": "Text Editor",
    "label": "Deskripsi",
    "depends_on": "eval:doc.asset_type == 'Lainnya'"
+  },
+  {
+   "fieldname": "section_photos",
+   "fieldtype": "Section Break",
+   "label": "Foto/Gambar"
+  },
+  {
+   "fieldname": "photos",
+   "fieldtype": "Table",
+   "label": "Foto/Gambar",
+   "options": "NextHD Photo Link"
   }
  ],
  "idx_unique": [],
