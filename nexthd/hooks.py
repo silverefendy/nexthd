@@ -150,6 +150,9 @@ doc_events = {
 	},
 	"NextHD Change Request": {
 		"on_update": "nexthd.next_helpdesk.utils.telegram.notify_change_request_approval_needed"
+	},
+	"File": {
+		"after_insert": "nexthd.next_helpdesk.utils.image_compress.compress_photo_on_upload"
 	}
 }
 
@@ -194,7 +197,8 @@ fixtures = [
                 "NextHD Problem",
                 "NextHD Change Request",
                 "NextHD Asset",
-                "NextHD Known Error"
+                "NextHD Known Error",
+                "NextHD Ticket"
         ]]]},
         {"dt": "Web Form", "filters": [["name", "=", "Tiket Saya"]]}
 ]

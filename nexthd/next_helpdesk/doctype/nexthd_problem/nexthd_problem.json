@@ -21,7 +21,9 @@
   "known_error",
   "change_request",
   "section_tickets",
-  "related_tickets"
+  "related_tickets",
+  "section_photos",
+  "photos"
  ],
  "fields": [
   {
@@ -101,6 +103,17 @@
    "fieldtype": "Table",
    "label": "Related Tickets",
    "options": "NextHD Problem Ticket"
+  },
+  {
+   "fieldname": "section_photos",
+   "fieldtype": "Section Break",
+   "label": "Foto/Gambar"
+  },
+  {
+   "fieldname": "photos",
+   "fieldtype": "Table",
+   "label": "Foto/Gambar",
+   "options": "NextHD Photo Link"
   }
  ],
  "idx_unique": [],

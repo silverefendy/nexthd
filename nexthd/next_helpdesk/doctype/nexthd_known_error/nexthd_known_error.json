@@ -12,7 +12,9 @@
   "title",
   "symptom",
   "workaround",
-  "related_problem"
+  "related_problem",
+  "section_photos",
+  "photos"
  ],
  "fields": [
   {
@@ -42,6 +44,17 @@
    "fieldtype": "Link",
    "label": "Related Problem",
    "options": "NextHD Problem"
+  },
+  {
+   "fieldname": "section_photos",
+   "fieldtype": "Section Break",
+   "label": "Foto/Gambar"
+  },
+  {
+   "fieldname": "photos",
+   "fieldtype": "Table",
+   "label": "Foto/Gambar",
+   "options": "NextHD Photo Link"
   }
  ],
  "idx_unique": [],
