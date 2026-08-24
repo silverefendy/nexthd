@@ -6,7 +6,7 @@
 >
 > Status: ✅ Selesai & Live | 🔶 Sedang Dikerjakan/Menunggu Konfirmasi | ⬜ Belum Dikerjakan (Rencana)
 >
-> **Last updated:** 2026-08-23 18:30 WIB
+> **Last updated:** 2026-08-24 09:50 WIB
 
 ---
 
@@ -31,20 +31,19 @@
 | Naming series seragam YY.MM | ✅ | Semua 6 DocType | 19 Agustus |
 | `FAQ_DEVELOPER.md` | ✅ | Kurasi masalah berulang untuk Devin | 22 Agustus |
 | `AUDIT_SISTEM.md` | ✅ | Script audit lengkap kesehatan server/repo | 23 Agustus |
+| Fitur foto reusable (Ticket/Problem/Asset/Known Error) | ✅ | DocType `NextHD Photo` + `NextHD Photo Link`, galeri swipe, kompresi otomatis (Pillow), auto-copy saat convert Ticket→Problem/Problem→Known Error | PR #9, commit `03a3c5d`, merged 24 Agustus |
+| NextHD Photo di sidebar Workspace + dashboard Number Card | ✅ | Link sidebar setelah Known Error, card "Total Foto Terupload" di dashboard, fixture Number Card lengkap (9 card, sebelumnya 0 ter-fixture) | Commit `a69df61`, 24 Agustus |
+| Bug SLA Kritis `is_24x7` tidak sesuai SOP | ✅ | Diperbaiki langsung di DB via `bench console`, `is_24x7` Kritis: 0→1 | 24 Agustus |
+| Business Hours Minggu (hari libur) | ✅ | Record ke-7 dibuat, `is_working_day=0` | 24 Agustus |
+| NextHD Holiday 2026 — 17 hari libur nasional | ✅ | Diisi sesuai SKB 3 Menteri No. 1497/2025, 2/2025, 5/2025 (resmi Setneg) | 24 Agustus |
 
 ---
-
-## 🔶 Sedang Dikerjakan / Menunggu Konfirmasi
-
-| Fitur | Status | Keterangan | PIC |
-|---|---|---|---|
-| Foto/gambar reusable (Ticket/Problem/Asset/Known Error) | 🔶 | DocType `NextHD Photo` + `NextHD Photo Link`, galeri swipe, kompresi otomatis, auto-copy saat convert dokumen. Prompt sudah diberikan ke Devin, status belum terkonfirmasi (server Devin sempat offline). Cek `AUDIT_SISTEM.md §14` untuk verifikasi cepat | Devin/Efendy |
 
 ## 🔴 Bug Perlu Diperbaiki
 
 | Bug | Status | Keterangan | PIC |
 |---|---|---|---|
-| `install.py` — nilai SLA default usang | 🔴 | `create_default_sla_policies()` masih pakai angka SLA versi lama (pra-19 Agustus). Perbaikan kode sudah disiapkan Claude, tinggal commit via git | Efendy |
+| `install.py` — nilai SLA default usang | 🔴 | `create_default_sla_policies()` masih pakai angka SLA versi lama (pra-19 Agustus) — mempengaruhi instalasi BARU ke server lain, bukan produksi saat ini (produksi sudah diperbaiki langsung 24 Agustus). Perbaikan kode belum di-commit | Efendy |
 
 ---
 
@@ -191,8 +190,9 @@ tidak sinkron, 20 Agustus).
 | Testing end-to-end workflow di UI browser | ⬜ | Backend sudah lulus 100% (20 Agustus), belum ditest klik manual | Efendy |
 | Role assignment `support@ciptamebel.co.id` → IT Manager | ⬜ | Keputusan: sementara 1 akun shared dulu | Efendy |
 | File `HANDOFF_SLA_NextHD_2026-08-19.md` belum ter-commit | ⬜ | Cek di server, `git add` kalau masih ada | Efendy |
-| Guard permanen duplikasi workflow transition | ⬜ | Root cause re-import belum dikonfirmasi pasti | Claude |
+| Guard permanen duplikasi workflow transition | ⬜ | Root cause re-import belum dikonfirmasi pasti — ditemukan indikasi duplikat 50% transisi (idx=0) di audit 24 Agustus, belum diinvestigasi lanjut | Claude |
 | Link Telegram untuk user test `test.requester` | ⬜ | Belum pernah kirim `/start`+`/link`, bukan bug | Efendy |
+| Konfirmasi `bench migrate` + `bench restart` sudah jalan pasca commit `a69df61` | ⬜ | Menunggu konfirmasi Efendy | Efendy |
 
 ---
 
