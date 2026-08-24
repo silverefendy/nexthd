@@ -200,7 +200,18 @@ fixtures = [
                 "NextHD Known Error",
                 "NextHD Ticket"
         ]]]},
-        {"dt": "Web Form", "filters": [["name", "=", "Tiket Saya"]]}
+        {"dt": "Web Form", "filters": [["name", "=", "Tiket Saya"]]},
+        {"dt": "Number Card", "filters": [["name", "in", [
+                "Tiket Baru",
+                "Tiket Sedang Dikerjakan",
+                "Menunggu User",
+                "Tiket Selesai Bulan Ini",
+                "Tiket Prioritas Kritis",
+                "Problem Terbuka",
+                "SLA Hampir Breach",
+                "SLA Breach Resolusi",
+                "Total Foto Terupload"
+        ]]]}
 ]
 
 # Workspace

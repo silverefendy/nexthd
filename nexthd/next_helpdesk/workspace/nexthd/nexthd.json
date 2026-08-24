@@ -1,7 +1,7 @@
 {
  "app": "nexthd",
  "charts": [],
- "content": "[{\"id\": \"hdr-main\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Operasional</b></span>\", \"col\": 12}}, {\"id\": \"sc-new-ticket\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"New Ticket\", \"col\": 3}}, {\"id\": \"sc-ticket-list\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"All Tickets\", \"col\": 3}}, {\"id\": \"sc-problem\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Problem\", \"col\": 3}}, {\"id\": \"sc-change\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Change Request\", \"col\": 3}}, {\"id\": \"hdr-stats\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Statistik Tiket</b></span>\", \"col\": 12}}, {\"id\": \"card-open\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Tiket Baru\"}}, {\"id\": \"card-inprogress\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Tiket Sedang Dikerjakan\"}}, {\"id\": \"card-waiting\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Menunggu User\"}}, {\"id\": \"card-resolved\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Tiket Selesai Bulan Ini\"}}, {\"id\": \"card-critical\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Tiket Prioritas Kritis\"}}, {\"id\": \"card-problem\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Problem Terbuka\"}}, {\"id\": \"card-sla-warning\", \"type\": \"number_card\", \"data\": {\"col\": 6, \"number_card_name\": \"SLA Hampir Breach\"}}, {\"id\": \"card-sla-breach\", \"type\": \"number_card\", \"data\": {\"col\": 6, \"number_card_name\": \"SLA Breach Resolusi\"}}, {\"id\": \"hdr-list\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Tiket Terbaru</b></span>\", \"col\": 12}}, {\"id\": \"ql-ticket\", \"type\": \"quick_list\", \"data\": {\"quick_list_name\": \"Open Tickets\", \"col\": 6}}, {\"id\": \"ql-critical\", \"type\": \"quick_list\", \"data\": {\"quick_list_name\": \"Critical Tickets\", \"col\": 6}}, {\"id\": \"hdr-config\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Konfigurasi</b></span>\", \"col\": 12}}, {\"id\": \"sc-settings\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Settings\", \"col\": 3}}, {\"id\": \"sc-sla\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD SLA Policy\", \"col\": 3}}, {\"id\": \"sc-holiday\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Holiday\", \"col\": 3}}, {\"id\": \"sc-team\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Team\", \"col\": 3}}, {\"id\": \"sc-category\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Category\", \"col\": 3}}]",
+ "content": "[{\"id\": \"hdr-main\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Operasional</b></span>\", \"col\": 12}}, {\"id\": \"sc-new-ticket\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"New Ticket\", \"col\": 3}}, {\"id\": \"sc-ticket-list\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"All Tickets\", \"col\": 3}}, {\"id\": \"sc-problem\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Problem\", \"col\": 3}}, {\"id\": \"sc-change\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Change Request\", \"col\": 3}}, {\"id\": \"hdr-stats\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Statistik Tiket</b></span>\", \"col\": 12}}, {\"id\": \"card-open\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Tiket Baru\"}}, {\"id\": \"card-inprogress\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Tiket Sedang Dikerjakan\"}}, {\"id\": \"card-waiting\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Menunggu User\"}}, {\"id\": \"card-resolved\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Tiket Selesai Bulan Ini\"}}, {\"id\": \"card-critical\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Tiket Prioritas Kritis\"}}, {\"id\": \"card-problem\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Problem Terbuka\"}}, {\"id\": \"card-photo\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Total Foto Terupload\"}}, {\"id\": \"card-sla-warning\", \"type\": \"number_card\", \"data\": {\"col\": 6, \"number_card_name\": \"SLA Hampir Breach\"}}, {\"id\": \"card-sla-breach\", \"type\": \"number_card\", \"data\": {\"col\": 6, \"number_card_name\": \"SLA Breach Resolusi\"}}, {\"id\": \"hdr-list\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Tiket Terbaru</b></span>\", \"col\": 12}}, {\"id\": \"ql-ticket\", \"type\": \"quick_list\", \"data\": {\"quick_list_name\": \"Open Tickets\", \"col\": 6}}, {\"id\": \"ql-critical\", \"type\": \"quick_list\", \"data\": {\"quick_list_name\": \"Critical Tickets\", \"col\": 6}}, {\"id\": \"hdr-config\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Konfigurasi</b></span>\", \"col\": 12}}, {\"id\": \"sc-settings\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Settings\", \"col\": 3}}, {\"id\": \"sc-sla\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD SLA Policy\", \"col\": 3}}, {\"id\": \"sc-holiday\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Holiday\", \"col\": 3}}, {\"id\": \"sc-team\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Team\", \"col\": 3}}, {\"id\": \"sc-category\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Category\", \"col\": 3}}]",
  "creation": "2026-08-07 00:00:00",
  "custom_blocks": [],
  "docstatus": 0,
@@ -49,6 +49,16 @@
    "label": "NextHD Known Error",
    "link_count": 0,
    "link_to": "NextHD Known Error",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "NextHD Photo",
+   "link_count": 0,
+   "link_to": "NextHD Photo",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -170,6 +180,10 @@
   {
    "label": "SLA Breach Resolusi",
    "number_card_name": "SLA Breach Resolusi"
+  },
+  {
+   "label": "Total Foto Terupload",
+   "number_card_name": "Total Foto Terupload"
   }
  ],
  "owner": "Administrator",
