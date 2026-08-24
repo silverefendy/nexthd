@@ -200,9 +200,146 @@ cat /home/it/audit_result.txt
 
 ---
 
-## Catatan Bug Terkait yang Sudah Diketahui
+## Status Bug `install.py` — SUDAH DIPERBAIKI (24 Agustus 2026)
 
-**`nexthd/install.py` fungsi `create_default_sla_policies()` masih pakai nilai SLA versi LAMA** (sebelum redesign 19 Agustus 2026) — response/resolution minutes-nya salah dan `is_24x7` tidak pernah di-set. Kalau audit §6 menunjukkan `[TIDAK COCOK SOP]` di server manapun yang baru diinstall pakai kode saat ini, ini penyebabnya. Perbaikan sudah disiapkan (nilai baru: Kritis 15/60 is_24x7=1, Tinggi 30/240, Sedang 60/2880, Rendah 120/10080), tinggal dieksekusi via commit terpisah ke `install.py`.
+~~`nexthd/install.py` fungsi `create_default_sla_policies()` masih pakai nilai SLA versi LAMA~~
+
+**Update:** Sudah diperbaiki dan di-push ke `main` (commit `b3a24b2`, merged ke `2d795b9`) pada 24 Agustus 2026. Nilai sekarang: Kritis 15/60 `is_24x7=1`, Tinggi 30/240, Sedang 60/2880, Rendah 120/10080 — sesuai SOP final 19 Agustus. Instalasi baru dari kode `main` saat ini sudah akan dapat SLA yang benar sejak awal, tidak perlu patch manual lagi.
+
+---
+
+## Update 24 Agustus 2026 — Verifikasi Ringan Pasca-Perbaikan Sesi Ini
+
+> **Waktu:** 24 Agustus 2026 (jam tidak tercatat di log sesi — kalau perlu presisi menit,
+> cek timestamp asli di riwayat chat Claude)
+> **Konteks:** Script ini dipakai untuk verifikasi cepat setelah rangkaian perbaikan sesi
+> 24 Agustus: fix sidebar "NextHD Photo" yang gagal muncul (root cause: `import_file_by_path`
+> tidak sync child table `links`, harus di-append manual via `doc.save()`), dedup Workflow
+> Transition yang terduplikasi 4× di ketiga workflow (Ticket 28→7, Problem 24→6, Change
+> Request 32→8 — root cause: `Workflow Action Master` "Convert to Known Error" hilang,
+> bikin `wf.save()` gagal validasi sampai master dibuat ulang), penambahan 8 Cuti Bersama
+> 2026, dan patch `install.py` di atas.
+>
+> Lebih ringan dari script Full Audit di atas — cuma verifikasi 9 titik spesifik yang
+> disentuh sesi ini, bukan schema drift menyeluruh. Cocok dipakai sebagai smoke test cepat
+> setelah perubahan serupa, bukan pengganti Full Audit.
+
+```bash
+cat > /home/it/final_check_all_v2.py << 'EOF'
+exec("""
+print("========================================")
+print("1. WORKFLOW TRANSITIONS (harus 7/6/8, no dup)")
+print("========================================")
+for wf_name, expected in [("NextHD Ticket", 7), ("NextHD Problem", 6), ("NextHD Change Request", 8)]:
+    rows = frappe.db.sql("SELECT state, action, next_state FROM `tabWorkflow Transition` WHERE parent=%s", (wf_name,), as_dict=True)
+    total = len(rows)
+    unique_keys = set((r.state, r.action, r.next_state) for r in rows)
+    status = "OK" if total == expected and total == len(unique_keys) else "MASIH ADA MASALAH"
+    print(wf_name + ": total=" + str(total) + " unique=" + str(len(unique_keys)) + " expected=" + str(expected) + " -> " + status)
+
+print("")
+print("========================================")
+print("2. WORKFLOW ACTION MASTER (semua action harus ada master-nya)")
+print("========================================")
+all_actions = set()
+for wf_name in ["NextHD Ticket", "NextHD Problem", "NextHD Change Request"]:
+    rows = frappe.db.sql("SELECT DISTINCT action FROM `tabWorkflow Transition` WHERE parent=%s", (wf_name,), as_dict=True)
+    for r in rows:
+        all_actions.add(r.action)
+missing = [a for a in all_actions if not frappe.db.exists("Workflow Action Master", a)]
+print("Total action unik: " + str(len(all_actions)))
+print("Yang masih bolong: " + (str(missing) if missing else "TIDAK ADA (aman)"))
+
+print("")
+print("========================================")
+print("3. SIDEBAR WORKSPACE NextHD")
+print("========================================")
+ws = frappe.get_doc("Workspace", "NextHD")
+labels = [l.label for l in ws.links]
+print("Total sidebar item: " + str(len(labels)))
+print("Ada NextHD Photo: " + str("NextHD Photo" in labels))
+print("List: " + str(labels))
+
+print("")
+print("========================================")
+print("4. NUMBER CARDS DI WORKSPACE")
+print("========================================")
+nc = frappe.db.sql("SELECT number_card_name FROM `tabWorkspace Number Card` WHERE parent='NextHD'", as_dict=True)
+print("Total: " + str(len(nc)) + " -> " + str([n.number_card_name for n in nc]))
+print("Ada Total Foto Terupload: " + str(any(n.number_card_name == "Total Foto Terupload" for n in nc)))
+
+print("")
+print("========================================")
+print("5. SLA POLICY")
+print("========================================")
+sla_rows = frappe.get_all("NextHD SLA Policy", fields=["priority", "response_time_minutes", "resolution_time_minutes", "is_24x7"], order_by="priority")
+for s in sla_rows:
+    print("    " + str(s.priority) + ": response=" + str(s.response_time_minutes) + " resolution=" + str(s.resolution_time_minutes) + " is_24x7=" + str(s.is_24x7))
+kritis = [s for s in sla_rows if s.priority == "Kritis"]
+if kritis and kritis[0].is_24x7 == 1:
+    print("Kritis is_24x7=1 -> OK")
+else:
+    print("Kritis is_24x7 BUKAN 1 -> PERLU DICEK")
+
+print("")
+print("========================================")
+print("6. BUSINESS HOURS")
+print("========================================")
+bh = frappe.get_all("NextHD Business Hours", fields=["day", "is_working_day"], order_by="creation")
+print("Total record: " + str(len(bh)))
+days_seen = [b.day for b in bh]
+dup_days = set([d for d in days_seen if days_seen.count(d) > 1])
+print("Hari duplikat: " + (str(dup_days) if dup_days else "TIDAK ADA"))
+for b in bh:
+    print("    " + str(b.day) + " working=" + str(b.is_working_day))
+
+print("")
+print("========================================")
+print("7. NEXTHD HOLIDAY")
+print("========================================")
+total_holiday = frappe.db.count("NextHD Holiday")
+cuti_count = frappe.db.count("NextHD Holiday", {"description": ["like", "Cuti Bersama%"]})
+print("Total: " + str(total_holiday) + " (cuti bersama: " + str(cuti_count) + ")")
+
+print("")
+print("========================================")
+print("8. ROLES NEXTHD")
+print("========================================")
+roles = ["Requester", "Agent", "Agent Manager", "IT Manager", "IT Auditor"]
+for r in roles:
+    exists = frappe.db.exists("Role", r)
+    print("    " + r + ": " + ("ADA" if exists else "TIDAK ADA -- MASALAH"))
+
+print("")
+print("========================================")
+print("9. NextHD Photo DocType")
+print("========================================")
+print("DocType NextHD Photo ada: " + str(frappe.db.exists("DocType", "NextHD Photo") is not None))
+print("Jumlah record NextHD Photo: " + str(frappe.db.count("NextHD Photo")))
+
+print("")
+print("========================================")
+print("SELESAI - REVIEW HASIL DI ATAS")
+print("========================================")
+""")
+EOF
+bench --site desk.ciptamebel.co.id console < /home/it/final_check_all_v2.py > /home/it/final_check_all_v2_result.txt 2>&1 && cat /home/it/final_check_all_v2_result.txt
+```
+
+### Hasil Terakhir (24 Agustus 2026)
+
+Semua 9 titik pemeriksaan **OK**, kecuali satu anomali yang perlu keputusan manusia:
+
+- Workflow Transition: Ticket 7/7, Problem 6/6, Change Request 8/8 — semua unik, tidak ada duplikat
+- Workflow Action Master: 17 action unik, tidak ada yang bolong
+- Sidebar: "NextHD Photo" muncul
+- Number Card: "Total Foto Terupload" muncul (total 9 card)
+- SLA Policy: sesuai SOP final 19 Agustus, Kritis `is_24x7=1`
+- Holiday: 25 record (17 nasional + 8 cuti bersama 2026)
+- Roles: 5/5 ada
+- NextHD Photo DocType: aktif, 0 record (belum ada foto diupload, wajar karena fitur baru live)
+
+**⚠️ Anomali ditemukan — belum diputuskan:** Business Hours **Sabtu tercatat `is_working_day=1`** (hari kerja), padahal `install.py` (setelah patch 24 Agustus) men-set default Sabtu `is_working_day=0` (bukan hari kerja). Perlu diklarifikasi: apakah Sabtu memang sengaja dijadikan hari kerja di production (kalau ya, `install.py` perlu disesuaikan lagi supaya konsisten), atau ini data lama yang salah dan perlu dikoreksi ke `0`. **Belum ada tindakan diambil terhadap ini — menunggu keputusan.**
 
 ---
 
