@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-24 (sesi lanjutan — Business Hours Sabtu + fix install.py)
+> **Last updated:** 2026-08-25 (sesi lanjutan — sidebar report via `Workspace.links` + fixture workflow name-match, migrate belum diuji)
 
 ---
 
@@ -42,13 +42,13 @@
 
 - Manajemen tiket insiden dan permintaan layanan
 - Web Form self-service untuk Requester di `/tiket-saya` (PR #6) — **✅ terkonfirmasi live** di produksi 22 Agustus (`published: 1`, route `tiket-saya` aktif)
-- Workflow approval untuk Change Request (state machine terverifikasi via regression test, 2026-08-20; dedup ulang 24 Agustus)
+- Workflow approval untuk Change Request (state machine terverifikasi via regression test, 2026-08-20; dedup ulang 24 & 25 Agustus)
 - Manajemen Problem dan Known Error (ITIL-lite)
 - Notifikasi real-time via Telegram Bot — **✅ terkonfirmasi live**, bot sudah balas dan token/enable sudah terkonfirmasi di NextHD Settings
 - SLA monitoring otomatis berbasis jam kerja (warning 30 menit sebelum breach), termasuk **titik-mulai resolution saat "Mulai Kerjakan" + pause/resume saat "Menunggu User"** (PR #8, bugfix `76ce3e9`) — **✅ live + terverifikasi**
 - Priority otomatis dari matriks Impact × Urgency, dengan override manual untuk Agent Manager/IT Manager (PR #7) — **✅ live + terverifikasi**
 - Multi-tim dengan assignment agent
-- Custom reports: Tiket per Bulan, Tiket per Kategori, Tiket per Prioritas (breach SLA)
+- Custom reports: Tiket per Bulan, Tiket per Agent, Tiket per Kategori, Tiket per Prioritas (breach SLA), SLA Compliance Bulanan, Aset Bermasalah — **sidebar submenu sedang disiapkan** (lihat item AA di bawah)
 - Foto/gambar reusable & bisa di-link antar Ticket/Problem/Asset/Known Error (PR #9) — **✅ live + terverifikasi 24 Agustus**, termasuk sidebar & dashboard Number Card
 - **Rencana ke depan:** Knowledge Base publik (self-service), tag di tiket, CSAT — lihat `docs/DAFTAR_FITUR.md`
 
@@ -58,16 +58,14 @@
 
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `POLA_KERJA_DAN_BUG.md`.
 > Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/DAFTAR_FITUR.md`.
->
-> **Update 2026-08-24 (lanjutan)** — Item Y (Business Hours Sabtu) **sudah diputuskan
-> Efendy**: Sabtu memang hari kerja, jam 08:00–15:00. Data production + `install.py`
-> diselaraskan. Ditemukan **bug tambahan (item Z)**: commit `b3a24b2` untuk `install.py`
-> ternyata kehilangan seluruh indentasi (kemungkinan tab hilang saat heredoc/paste di
-> sesi sebelumnya), membuat file itu `IndentationError` kalau dijalankan — diperbaiki
-> bersamaan dengan fix Sabtu, kali ini diverifikasi syntax-nya dengan `python3 -c
-> "import ast; ast.parse(...)"` sebelum commit.
 
-### ✅ Item Y & Z — Baru Saja Diselesaikan (24 Agustus)
+### 🔶 Item AA — Sidebar 6 Link Report (Sedang Berjalan, 25 Agustus)
+
+| # | Item | Keterangan | PIC |
+|---|---|---|---|
+| AA | Ganti menu sidebar "NextHD Report" generic dengan 6 link report langsung | **Root cause ditemukan:** sidebar sebenarnya punya dua tabel — `Workspace Sidebar Item` (turunan/auto-generate, ditimpa ulang tiap migrate) dan `Workspace.links` (sumber asli, bertahan lewat migrate). Percobaan pertama (edit `Workspace Sidebar Item` langsung) **gagal saat migrate diuji** — data sempat hilang, sudah di-restore dari backup. Pendekatan baru (edit `Workspace.links` langsung) **sudah dijalankan dan diverifikasi** via `bench console`: 19 item total (13 lama + 6 report baru). **`bench migrate` untuk konfirmasi final BELUM dijalankan.** Detail lengkap + script di `docs/AUDIT_SISTEM.md` | Claude + Efendy |
+
+### ✅ Item Y & Z — Selesai (24 Agustus)
 
 | # | Item | Keterangan | PIC |
 |---|---|---|---|
@@ -99,7 +97,7 @@
 | J | Workflow — testing end-to-end di UI browser | Regression test backend sudah lulus 100% (2026-08-20). Belum ditest klik manual di browser untuk verifikasi tombol Actions & permission per role tampil benar | Efendy |
 | K | Role assignment ke user spesifik | `support@ciptamebel.co.id` → role IT Manager. Keputusan: sementara 1 akun shared dulu | Efendy |
 | L | File `HANDOFF_SLA_NextHD_2026-08-19.md` | Disebut di HANDOFF.md tapi tidak ada di repo. Kalau masih ada di server, perlu `git add` + commit sebelum hilang | Efendy |
-| M | Guard permanen duplikasi workflow transition | Root cause **sekarang terkonfirmasi** (24 Agustus): `Workflow Action Master` yang hilang membuat proses save/reimport gagal di tengah jalan dan meninggalkan baris duplikat. Sudah dedup ulang 2×, tapi belum ada mekanisme pencegahan otomatis | Claude |
+| M | Guard permanen duplikasi workflow transition | Root cause **sekarang terkonfirmasi** (25 Agustus): `Workflow Transition` adalah fixture aktif di `hooks.py`, dan file fixture-nya menumpuk beberapa generasi export lama — dedup di database saja tidak permanen kalau fixture di repo tidak ikut dibersihkan. Sudah dibersihkan total 2× (commit `9cf994f`, lalu `322827f` untuk perbaiki `name` mismatch). Belum ada mekanisme pencegahan otomatis | Claude |
 | N | Pemetaan tanggal Cuti Bersama 2026 belum dicek silang ke SKB asli | Data ditambahkan berdasar asumsi pola umum kalender cuti bersama Indonesia, bukan dibaca langsung dari teks SKB 3 Menteri | Efendy |
 | O | Dashboard "Aset Bermasalah" (Number Card) | Usulan, belum dikerjakan | - |
 | P | SLA otomatis untuk Problem/Change Request | Saat ini SLA hanya untuk Ticket | - |
@@ -160,7 +158,9 @@
 | Script verifikasi ringan pasca-perbaikan ditambahkan ke `AUDIT_SISTEM.md` | ✅ 24 Agustus |
 | Business Hours Sabtu — dikonfirmasi hari kerja 08:00–15:00 (item Y) | ✅ Keputusan Efendy, 24 Agustus. Data production + `install.py` diselaraskan |
 | `install.py` kehilangan indentasi akibat commit sebelumnya (item Z) | ✅ Ditulis ulang + diverifikasi syntax-nya sebelum commit, 24 Agustus |
+| Duplikasi Workflow Transition round 3 — root cause fixture di repo (bukan Workflow Action Master) ditemukan & diperbaiki | ✅ 25 Agustus, fixture ditulis ulang (commit `9cf994f`), lalu `name` disamakan dengan DB (commit `322827f`). Belum diuji lewat migrate baru |
+| Root cause sidebar dikoreksi total — `Workspace.links` (bukan `Workspace Sidebar Item`) adalah sumber asli | ✅ 25 Agustus. Percobaan pertama sempat menghapus data sidebar via migrate, di-restore dari backup. 6 link report berhasil dipindahkan ke `Workspace.links` (19 item total), migrate belum diuji — lihat item AA & `docs/AUDIT_SISTEM.md` |
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-24.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-25.*
