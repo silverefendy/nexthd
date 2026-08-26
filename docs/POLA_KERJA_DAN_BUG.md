@@ -3,7 +3,7 @@
 > Frappe quirks, aturan wajib saat coding/debug, dan riwayat bug per sesi.
 > File ini yang paling sering bertambah tiap sesi baru.
 >
-> **Last updated:** 2026-08-22 10:35 WIB
+> **Last updated:** 2026-08-26
 
 ---
 
@@ -51,9 +51,10 @@ Tanpa hook ini, nexthd tidak muncul di desktop meski ada di `tabDesktop Icon`.
 > sudah benar dari awal — murni masalah cache. Fix: `bench clear-cache` + `bench clear-website-cache`
 > + `bench build --app nexthd` + `bench restart` + hard refresh browser.
 
-### B. `/desk/nexthd` — Workspace Page
+### B. `/desk/nexthd` — Workspace Page (Dashboard: Number Card & Shortcut Card)
 
-Dikontrol oleh **`tabWorkspace`** dan file `nexthd/next_helpdesk/workspace/nexthd/nexthd.json`.
+Dikontrol oleh **`tabWorkspace`** (kolom `content`, JSON berisi urutan blok yang dirender) dan
+file `nexthd/next_helpdesk/workspace/nexthd/nexthd.json`.
 
 > ⚠️ **JANGAN** generate `content` sebagai string literal dengan escape manual.
 > **SELALU** build sebagai Python dict/list lalu `json.dumps()` sekali.
@@ -67,17 +68,33 @@ Dikontrol oleh **`tabWorkspace`** dan file `nexthd/next_helpdesk/workspace/nexth
 > dengan key `"card_name"` — SALAH. Frappe v16 butuh `"type": "number_card"` dengan key
 > `"number_card_name"`. Type yang tidak dikenal di-skip diam-diam tanpa error.
 
-### C. Sidebar Kiri — `tabWorkspace Sidebar`
+**Shortcut Cards (DocType/Report) di dashboard — `tabWorkspace Shortcut`:**
+- Tabel terpisah dari `tabWorkspace Link` (sidebar kiri, lihat §C di bawah) — dua-duanya
+  `child table` dari `Workspace`, tapi `parentfield` beda (`shortcuts` vs `links`) dan
+  fungsinya beda: `Workspace Shortcut` = kartu di badan dashboard, `Workspace Link` = daftar
+  di sidebar kiri.
+- Block content untuk memunculkan kartu shortcut: `{"type": "shortcut", "data": {"shortcut_name": "<label>", "col": N}}` — `shortcut_name` harus **persis sama** dengan kolom `label` di `tabWorkspace Shortcut`, kalau tidak match, kartu di-skip diam-diam (sama seperti number card).
+- **Untuk `type = "Report"`, kolom `report_ref_doctype` WAJIB diisi** (DocType yang jadi rujukan report). Kalau kosong/`NULL`, Frappe kemungkinan besar gagal resolve report saat resolve config kartu, sehingga kartu **tidak ikut dirender** di dashboard — tidak ada error yang terlihat di UI atau log biasa. Lihat bug session 2026-08-26.
+- **Update `content` via SQL langsung TIDAK otomatis invalidate cache** — Frappe nge-cache konten Workspace di Redis per-app. Setelah `UPDATE tabWorkspace SET content=...` via SQL, WAJIB `bench clear-cache` + `bench clear-website-cache` (bukan cuma hard refresh browser) baru kartu baru muncul.
 
-Dikontrol oleh **`tabWorkspace Sidebar`** dan **`tabWorkspace Sidebar Item`**.
+### C. Sidebar Kiri — 3 Tabel Berlapis (Penting: Jangan Tertukar dengan §B)
 
-> `standard=1` → sidebar tidak bisa diedit via UI. Fix: `UPDATE tabWorkspace Sidebar SET standard=0`
+1. **`Workspace.links` (child table `tabWorkspace Link`)** — **sumber data asli**, bertahan
+   lewat `bench migrate`. Ini yang harus diedit kalau mau ubah isi sidebar kiri secara permanen.
+   Terkonfirmasi dari dokumentasi resmi Frappe v16 (lihat `AUDIT_SISTEM.md`, "Update 25 Agustus
+   2026 (Lanjutan)").
+2. **`tabWorkspace Sidebar Item`** — tabel **turunan/auto-generate**, diregenerasi ulang dari
+   `Workspace.links` setiap `bench migrate`. Edit langsung ke tabel ini **akan hilang** saat
+   migrate berikutnya (`standard=1` → sidebar tidak bisa diedit via UI juga; fix:
+   `UPDATE tabWorkspace Sidebar SET standard=0`).
+3. **`tabWorkspace Shortcut`** — **bukan bagian sidebar sama sekali**, ini kartu dashboard
+   (lihat §B). Jangan disamakan hanya karena sama-sama "shortcut"-nya Workspace.
 
-> ✅ **FIXED (2026-08-19):** Item **Holiday hilang dari sidebar, sidebar rusak saat diklik**.
-> Root cause: `NextHD Holiday` (DocType terpisah dari `NextHD Business Hours`) tidak pernah
-> terdaftar di fixture `nexthd/fixtures/workspace_sidebar.json`, sehingga insert manual
-> sebelumnya selalu tertimpa/rusak tiap `bench migrate`. Fix: tambah entry Holiday langsung
-> ke fixture file (bukan insert manual ke DB), lalu migrate.
+> ⚠️ **Jangan tertukar ketiganya.** Kasus nyata 26 Agustus: perubahan sesi ini dilakukan di
+> `tabWorkspace Shortcut` (kartu dashboard) untuk fitur Foto (DocType) dan 6 Report — ini
+> **terpisah total** dari pekerjaan item AA (25 Agustus, sidebar kiri via `Workspace.links`)
+> yang migrate-nya belum dijalankan. Keduanya boleh berjalan paralel tanpa saling mengganggu,
+> tapi harus jelas dokumentasi/perubahan mana untuk sistem yang mana.
 
 ### D. Aturan Fixtures — WAJIB
 
@@ -111,7 +128,12 @@ Sections:
       Critical Tickets → NextHD Ticket WHERE priority = Kritis AND status NOT IN Selesai,Ditutup
 
   [Konfigurasi]
-    Shortcuts: NextHD Settings, NextHD SLA Policy, NextHD Team, NextHD Category
+    Shortcuts: NextHD Settings, NextHD SLA Policy, NextHD Team, NextHD Category, NextHD Photo (ditambah 26 Agustus)
+
+  [Laporan] (ditambah 26 Agustus)
+    Shortcuts (Report, report_ref_doctype terisi): Tiket per Bulan, Tiket per Agent,
+    Tiket per Prioritas, Tiket per Kategori, SLA Compliance Bulanan (ref NextHD Ticket),
+    Aset Bermasalah (ref NextHD Asset)
 ```
 
 ---
@@ -170,6 +192,8 @@ IPython punya automagic `%run` yang bisa "menangkap" pemanggilan `run()` sebagai
 | MariaDB subquery | Versi lama tidak support `LIMIT` di subquery `IN` |
 | JSON content workspace | Generate via `json.dumps()` Python, BUKAN string literal manual |
 | Workspace number card block | Type HARUS `"number_card"` (bukan `"card"`), key HARUS `"number_card_name"` (bukan `"card_name"`) |
+| **Workspace shortcut block bertipe Report** | Kolom `report_ref_doctype` di `tabWorkspace Shortcut` WAJIB diisi, kalau tidak kartu di-skip diam-diam dari dashboard (lihat §1.B) |
+| **Update `Workspace.content` via SQL langsung** | Tidak auto-invalidate cache Redis — WAJIB `bench clear-cache` + `bench clear-website-cache` setelahnya, baru hard refresh browser |
 | `Workflow State` (fixtures) | Tidak punya kolom `workflow` — jangan filter berdasarkan itu. Master global, TIDAK masuk fixtures per-app |
 | Role assignment ke user | Via UI (User → Roles), TIDAK perlu SQL |
 | **Workflow State → `Update Field`** | Jangan isi sama dengan `workflow_state_field` kecuali `Update Value` juga diisi benar — kalau kosong, status akan tertimpa `None` setelah transisi. Lihat `WORKFLOW.md` |
@@ -187,6 +211,7 @@ IPython punya automagic `%run` yang bisa "menangkap" pemanggilan `run()` sebagai
 | **`frappe.logger` vs `frappe.logger()`** | `frappe.logger` adalah fungsi, BUKAN objek logger — harus dipanggil dulu `frappe.logger()` baru bisa `.info(...)`/`.error(...)` dst. Salah tulis `frappe.logger.info(...)` (tanpa kurung) akan lolos saat ditulis tapi meledak saat dieksekusi: `AttributeError: 'function' object has no attribute 'info'`. Cek SEMUA pemakaian `frappe.logger` di file yang sama kalau nemu satu instance salah — kemungkinan ada yang lain juga ke-copy-paste dari pattern salah yang sama |
 | **DocType dengan `"permissions": []` kosong total di JSON** | **Ditemukan 2026-08-22 (lihat §4 bug session terkait).** Kalau array `permissions` benar-benar kosong (bukan cuma minim), DocType HANYA bisa diakses Administrator — semua role lain (termasuk System Manager) kena `PermissionError`/404 saat akses UI. Selalu tambahkan minimal 1 baris permission (`System Manager` atau role relevan) untuk setiap DocType baru, walau cuma untuk data master yang jarang diedit. **Fix diterapkan (commit `31f35da`) untuk `NextHD SLA Policy` & `NextHD Business Hours`.** |
 | **Pola aman untuk logic side-effect di `on_update()`** | Kasus nyata (PR #8, 2026-08-22): logic pause/resume SLA + recalculate butuh update field di dalam `on_update()`. Devin menggunakan `self.db_set(...)` / `frappe.db.set_value(...)` langsung, BUKAN `self.save()`, sehingga tidak memicu infinite recursion (`on_update()` terpanggil lagi). Pola ini jadi referensi wajib untuk hook `on_update()`/`validate()` berikutnya yang butuh side-effect DB |
+| **Report shortcut URL selalu `/desk/query-report/<Nama Report>`** | Ini route standar Frappe untuk semua Query Report (dipakai sama persis oleh ERPNext dan app lain) — TIDAK bisa diubah jadi `/desk/nexthd/...` tanpa menulis ulang report sebagai custom Page (kehilangan fitur bawaan: filter builder, export, chart). Bukan bug, ini pola standar Frappe — jangan dianggap "belum sepenuhnya dari NextHD" |
 
 ---
 
@@ -356,6 +381,25 @@ Sesi ini melakukan verifikasi tambahan (di luar 4 file yang sudah dicek sebelumn
 
 **Status akhir sesi ini:** Kedua PR sudah di-review levelnya kode oleh Claude (diff, logic, dan pola anti-recursion) dan terlihat sesuai spesifikasi yang diminta ke Devin. **Belum ada test end-to-end manual di server produksi** — itu jadi langkah berikutnya untuk Efendy (lihat panduan test CLI di pesan chat terkait / `SUMMARY.md §2`). Item A, B, C, T dipindah dari "belum ada di kode" ke "kode selesai, menunggu deploy" di `SUMMARY.md §2`.
 
+### ✅ SELESAI — Bug Session 2026-08-26 (Dashboard Shortcut "NextHD Photo" & 6 Report — `report_ref_doctype` & Cache)
+
+**Konteks:** Menambahkan 7 kartu shortcut baru ke dashboard `/desk/nexthd` — 1 shortcut DocType (`NextHD Photo`) ke section "Konfigurasi", dan 6 shortcut Report (`Tiket per Bulan`, `Tiket per Agent`, `Tiket per Prioritas`, `Tiket per Kategori`, `SLA Compliance Bulanan`, `Aset Bermasalah`) ke section baru "Laporan". Insert dilakukan via SQL langsung ke `tabWorkspace Shortcut` + update `Workspace.content` — **ini pekerjaan terpisah dari item AA (25 Agustus, sidebar kiri via `Workspace.links`)**, jangan disatukan meski sama-sama menyangkut "Report" dan "Photo". Lihat §1.B dan §1.C untuk penjelasan lengkap perbedaan ketiga tabel Workspace.
+
+**Gejala:** Setelah insert (7 shortcut baru terkonfirmasi ada di `tabWorkspace Shortcut`, `content` JSON terkonfirmasi 32 blok), halaman `/desk/nexthd-photo` bisa dibuka manual via URL langsung, tapi kartu "NextHD Photo" **tidak muncul** di dashboard. 6 kartu Report juga tidak muncul sama sekali.
+
+**Investigasi:**
+1. Role Efendy (`support@ciptamebel.co.id`) dicek — punya `IT Manager` **dan** `System Manager`, jadi permission BUKAN penyebab (baik untuk DocType `NextHD Photo` maupun ke-6 Report).
+2. Kolom `report_ref_doctype` di `tabWorkspace Shortcut` untuk ke-6 shortcut Report ternyata **kosong (`NULL`)** — tidak diisi saat insert awal.
+
+**Root cause & fix:**
+- **6 shortcut Report:** `report_ref_doctype` kosong membuat Frappe kemungkinan besar gagal resolve konfigurasi kartu saat render, sehingga di-skip diam-diam. Fix: `UPDATE tabWorkspace Shortcut SET report_ref_doctype=... WHERE label=... AND type='Report'` — 5 report (Tiket per Bulan/Agent/Prioritas/Kategori, SLA Compliance Bulanan) → `NextHD Ticket`, 1 report (Aset Bermasalah) → `NextHD Asset`.
+- **Shortcut "NextHD Photo":** data & permission sudah benar dari awal, jadi penyebabnya cache Redis — `Workspace.content` diupdate via SQL langsung (bukan `doc.save()`), yang tidak memicu invalidasi cache otomatis (lihat aturan baru di §3).
+- Fix gabungan: isi `report_ref_doctype` + `bench clear-cache` + `bench clear-website-cache`, lalu hard refresh browser (Ctrl+Shift+R, bukan reload biasa — karena cache boot info browser juga bisa menyimpan versi lama).
+
+**Catatan tambahan:** URL report tetap `/desk/query-report/<nama>` — ini standar Frappe untuk semua Query Report (sama seperti ERPNext), bukan bug, dan tidak bisa diubah jadi rute `/desk/nexthd/...` tanpa menulis ulang report sebagai custom Page. Modul report sudah benar (`Next Helpdesk`), jadi tetap terhubung ke NextHD lewat breadcrumb/pencarian meski URL bar-nya rute standar Frappe.
+
+**Status:** Fix sudah dijalankan di server, menunggu konfirmasi visual Efendy (kartu Photo + 6 Report muncul di dashboard setelah hard refresh) sebelum export ke fixture JSON `nexthd/next_helpdesk/workspace/nexthd/nexthd.json` (pola: DB dulu → verifikasi UI → fixture → push).
+
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 10:35 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-26.*
