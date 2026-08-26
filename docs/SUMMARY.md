@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-25 (sesi lanjutan — sidebar report via `Workspace.links` + fixture workflow name-match, migrate belum diuji)
+> **Last updated:** 2026-08-26 (sesi lanjutan — dashboard shortcut "NextHD Photo" + 6 Report via `Workspace Shortcut` diperbaiki (`report_ref_doctype` + cache); item AA sidebar kiri via `Workspace.links` masih menunggu `bench migrate`)
 
 ---
 
@@ -15,9 +15,9 @@
 | `docs/DAFTAR_FITUR.md` | Checklist lengkap semua fitur (selesai/dikerjakan/rencana) dalam satu tabel, termasuk desain Generalisasi Non-IT & Wipe Data Tool (sebelumnya di `ARSITEKTUR.md §8/§9`) |
 | `docs/ARSITEKTUR.md` | Infrastruktur, struktur app, DocType/field lengkap, permissions, schema tabel, label ID |
 | `docs/WORKFLOW.md` | Notifikasi Telegram + semua state machine + riwayat bug workflow |
-| `docs/POLA_KERJA_DAN_BUG.md` | Frappe quirks (Desktop/Workspace), aturan wajib saat coding/debug, riwayat bug lengkap |
+| `docs/POLA_KERJA_DAN_BUG.md` | Frappe quirks (Desktop/Workspace/Dashboard Shortcut), aturan wajib saat coding/debug, riwayat bug lengkap |
 | `docs/PANDUAN_INSTALASI.md` | Instalasi, setup Telegram/SLA, alur deploy, referensi |
-| `docs/AUDIT_SISTEM.md` | Script audit lengkap (schema drift, Workspace, Workflow master data, SLA, fixtures) + script verifikasi ringan pasca-perbaikan. Dipakai on-demand untuk cek kesehatan server atau sebelum install ke server baru |
+| `docs/AUDIT_SISTEM.md` | Script audit lengkap (schema drift, Workspace, Workflow master data, SLA, fixtures) + script verifikasi ringan pasca-perbaikan + script gabungan cek semua isu Workspace/Sidebar/Dashboard. Dipakai on-demand untuk cek kesehatan server atau sebelum install ke server baru |
 
 ---
 
@@ -48,8 +48,8 @@
 - SLA monitoring otomatis berbasis jam kerja (warning 30 menit sebelum breach), termasuk **titik-mulai resolution saat "Mulai Kerjakan" + pause/resume saat "Menunggu User"** (PR #8, bugfix `76ce3e9`) — **✅ live + terverifikasi**
 - Priority otomatis dari matriks Impact × Urgency, dengan override manual untuk Agent Manager/IT Manager (PR #7) — **✅ live + terverifikasi**
 - Multi-tim dengan assignment agent
-- Custom reports: Tiket per Bulan, Tiket per Agent, Tiket per Kategori, Tiket per Prioritas (breach SLA), SLA Compliance Bulanan, Aset Bermasalah — **sidebar submenu sedang disiapkan** (lihat item AA di bawah)
-- Foto/gambar reusable & bisa di-link antar Ticket/Problem/Asset/Known Error (PR #9) — **✅ live + terverifikasi 24 Agustus**, termasuk sidebar & dashboard Number Card
+- Custom reports: Tiket per Bulan, Tiket per Agent, Tiket per Kategori, Tiket per Prioritas (breach SLA), SLA Compliance Bulanan, Aset Bermasalah — **kartu shortcut dashboard "Laporan" sudah ditambah (26 Agustus, fix `report_ref_doctype`+cache, menunggu konfirmasi visual)**, sidebar kiri submenu masih di item AA di bawah
+- Foto/gambar reusable & bisa di-link antar Ticket/Problem/Asset/Known Error (PR #9) — **✅ live + terverifikasi 24 Agustus**, termasuk sidebar & dashboard Number Card. **Shortcut dashboard "NextHD Photo" (kartu terpisah di section Konfigurasi) ditambah 26 Agustus**, sempat tidak muncul karena cache — sudah difix, menunggu konfirmasi visual
 - **Rencana ke depan:** Knowledge Base publik (self-service), tag di tiket, CSAT — lihat `docs/DAFTAR_FITUR.md`
 
 ---
@@ -58,6 +58,14 @@
 
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `POLA_KERJA_DAN_BUG.md`.
 > Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/DAFTAR_FITUR.md`.
+
+### 🔶 Item BB — Dashboard Shortcut "NextHD Photo" & 6 Report (Menunggu Konfirmasi Visual, 26 Agustus)
+
+| # | Item | Keterangan | PIC |
+|---|---|---|---|
+| BB | Kartu shortcut dashboard `/desk/nexthd`: 1 DocType (NextHD Photo) + 6 Report (section baru "Laporan") | Insert ke `tabWorkspace Shortcut` + update `Workspace.content` sudah dijalankan (7 shortcut baru, total 32 blok). Sempat tidak muncul di dashboard — root cause: `report_ref_doctype` kosong untuk 6 shortcut Report (fixed), dan cache Redis untuk shortcut Photo (fixed via `bench clear-cache`+`clear-website-cache`). **Menunggu Efendy hard refresh & konfirmasi visual** sebelum di-export ke fixture. Detail lengkap di `docs/POLA_KERJA_DAN_BUG.md` bug session 26 Agustus | Claude + Efendy |
+
+> **Catatan penting:** item BB (kartu dashboard, tabel `Workspace Shortcut`) **terpisah total** dari item AA di bawah (sidebar kiri, tabel `Workspace.links`) — dua sistem berbeda meski sama-sama menyangkut Report & Photo. Jangan disatukan saat verifikasi.
 
 ### 🔶 Item AA — Sidebar 6 Link Report (Sedang Berjalan, 25 Agustus)
 
@@ -160,7 +168,8 @@
 | `install.py` kehilangan indentasi akibat commit sebelumnya (item Z) | ✅ Ditulis ulang + diverifikasi syntax-nya sebelum commit, 24 Agustus |
 | Duplikasi Workflow Transition round 3 — root cause fixture di repo (bukan Workflow Action Master) ditemukan & diperbaiki | ✅ 25 Agustus, fixture ditulis ulang (commit `9cf994f`), lalu `name` disamakan dengan DB (commit `322827f`). Belum diuji lewat migrate baru |
 | Root cause sidebar dikoreksi total — `Workspace.links` (bukan `Workspace Sidebar Item`) adalah sumber asli | ✅ 25 Agustus. Percobaan pertama sempat menghapus data sidebar via migrate, di-restore dari backup. 6 link report berhasil dipindahkan ke `Workspace.links` (19 item total), migrate belum diuji — lihat item AA & `docs/AUDIT_SISTEM.md` |
+| Dashboard shortcut "NextHD Photo" + 6 Report ditambah ke `Workspace Shortcut` (item BB) | ✅ Diinsert 26 Agustus (7 shortcut baru, `content` 32 blok). Sempat tidak render — root cause `report_ref_doctype` kosong (6 Report) + cache Redis (Photo), keduanya sudah difix. Menunggu konfirmasi visual Efendy — lihat `docs/AUDIT_SISTEM.md` & `POLA_KERJA_DAN_BUG.md` |
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-25.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-26.*
