@@ -663,4 +663,149 @@ sesuai rencana.
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-25.*
+## Update 26 Agustus 2026 — Dashboard Shortcut "NextHD Photo" & 6 Report (`Workspace Shortcut`, `report_ref_doctype`)
+
+> **Konteks:** Berbeda dari item AA (25 Agustus, sidebar kiri via `Workspace.links`), sesi
+> ini menambahkan **kartu shortcut di badan dashboard** `/desk/nexthd` — tabel `tabWorkspace
+> Shortcut` (`parentfield = 'shortcuts'`), bukan `tabWorkspace Link` (`parentfield =
+> 'links'`, sidebar). Root cause & fix lengkap ada di `docs/POLA_KERJA_DAN_BUG.md` §1.B, §1.C,
+> dan bug session 26 Agustus. Ringkasan: 6 shortcut Report tidak render karena
+> `report_ref_doctype` kosong (fix: isi field itu), shortcut "NextHD Photo" tidak render
+> karena cache Redis setelah update `Workspace.content` via SQL langsung (fix: `bench
+> clear-cache` + `clear-website-cache`).
+
+### Script — Cek `Workspace Shortcut` & `report_ref_doctype` (Read-Only)
+
+```bash
+cat > /home/it/check_workspace_shortcut.py << 'EOF'
+def check():
+    print("=== ISI tabWorkspace Shortcut (parent NextHD) ===")
+    rows = frappe.db.sql("SELECT idx, label, type, link_to, report_ref_doctype FROM `tabWorkspace Shortcut` WHERE parent='NextHD' ORDER BY idx", as_dict=True)
+    print("Total: " + str(len(rows)))
+    missing_ref = []
+    for r in rows:
+        flag = ""
+        if r.type == "Report" and not r.report_ref_doctype:
+            flag = "  <-- report_ref_doctype KOSONG, kartu tidak akan muncul"
+            missing_ref.append(r.label)
+        print(str(r.idx) + " | " + str(r.label) + " | " + str(r.type) + " -> " + str(r.link_to) + " | ref=" + str(r.report_ref_doctype) + flag)
+    print("")
+    if missing_ref:
+        print("HASIL: ADA " + str(len(missing_ref)) + " shortcut Report tanpa report_ref_doctype: " + str(missing_ref))
+    else:
+        print("HASIL: SEMUA shortcut Report sudah punya report_ref_doctype")
+
+check()
+EOF
+sed -i 's/\r$//' /home/it/check_workspace_shortcut.py && \
+sed -i 's/^    /\t/' /home/it/check_workspace_shortcut.py && \
+bench --site desk.ciptamebel.co.id console < /home/it/check_workspace_shortcut.py
+```
+
+### Script Gabungan — Cek SEMUA Isu Workspace/Sidebar/Dashboard Sekaligus (Baru)
+
+Gabungan pemeriksaan §3 (Workspace/Sidebar) dari Full Audit + `Workspace.links` (item AA) +
+`Workspace Shortcut` (item BB) + jumlah blok `content` — satu jalan untuk deteksi dini kalau
+ada shortcut/link/number card yang "hilang diam-diam" dari dashboard atau sidebar. Cocok
+dipakai kapan saja curiga ada kartu/menu yang tidak muncul padahal datanya "kelihatan" ada.
+
+```bash
+cat > /home/it/audit_workspace_all.py << 'EOF'
+def main_check():
+    import json
+    print("=====================================================")
+    print("AUDIT WORKSPACE/SIDEBAR/DASHBOARD LENGKAP - " + str(frappe.utils.now()))
+    print("=====================================================")
+    print("")
+    print("=== 1. Workspace.content - Jumlah & Tipe Blok ===")
+    content_raw = frappe.db.get_value("Workspace", "NextHD", "content")
+    content = json.loads(content_raw) if content_raw else []
+    print("Total blok: " + str(len(content)))
+    type_count = {}
+    for block in content:
+        t = block.get("type", "unknown")
+        type_count[t] = type_count.get(t, 0) + 1
+    print("Breakdown per tipe: " + str(type_count))
+    shortcut_names_in_content = set()
+    for block in content:
+        if block.get("type") == "shortcut":
+            shortcut_names_in_content.add(block.get("data", {}).get("shortcut_name"))
+    print("")
+    print("=== 2. tabWorkspace Shortcut (kartu dashboard) vs Workspace.content ===")
+    shortcut_rows = frappe.db.sql("SELECT label, type, report_ref_doctype FROM `tabWorkspace Shortcut` WHERE parent='NextHD'", as_dict=True)
+    print("Total baris di tabel: " + str(len(shortcut_rows)))
+    for r in shortcut_rows:
+        in_content = r.label in shortcut_names_in_content
+        problem = ""
+        if not in_content:
+            problem = problem + " [TIDAK ADA DI content JSON]"
+        if r.type == "Report" and not r.report_ref_doctype:
+            problem = problem + " [report_ref_doctype KOSONG]"
+        status = "OK" if not problem else "BERMASALAH:" + problem
+        print("    " + str(r.label) + " (" + str(r.type) + ") -> " + status)
+    orphan_content_refs = shortcut_names_in_content - set([r.label for r in shortcut_rows])
+    if orphan_content_refs:
+        print("[PERINGATAN] content JSON mereferensikan shortcut_name yang TIDAK ADA di tabWorkspace Shortcut: " + str(orphan_content_refs))
+    print("")
+    print("=== 3. Workspace.links (sumber asli SIDEBAR KIRI, item AA) ===")
+    ws_doc = frappe.get_doc("Workspace", "NextHD")
+    link_labels = [l.label for l in ws_doc.links]
+    print("Total item: " + str(len(link_labels)))
+    print("List: " + str(link_labels))
+    report_labels_expected = ["Tiket per Bulan", "Tiket per Agent", "Tiket per Prioritas", "Tiket per Kategori", "SLA Compliance Bulanan", "Aset Bermasalah"]
+    missing_report_links = [r for r in report_labels_expected if r not in link_labels]
+    if missing_report_links:
+        print("[BELUM ADA di Workspace.links] " + str(missing_report_links))
+    else:
+        print("Semua 6 link report sudah ada di Workspace.links")
+    print("")
+    print("=== 4. tabWorkspace Sidebar Item (turunan/auto-generate dari Workspace.links) ===")
+    sidebar_item_rows = frappe.db.sql("SELECT label, link_to FROM `tabWorkspace Sidebar Item` WHERE parent='NextHD'", as_dict=True)
+    sidebar_item_labels = [r.label for r in sidebar_item_rows]
+    print("Total item: " + str(len(sidebar_item_labels)))
+    print("List: " + str(sidebar_item_labels))
+    if len(sidebar_item_labels) != len(link_labels):
+        print("[PERINGATAN] Jumlah Workspace Sidebar Item (" + str(len(sidebar_item_labels)) + ") BEDA dari Workspace.links (" + str(len(link_labels)) + ") - kemungkinan belum di-migrate, atau migrate belum pernah dijalankan sejak Workspace.links terakhir diubah")
+    else:
+        print("Jumlah sinkron dengan Workspace.links - kemungkinan sudah pernah migrate sejak perubahan terakhir")
+    print("")
+    print("=== 5. Number Card di Workspace ===")
+    nc_rows = frappe.db.sql("SELECT number_card_name FROM `tabWorkspace Number Card` WHERE parent='NextHD'", as_dict=True)
+    nc_names = [r.number_card_name for r in nc_rows]
+    print("Total: " + str(len(nc_names)) + " -> " + str(nc_names))
+    orphan_nc_in_content = set()
+    for block in content:
+        if block.get("type") == "number_card":
+            nc_name = block.get("data", {}).get("number_card_name")
+            if nc_name not in nc_names:
+                orphan_nc_in_content.add(nc_name)
+    if orphan_nc_in_content:
+        print("[PERINGATAN] content JSON mereferensikan number_card_name yang TIDAK ADA di tabWorkspace Number Card: " + str(orphan_nc_in_content))
+    print("")
+    print("=== 6. Desktop Icon nexthd ===")
+    icon = frappe.db.get_value("Desktop Icon", {"app": "nexthd"}, ["name", "link_type", "link_to", "standard"], as_dict=True)
+    print(str(icon))
+    print("")
+    print("=====================================================")
+    print("AUDIT WORKSPACE/SIDEBAR/DASHBOARD SELESAI")
+    print("Cara baca cepat: cari baris [PERINGATAN], [BERMASALAH], atau [BELUM ADA] di atas")
+    print("=====================================================")
+
+main_check()
+EOF
+sed -i 's/\r$//' /home/it/audit_workspace_all.py && \
+sed -i 's/^    /\t/' /home/it/audit_workspace_all.py && \
+cat -A /home/it/audit_workspace_all.py | head -5 && \
+bench --site desk.ciptamebel.co.id console < /home/it/audit_workspace_all.py > /home/it/audit_workspace_all_result.txt 2>&1 && \
+cat /home/it/audit_workspace_all_result.txt
+```
+
+**Cara pakai hasilnya:** kalau ada baris `[PERINGATAN]`, `[BERMASALAH]`, atau `[BELUM ADA]`,
+itu kandidat kuat kenapa sesuatu tidak muncul di UI. Kombinasikan dengan
+`bench clear-cache` + `bench clear-website-cache` + hard refresh sebelum menyimpulkan ada
+bug data — banyak kasus di project ini (lihat riwayat di atas) yang ternyata murni cache,
+bukan data salah.
+
+---
+
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-26.*
