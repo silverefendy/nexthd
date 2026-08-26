@@ -1,0 +1,26 @@
+{
+ "add_total_row": 0,
+ "creation": "2026-08-26 00:00:00.000000",
+ "disable_prepared_report": 0,
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [
+  {"fieldname": "from_date", "fieldtype": "Date", "label": "From Date", "mandatory": 0},
+  {"fieldname": "to_date", "fieldtype": "Date", "label": "To Date", "mandatory": 0},
+  {"fieldname": "status", "fieldtype": "Select", "label": "Status", "mandatory": 0, "options": "\nBaru\nSedang Dikerjakan\nMenunggu User\nSelesai\nDitutup"},
+  {"fieldname": "priority", "fieldtype": "Select", "label": "Priority", "mandatory": 0, "options": "\nKritis\nTinggi\nSedang\nRendah"},
+  {"fieldname": "team", "fieldtype": "Link", "label": "Team", "mandatory": 0, "options": "NextHD Team"}
+ ],
+ "idx": 0,
+ "is_standard": "Yes",
+ "json": "{}",
+ "module": "Next Helpdesk",
+ "name": "Detail Tiket Lengkap",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "NextHD Ticket",
+ "report_name": "Detail Tiket Lengkap",
+ "report_type": "Script Report",
+ "roles": [{"role": "IT Manager"}, {"role": "Agent Manager"}, {"role": "Agent"}]
+}

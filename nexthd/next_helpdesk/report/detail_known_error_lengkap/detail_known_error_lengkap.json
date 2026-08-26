@@ -1,0 +1,22 @@
+{
+ "add_total_row": 0,
+ "creation": "2026-08-26 00:00:00.000000",
+ "disable_prepared_report": 0,
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [
+  {"fieldname": "related_problem", "fieldtype": "Link", "label": "Related Problem", "mandatory": 0, "options": "NextHD Problem"}
+ ],
+ "idx": 0,
+ "is_standard": "Yes",
+ "json": "{}",
+ "module": "Next Helpdesk",
+ "name": "Detail Known Error Lengkap",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "NextHD Known Error",
+ "report_name": "Detail Known Error Lengkap",
+ "report_type": "Script Report",
+ "roles": [{"role": "IT Manager"}, {"role": "Agent Manager"}, {"role": "Agent"}]
+}
