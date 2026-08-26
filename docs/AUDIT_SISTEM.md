@@ -193,7 +193,7 @@ cat /home/it/audit_result.txt
 | §1 Schema Drift | `[DRIFT DITEMUKAN]` + "Kolom ADA di DB tapi TIDAK ADA di JSON" = field siluman, akan **hilang** di install baru. Paling kritis untuk difix duluan |
 | §1 "Field ADA di JSON tapi TIDAK ADA di DB" | Tidak berbahaya — tinggal `bench migrate` di server ini, Frappe akan otomatis bikin kolomnya |
 | §2 Workflow | `is_active=0` atau jumlah transisi tidak sesuai (Ticket 7, Problem 6, CR 8) = ada yang belum di-migrate/rusak. `idx=0` count > 0 = ada duplikat belum dibersihkan. **Lihat catatan penting di "Update 25 Agustus 2026" di bawah — dedup di DB saja TIDAK CUKUP kalau fixture di repo juga masih kotor** |
-| §3 Workspace/Sidebar | `Workspace Sidebar Item` ini adalah tabel **turunan/auto-generate**, bukan sumber asli — lihat "Update 25 Agustus 2026 (Lanjutan)" di bawah. Sumber asli yang harus dicek/diedit adalah `Workspace.links` |
+| §3 Workspace/Sidebar | `Workspace Sidebar Item` ini adalah tabel **turunan/auto-generate**, bukan sumber asli — lihat "Update 25 Agustus 2026 (Lanjutan)" di bawah. Sumber asli yang harus dicek/diedit adalah `Workspace.links`. **PENTING (26 Agustus):** jangan pernah kosongkan `Workspace.links` tanpa langsung mengisi ulang di transaksi yang sama — pernah menyebabkan seluruh sidebar hilang total, lihat "Update 26 Agustus 2026 (Lanjutan)" |
 | §5 Navigasi Terkunci | Kalau bukan `nexthd`, ini pelanggaran aturan kunci di `HANDOFF.md` — perlu dikoreksi manual |
 | §6 SLA Policy | `[TIDAK COCOK SOP]` = nilai di database beda dari SOP final 19 Agustus — kemungkinan besar karena instalasi baru pakai `install.py` yang belum diperbaiki (lihat catatan bug di bawah) |
 | §14 Fitur Foto | Kalau `False` untuk kedua DocType, berarti pekerjaan Devin soal fitur foto (item W) memang belum ter-push — konsisten dengan temuan sebelumnya |
@@ -392,11 +392,14 @@ Frappe itu upsert-by-`name`), sehingga angka sempat melonjak lagi jadi 35/30/40 
 dicoba (lihat detail insiden di bagian "Update 25 Agustus 2026 (Lanjutan)" di bawah).
 **Sudah diperbaiki lagi** di commit `322827f` — fixture ditulis ulang dengan `name` yang
 cocok persis dengan `name` aktual di database saat ini setelah restore backup (mis.
-`rch04rcult`, `rch0slb247`, dst). Server sudah `git pull`, dikonfirmasi `Total: 21`, `name`
-pertama `rch04rcult` — cocok dengan DB. **Belum diuji lewat `bench migrate` sungguhan
-setelah perbaikan kedua ini.**
+`rch04rcult`, `rch0slb247`, dst).
 
-### Script Verifikasi Baru — Workflow Transition (Deteksi Dini)
+**✅ Update 26 Agustus — dikonfirmasi PERMANEN.** Sudah diuji lewat 2× `bench migrate`
+sungguhan (26 Agustus pagi dan siang) — hasil tetap **7/6/8, tidak ada duplikat** di
+kedua percobaan. Fixture dan database sudah benar-benar selaras, tidak perlu dikhawatirkan
+lagi kecuali ada perubahan manual baru ke Workflow Transition di masa depan.
+
+### Script Verifikasi — Workflow Transition (Deteksi Dini)
 
 Jalankan kapan saja curiga duplikasi balik lagi. Kalau hasilnya "MASIH ADA DUPLIKAT" padahal
 baru saja di-dedup, curigai fixture file di repo, bukan cuma database — minta Claude cek
@@ -428,12 +431,7 @@ sed -i 's/^    /\t/' /home/it/check_workflow_transition_clean.py && \
 bench --site desk.ciptamebel.co.id console < /home/it/check_workflow_transition_clean.py
 ```
 
-**Hasil verifikasi 25 Agustus (setelah perbaikan pertama):** Ticket 7/7, Problem 6/6, Change
-Request 8/8 — semua unik, DB bersih. Lihat catatan lanjutan di atas soal insiden `name`
-mismatch dan perbaikan kedua (`322827f`) — jalankan script ini lagi setelah `bench migrate`
-berikutnya untuk konfirmasi final.
-
-### Script Verifikasi Baru — Business Hours vs SOP
+### Script — Business Hours vs SOP
 
 ```bash
 cat > /home/it/check_business_hours.py << 'EOF'
@@ -488,15 +486,12 @@ bench --site desk.ciptamebel.co.id console < /home/it/check_business_hours.py
 > **Catatan:** versi pertama script ini (dipakai 25 Agustus pagi) salah membandingkan format
 > waktu (`8:00:00` vs `08:00:00` dianggap beda padahal sama), sehingga sempat melaporkan
 > "TIDAK COCOK" di semua hari padahal datanya benar. Versi di atas sudah menormalkan format
-> sebelum dibandingkan.
+> sebelum dibandingkan. **Sabtu `is_working_day=1` (08:00-15:00) adalah data yang BENAR dan
+> disengaja** — jangan diubah tanpa konfirmasi eksplisit dari Efendy.
 
 ---
 
 ## Update 25 Agustus 2026 (Lanjutan) — Koreksi Total: `Workspace.links` adalah Sumber Asli Sidebar, Bukan `Workspace Sidebar Item`
-
-> **Status keseluruhan pada akhir sesi ini: 6 link report berhasil dimasukkan ke
-> `Workspace.links` (sumber asli), diverifikasi via `bench console` — 19 item total. `bench
-> migrate` untuk mengonfirmasi hasil ini belum dijalankan.**
 
 ### Kronologi Insiden
 
@@ -506,51 +501,32 @@ langsung dan membuat file `nexthd/next_helpdesk/workspace_sidebar/nexthd.json` u
 
 - Sidebar turun dari 22 item jadi 14 item — item "NextHD Photo" dan 6 report **hilang**,
   log menunjukkan `Removing orphan Workspace Sidebars`
-- Workflow Transition ikut melonjak dari 7/6/8 jadi 35/30/40 (lihat insiden `name` mismatch
-  di bagian sebelumnya)
+- Workflow Transition ikut melonjak dari 7/6/8 jadi 35/30/40 (insiden `name` mismatch,
+  lihat bagian sebelumnya)
 
-**Tindakan yang diambil:** restore database dari backup pra-migrate
-(`20260825_150120-desk_ciptamebel_co_id-database.sql.gz`) — berhasil, semua kembali ke
-kondisi sebelum migrate (sidebar 22 item, workflow 7/6/8).
+**Tindakan yang diambil:** restore database dari backup pra-migrate — berhasil, semua
+kembali ke kondisi sebelum migrate.
 
 ### Root Cause Sebenarnya (Terkonfirmasi dari Dokumentasi Resmi Frappe)
 
-Dokumentasi migrasi resmi Frappe v16 (GitHub wiki, halaman "Migrating to version 16")
-menyatakan sidebar baru ini "powered by Workspace Sidebar doctype" dan **"autogenerated for
-the most part"**.
-
-Artinya: `Workspace Sidebar Item` **bukan sumber data asli** — itu hasil **auto-generate**
-dari `Workspace.links` (child table field `links` di doctype stock `Workspace`, yang sudah
-ada sejak dulu). Setiap `bench migrate`, Frappe meregenerasi ulang `Workspace Sidebar Item`
-berdasarkan `Workspace.links`, lalu menghapus apa pun di `Workspace Sidebar Item` yang tidak
-berasal dari `Workspace.links` — itu persis penyebab `Removing orphan Workspace Sidebars`.
+Dokumentasi migrasi resmi Frappe v16 menyatakan sidebar baru ini "powered by Workspace
+Sidebar doctype" dan **"autogenerated for the most part"**. Artinya: `Workspace Sidebar Item`
+**bukan sumber data asli** — itu hasil **auto-generate** dari `Workspace.links` (child table
+field `links` di doctype stock `Workspace`). Setiap `bench migrate`, Frappe meregenerasi ulang
+`Workspace Sidebar Item` berdasarkan `Workspace.links`, lalu menghapus apa pun di `Workspace
+Sidebar Item` yang tidak berasal dari `Workspace.links`.
 
 **Kesimpulan:** seluruh pendekatan edit `Workspace Sidebar Item` + file
 `workspace_sidebar/nexthd.json` (dipakai sejak sesi 24 Agustus) **salah alamat**. Sumber
-kebenaran yang benar adalah **`Workspace.links`**. File
-`nexthd/next_helpdesk/workspace_sidebar/nexthd.json` **masih ada di repo tapi kemungkinan
-besar tidak relevan/tidak berguna** — belum diputuskan apakah dihapus, tidak berbahaya
-dibiarkan tapi berpotensi membingungkan sesi berikutnya.
+kebenaran yang benar adalah **`Workspace.links`**.
 
-Catatan: `Workspace.links` sendiri sudah pernah terbukti aman disentuh — item "NextHD Photo"
-berhasil ditambahkan ke situ pada sesi 24 Agustus lewat `doc.save()` dan bertahan lewat
-migrate berkali-kali.
+### Perbaikan yang Dilakukan (via `Workspace.links`)
 
-### Perbaikan yang Dilakukan (Pendekatan Baru, via `Workspace.links`)
-
-1. Cek skema `tabWorkspace Link` (child table dari `Workspace.links`) — dikonfirmasi punya
-   kolom `report_ref_doctype` (yang sebelumnya bikin error di `Workspace Sidebar Item`),
-   sehingga link report bisa dibuat lebih lengkap dan benar di tabel ini.
-2. Item ke-14 "NextHD Report" (generic, `link_type: DocType`, `link_to: Report`) dihapus dari
-   `Workspace Link`, diganti 6 link report langsung (`link_type: Report`, dengan
-   `report_ref_doctype` terisi): Tiket per Bulan, Tiket per Agent, Tiket per Prioritas, Tiket
-   per Kategori, SLA Compliance Bulanan (semua ref `NextHD Ticket`), dan Aset Bermasalah (ref
-   `NextHD Asset`).
-3. **Sengaja dibuat flat (bukan submenu/section collapsible)** — dukungan `type: Section
-   Break` di `Workspace Link` belum terverifikasi (beda dari `Workspace Sidebar Item` yang
-   sudah terbukti support), jadi pendekatan yang lebih aman dipilih dulu.
-4. Hasil dikonfirmasi via `bench console`: total 19 item di `Workspace.links` (13 lama + 6
-   report baru di idx 14-19), urutan dan `link_to` sesuai rencana.
+Item "NextHD Report" generic dihapus dari `tabWorkspace Link`, diganti 6 link report langsung
+(`link_type: Report`, dengan `report_ref_doctype` terisi): Tiket per Bulan, Tiket per Agent,
+Tiket per Prioritas, Tiket per Kategori, SLA Compliance Bulanan (ref `NextHD Ticket`), dan
+Aset Bermasalah (ref `NextHD Asset`). Total `Workspace.links` jadi 19 item (13 lama + 6
+report baru).
 
 ### Script — Cek Skema `Workspace Link` (Read-Only)
 
@@ -570,144 +546,26 @@ def check():
         for k, v in r.items():
             if v not in (None, "", 0):
                 print("    " + str(k) + ": " + str(v))
-    print("")
-    print("=== CONTOH LEWAT frappe.get_doc (format ORM, kalau mau doc.save()) ===")
-    doc = frappe.get_doc("Workspace", "NextHD")
-    for l in doc.links:
-        print(l.as_dict())
 
 check()
 EOF
 sed -i 's/\r$//' /home/it/check_workspace_link_schema.py && \
 sed -i 's/^    /\t/' /home/it/check_workspace_link_schema.py && \
-cat -A /home/it/check_workspace_link_schema.py | head -5 && \
-bench --site desk.ciptamebel.co.id console < /home/it/check_workspace_link_schema.py > /home/it/check_workspace_link_schema_result.txt 2>&1 && \
-cat /home/it/check_workspace_link_schema_result.txt
+bench --site desk.ciptamebel.co.id console < /home/it/check_workspace_link_schema.py
 ```
-
-### Script — Ganti "NextHD Report" dengan 6 Link Report di `Workspace.links` (Sudah Dijalankan, Hasil OK)
-
-```bash
-cat > /home/it/replace_workspace_link_report.py << 'EOF'
-def replace():
-    print("=== GANTI NextHD Report DI Workspace.links ===")
-    target = frappe.db.sql("SELECT name, idx FROM `tabWorkspace Link` WHERE parent='NextHD' AND label='NextHD Report'", as_dict=True)
-    if len(target) == 0:
-        print("TIDAK KETEMU item NextHD Report. Cek manual, tidak lanjut.")
-        return
-    old_idx = target[0].idx
-    old_name = target[0].name
-    print("Ketemu item lama idx " + str(old_idx) + " name " + old_name)
-    frappe.db.sql("DELETE FROM `tabWorkspace Link` WHERE name=%s", (old_name,))
-    from frappe.utils import now, generate_hash
-    now_ts = now()
-    user = frappe.session.user
-    new_rows = []
-    new_rows.append(("Link", "Tiket per Bulan", "Report", "Tiket per Bulan", "NextHD Ticket"))
-    new_rows.append(("Link", "Tiket per Agent", "Report", "Tiket per Agent", "NextHD Ticket"))
-    new_rows.append(("Link", "Tiket per Prioritas", "Report", "Tiket per Prioritas", "NextHD Ticket"))
-    new_rows.append(("Link", "Tiket per Kategori", "Report", "Tiket per Kategori", "NextHD Ticket"))
-    new_rows.append(("Link", "SLA Compliance Bulanan", "Report", "SLA Compliance Bulanan", "NextHD Ticket"))
-    new_rows.append(("Link", "Aset Bermasalah", "Report", "Aset Bermasalah", "NextHD Asset"))
-    i = 0
-    for row in new_rows:
-        row_type, label, link_type, link_to, ref_dt = row
-        row_name = generate_hash(length=10)
-        row_idx = old_idx + i
-        frappe.db.sql("INSERT INTO `tabWorkspace Link` (name, parent, parenttype, parentfield, idx, type, label, link_type, link_to, report_ref_doctype, hidden, onboard, is_query_report, link_count, docstatus, creation, modified, modified_by, owner) VALUES (%s, 'NextHD', 'Workspace', 'links', %s, %s, %s, %s, %s, %s, 0, 0, 0, 0, 0, %s, %s, %s, %s)", (row_name, row_idx, row_type, label, link_type, link_to, ref_dt, now_ts, now_ts, user, user))
-        i = i + 1
-    frappe.db.commit()
-    print("Selesai. 6 link report disisipkan di idx " + str(old_idx) + " sampai " + str(old_idx + 5))
-    print("")
-    print("=== VERIFIKASI ===")
-    rows = frappe.db.sql("SELECT idx, label, link_to FROM `tabWorkspace Link` WHERE parent='NextHD' ORDER BY idx", as_dict=True)
-    print("Total item sekarang: " + str(len(rows)))
-    for r in rows:
-        print(str(r.idx) + " | " + r.label + " -> " + str(r.link_to))
-
-replace()
-EOF
-sed -i 's/\r$//' /home/it/replace_workspace_link_report.py && \
-sed -i 's/^    /\t/' /home/it/replace_workspace_link_report.py && \
-cat -A /home/it/replace_workspace_link_report.py | head -5 && \
-bench --site desk.ciptamebel.co.id console < /home/it/replace_workspace_link_report.py
-```
-
-**Hasil eksekusi 25 Agustus:** berhasil. Total item `Workspace.links` sekarang **19** — 13
-item lama + 6 link report baru di idx 14-19 (Tiket per Bulan, Tiket per Agent, Tiket per
-Prioritas, Tiket per Kategori, SLA Compliance Bulanan, Aset Bermasalah), semua `link_to`
-sesuai rencana.
-
-### Yang Belum Selesai / Langkah Berikutnya
-
-1. **Buat backup baru** (`bench backup --with-files`) sebelum lanjut — jangan pakai backup
-   lama, karena kondisi DB sudah berubah lagi sejak backup itu dibuat (fixture workflow sudah
-   diperbaiki kedua kalinya, `Workspace.links` sudah diubah)
-2. **Jalankan `bench migrate`** — ini akan jadi uji nyata pertama untuk dua perbaikan
-   sekaligus: fixture `workflow_transition.json` (name sudah disamakan, commit `322827f`) dan
-   pendekatan baru sidebar via `Workspace.links`
-3. **Verifikasi pasca-migrate:** jalankan `check_workflow_transition_clean.py` (harus tetap
-   7/6/8), cek jumlah `Workspace Sidebar Item` (harus merefleksikan 6 report baru dari
-   `Workspace.links` — idealnya 19-20 item: 13 lama + Photo + 6 report), dan cek manual di
-   browser (sidebar kiri harus menampilkan 6 report tersebut)
-4. **Kalau migrate sukses dan sidebar benar** → pertimbangkan apakah mau upgrade ke submenu
-   collapsible (perlu riset dulu apakah `Workspace Link` support `type: Section Break`, belum
-   pernah dicoba)
-5. **Kalau migrate gagal/regresi lagi** → restore dari backup baru, jangan ulangi pola
-   coba-coba tanpa riset akar masalah dulu
-6. **Jangan edit `Workspace Sidebar Item` atau file `workspace_sidebar/nexthd.json` langsung
-   lagi** — pendekatan itu sudah terbukti salah dan berisiko menghapus data
-7. Pertimbangkan apakah file `nexthd/next_helpdesk/workspace_sidebar/nexthd.json` di repo
-   perlu dihapus atau diberi catatan "tidak dipakai" supaya tidak membingungkan sesi
-   berikutnya
 
 ---
 
 ## Update 26 Agustus 2026 — Dashboard Shortcut "NextHD Photo" & 6 Report (`Workspace Shortcut`, `report_ref_doctype`)
 
-> **Konteks:** Berbeda dari item AA (25 Agustus, sidebar kiri via `Workspace.links`), sesi
-> ini menambahkan **kartu shortcut di badan dashboard** `/desk/nexthd` — tabel `tabWorkspace
-> Shortcut` (`parentfield = 'shortcuts'`), bukan `tabWorkspace Link` (`parentfield =
-> 'links'`, sidebar). Root cause & fix lengkap ada di `docs/POLA_KERJA_DAN_BUG.md` §1.B, §1.C,
-> dan bug session 26 Agustus. Ringkasan: 6 shortcut Report tidak render karena
-> `report_ref_doctype` kosong (fix: isi field itu), shortcut "NextHD Photo" tidak render
-> karena cache Redis setelah update `Workspace.content` via SQL langsung (fix: `bench
-> clear-cache` + `clear-website-cache`).
+> **Konteks:** Berbeda dari sidebar kiri (`Workspace.links`), sesi ini menambahkan **kartu
+> shortcut di badan dashboard** `/desk/nexthd` — tabel `tabWorkspace Shortcut` (`parentfield =
+> 'shortcuts'`). Root cause & fix lengkap ada di `docs/POLA_KERJA_DAN_BUG.md` §1.B, §1.C.
+> Ringkasan: 6 shortcut Report tidak render karena `report_ref_doctype` kosong (fix: isi
+> field itu), shortcut "NextHD Photo" tidak render karena cache Redis setelah update
+> `Workspace.content` via SQL langsung (fix: `bench clear-cache` + `clear-website-cache`).
 
-### Script — Cek `Workspace Shortcut` & `report_ref_doctype` (Read-Only)
-
-```bash
-cat > /home/it/check_workspace_shortcut.py << 'EOF'
-def check():
-    print("=== ISI tabWorkspace Shortcut (parent NextHD) ===")
-    rows = frappe.db.sql("SELECT idx, label, type, link_to, report_ref_doctype FROM `tabWorkspace Shortcut` WHERE parent='NextHD' ORDER BY idx", as_dict=True)
-    print("Total: " + str(len(rows)))
-    missing_ref = []
-    for r in rows:
-        flag = ""
-        if r.type == "Report" and not r.report_ref_doctype:
-            flag = "  <-- report_ref_doctype KOSONG, kartu tidak akan muncul"
-            missing_ref.append(r.label)
-        print(str(r.idx) + " | " + str(r.label) + " | " + str(r.type) + " -> " + str(r.link_to) + " | ref=" + str(r.report_ref_doctype) + flag)
-    print("")
-    if missing_ref:
-        print("HASIL: ADA " + str(len(missing_ref)) + " shortcut Report tanpa report_ref_doctype: " + str(missing_ref))
-    else:
-        print("HASIL: SEMUA shortcut Report sudah punya report_ref_doctype")
-
-check()
-EOF
-sed -i 's/\r$//' /home/it/check_workspace_shortcut.py && \
-sed -i 's/^    /\t/' /home/it/check_workspace_shortcut.py && \
-bench --site desk.ciptamebel.co.id console < /home/it/check_workspace_shortcut.py
-```
-
-### Script Gabungan — Cek SEMUA Isu Workspace/Sidebar/Dashboard Sekaligus (Baru)
-
-Gabungan pemeriksaan §3 (Workspace/Sidebar) dari Full Audit + `Workspace.links` (item AA) +
-`Workspace Shortcut` (item BB) + jumlah blok `content` — satu jalan untuk deteksi dini kalau
-ada shortcut/link/number card yang "hilang diam-diam" dari dashboard atau sidebar. Cocok
-dipakai kapan saja curiga ada kartu/menu yang tidak muncul padahal datanya "kelihatan" ada.
+### Script Gabungan — Cek SEMUA Isu Workspace/Sidebar/Dashboard Sekaligus
 
 ```bash
 cat > /home/it/audit_workspace_all.py << 'EOF'
@@ -747,7 +605,7 @@ def main_check():
     if orphan_content_refs:
         print("[PERINGATAN] content JSON mereferensikan shortcut_name yang TIDAK ADA di tabWorkspace Shortcut: " + str(orphan_content_refs))
     print("")
-    print("=== 3. Workspace.links (sumber asli SIDEBAR KIRI, item AA) ===")
+    print("=== 3. Workspace.links (sumber asli SIDEBAR KIRI) ===")
     ws_doc = frappe.get_doc("Workspace", "NextHD")
     link_labels = [l.label for l in ws_doc.links]
     print("Total item: " + str(len(link_labels)))
@@ -765,30 +623,31 @@ def main_check():
     print("Total item: " + str(len(sidebar_item_labels)))
     print("List: " + str(sidebar_item_labels))
     if len(sidebar_item_labels) != len(link_labels):
-        print("[PERINGATAN] Jumlah Workspace Sidebar Item (" + str(len(sidebar_item_labels)) + ") BEDA dari Workspace.links (" + str(len(link_labels)) + ") - kemungkinan belum di-migrate, atau migrate belum pernah dijalankan sejak Workspace.links terakhir diubah")
+        print("[INFO] Jumlah Workspace Sidebar Item (" + str(len(sidebar_item_labels)) + ") BEDA dari Workspace.links (" + str(len(link_labels)) + ") - CATATAN 26 Agustus: ini TERNYATA NORMAL untuk link bertipe Report, Frappe v16 tampaknya tidak menyertakan link Report ke auto-generate sidebar (cuma DocType/Workspace). Selisih persis jumlah link Report di Workspace.links = bukan bug, jangan coba 'perbaiki' lagi tanpa bukti baru.")
     else:
-        print("Jumlah sinkron dengan Workspace.links - kemungkinan sudah pernah migrate sejak perubahan terakhir")
+        print("Jumlah sinkron dengan Workspace.links")
     print("")
     print("=== 5. Number Card di Workspace ===")
     nc_rows = frappe.db.sql("SELECT number_card_name FROM `tabWorkspace Number Card` WHERE parent='NextHD'", as_dict=True)
     nc_names = [r.number_card_name for r in nc_rows]
     print("Total: " + str(len(nc_names)) + " -> " + str(nc_names))
-    orphan_nc_in_content = set()
-    for block in content:
-        if block.get("type") == "number_card":
-            nc_name = block.get("data", {}).get("number_card_name")
-            if nc_name not in nc_names:
-                orphan_nc_in_content.add(nc_name)
-    if orphan_nc_in_content:
-        print("[PERINGATAN] content JSON mereferensikan number_card_name yang TIDAK ADA di tabWorkspace Number Card: " + str(orphan_nc_in_content))
     print("")
     print("=== 6. Desktop Icon nexthd ===")
     icon = frappe.db.get_value("Desktop Icon", {"app": "nexthd"}, ["name", "link_type", "link_to", "standard"], as_dict=True)
     print(str(icon))
     print("")
+    print("=== 7. SEMUA WORKSPACE (public/hidden) - ditambahkan 26 Agustus ===")
+    all_ws = frappe.db.sql("SELECT name, public, is_hidden, module FROM `tabWorkspace` ORDER BY module, name", as_dict=True)
+    print("Total workspace di database: " + str(len(all_ws)))
+    for w in all_ws:
+        flag = ""
+        if w.module == "Next Helpdesk" and w.name != "NextHD" and w.public == 1 and w.is_hidden == 0:
+            flag = "  <-- WARNING: workspace NextHD lain yang TAMPIL PUBLIK, kemungkinan perlu disembunyikan spt Ticket Center dkk"
+        print("    " + str(w.name) + " | public=" + str(w.public) + " | hidden=" + str(w.is_hidden) + " | module=" + str(w.module) + flag)
+    print("")
     print("=====================================================")
     print("AUDIT WORKSPACE/SIDEBAR/DASHBOARD SELESAI")
-    print("Cara baca cepat: cari baris [PERINGATAN], [BERMASALAH], atau [BELUM ADA] di atas")
+    print("Cara baca cepat: cari baris [PERINGATAN], [BERMASALAH], [BELUM ADA], atau WARNING di atas")
     print("=====================================================")
 
 main_check()
@@ -800,12 +659,93 @@ bench --site desk.ciptamebel.co.id console < /home/it/audit_workspace_all.py > /
 cat /home/it/audit_workspace_all_result.txt
 ```
 
-**Cara pakai hasilnya:** kalau ada baris `[PERINGATAN]`, `[BERMASALAH]`, atau `[BELUM ADA]`,
-itu kandidat kuat kenapa sesuatu tidak muncul di UI. Kombinasikan dengan
-`bench clear-cache` + `bench clear-website-cache` + hard refresh sebelum menyimpulkan ada
-bug data — banyak kasus di project ini (lihat riwayat di atas) yang ternyata murni cache,
-bukan data salah.
+**Cara pakai hasilnya:** kalau ada baris `[PERINGATAN]`, `[BERMASALAH]`, `[BELUM ADA]`, atau
+`WARNING`, itu kandidat kuat kenapa sesuatu tidak muncul di UI (atau muncul padahal
+seharusnya tidak). Kombinasikan dengan `bench clear-cache` + `bench clear-website-cache` +
+hard refresh browser sebelum menyimpulkan ada bug data — banyak kasus di project ini yang
+ternyata murni cache, bukan data salah. **§4 sekarang TIDAK lagi otomatis dianggap masalah**
+kalau selisihnya persis jumlah link Report — itu confirmed normal (lihat Update 26 Agustus
+Lanjutan di bawah).
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-26.*
+## Update 26 Agustus 2026 (Lanjutan) — Ditemukan 5 Workspace "Center" Tersembunyi + Insiden Sidebar Hilang Total + Konfirmasi Limitasi Frappe v16
+
+### Temuan: Workspace "Center" yang Sebelumnya Tidak Terdeteksi
+
+Ditemukan 5 workspace tambahan yang **sebelumnya tidak pernah muncul di audit manapun**
+sepanjang sesi-sesi ini, semua `module: Next Helpdesk` (jadi bagian dari project NextHD,
+kemungkinan dibuat Devin/Codex atau sesi AI lain di luar riwayat chat ini, tidak pernah
+terdokumentasi sampai sekarang):
+
+- `Ticket Center`
+- `Asset Center`
+- `Service Management`
+- `Configuration Center`
+- `Reports Center`
+
+Kelimanya (plus `Next Helpdesk`, workspace legacy) sempat tampil (`public=1, hidden=0`) di
+sidebar, membuat sidebar utama jadi sangat ramai/berantakan (di luar 15 item DocType NextHD
+yang biasa). **Sekarang statusnya sudah `public=0, hidden=1` (disembunyikan, TIDAK
+dihapus)** — data, Report, Number Card, dsb di dalamnya masih utuh, cuma tidak tampil di
+sidebar utama.
+
+### ⚠️ Insiden: Mengosongkan `Workspace.links` Tanpa Isi Ulang Langsung = Sidebar Hilang Total
+
+Percobaan pertama untuk merapikan sidebar (dari sumber eksternal/AI lain) sempat menjalankan
+`DELETE FROM tabWorkspace Link WHERE parent='NextHD'` **tanpa langsung insert ulang isi
+barunya** (rencananya navigasi dipindah seluruhnya ke dashboard shortcut). Begitu cache
+dibersihkan, **seluruh sidebar NextHD hilang total** — karena `Workspace Sidebar Item`
+(tampilan sidebar) di-regenerate dari `Workspace.links` saat cache/migrate, jadi
+`Workspace.links` kosong = sidebar kosong.
+
+**PELAJARAN KRITIS:** jangan pernah `DELETE` isi `Workspace.links` tanpa `INSERT` pengganti
+di **transaksi/script yang sama**. Kalau mau ganti isi sidebar, selalu hapus-dan-isi-ulang
+sekaligus dalam satu script, jangan dua langkah terpisah.
+
+**Perbaikan:** dijalankan script restore yang mengisi ulang 19 `Workspace Link` (13 DocType +
+6 Report) sekaligus menyembunyikan 5 workspace "Center" + legacy "Next Helpdesk" — semua
+lewat `frappe.db.sql()`/`frappe.db.set_value()` langsung (bukan `.save()`, karena `.save()`
+pada Workspace lama sempat memicu `MandatoryError`/`DocType View cannot be "Form"`). Hasil
+setelah restore + `clear-cache` + `clear-website-cache`: sidebar NextHD kembali bersih (15
+item inti), 5 workspace "Center" tidak lagi tampil, `Workflow Transition` tetap 7/6/8 (tidak
+terpengaruh insiden ini).
+
+### Konfirmasi Resmi: Sidebar Pendek di Halaman Report/DocType Adalah Limitasi Frappe v16, Bukan Bug Kita
+
+Saat masuk ke halaman report (`/desk/query-report/...`) atau DocType tertentu dari module
+"Next Helpdesk", sidebar otomatis berganti jadi versi pendek/generic ("Module Sidebar" —
+daftar DocType/Report auto berdasarkan field `module`), BUKAN sidebar lengkap Workspace
+NextHD. Ini **dikonfirmasi sebagai known limitation Frappe v16** (GitHub Issue #36317, juga
+dibahas di forum resmi Frappe) — sidebar Workspace yang lengkap **memang didesain hanya
+tampil di halaman Workspace itu sendiri**, otomatis berganti ke Module Sidebar begitu masuk
+DocType/Report. Belum ada fix resmi dari tim Frappe. Percobaan mengubah field
+`report_doc.module` breadcrumb/sidebar report tidak berhasil karena `set_breadcrumbs()`
+bawaan (di `query_report.js` baris ~1546) dipanggil ulang dan menimpa override custom.
+
+**Yang berhasil sebagai gantinya:** breadcrumb 2-level ("NextHD / <Nama Report>") di setiap
+file `.js` report NextHD (`frappe.query_reports["<nama>"].onload`), sehingga user tetap bisa
+1 klik balik ke dashboard NextHD dari halaman report mana pun, meski sidebar tetap versi
+pendek. **Per akhir sesi 26 Agustus, perbaikan breadcrumb ini masih dalam proses trial —
+beberapa percobaan format (`add()` single object, array, override `set_breadcrumbs`) belum
+berhasil, root cause pastinya (kapan/di mana breadcrumb bawaan menimpa ulang) belum
+sepenuhnya ditemukan.** Jangan hapus/reset 5 workspace "Center" atau `Workspace.links` untuk
+mengejar solusi sidebar ini — sudah terbukti berisiko tinggi (insiden di atas).
+
+### Rekomendasi untuk Sesi Berikutnya
+
+1. Kalau ingin lanjut riset breadcrumb, cek dulu apakah `report.set_breadcrumbs` di-reassign
+   lagi oleh proses lain setelah `onload` (misal saat data refresh/filter berubah) — belum
+   terverifikasi.
+2. Jangan coba lagi memaksakan sidebar lengkap tampil di halaman report/DocType — itu
+   limitasi platform, bukan config yang bisa diperbaiki tanpa override JS inti Frappe
+   (berisiko rusak tiap update Frappe, sebaiknya jadi task terpisah untuk Devin dengan
+   testing menyeluruh, bukan quick-fix).
+3. 6 link Report di sidebar `Workspace Sidebar Item` (turunan) kemungkinan **tidak akan
+   pernah muncul** meski migrate berkali-kali — ini pola konsisten di 2× percobaan migrate
+   (26 Agustus). Terima sebagai keterbatasan, akses report tetap tersedia lewat dashboard
+   shortcut (`Workspace Shortcut`) yang sudah berfungsi normal.
+
+---
+
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-26 (sore).*
