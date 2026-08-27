@@ -1,0 +1,128 @@
+{
+ "app": "nexthd",
+ "charts": [],
+ "content": "[{\"id\": \"54da6b3b30\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>NextHD Report</b></span>\", \"col\": 12}}, {\"id\": \"92c44bf068\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Detail Tiket Lengkap\", \"col\": 3}}, {\"id\": \"d45ab69a7e\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Detail Aset Lengkap\", \"col\": 3}}, {\"id\": \"9767b8964d\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Detail Known Error Lengkap\", \"col\": 3}}, {\"id\": \"da25bd85d3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Detail Problem Lengkap\", \"col\": 3}}, {\"id\": \"ec25d09032\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Detail Change Request Lengkap\", \"col\": 3}}, {\"id\": \"3292c2ef17\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Aset Bermasalah\", \"col\": 3}}, {\"id\": \"ffa064e623\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Tiket per Agent\", \"col\": 3}}, {\"id\": \"924e5531ae\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"SLA Compliance Bulanan\", \"col\": 3}}, {\"id\": \"c4c23d3fce\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Tiket per Bulan\", \"col\": 3}}, {\"id\": \"824f7af1f9\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Tiket per Kategori\", \"col\": 3}}, {\"id\": \"0821aa2d7d\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Tiket per Prioritas\", \"col\": 3}}]",
+ "creation": "2026-08-26 21:33:04.385750",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "small-file",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "NextHD Report",
+ "link_type": "DocType",
+ "links": [],
+ "modified": "2026-08-27 10:43:00.576861",
+ "modified_by": "Administrator",
+ "module": "Next Helpdesk",
+ "name": "NextHD Report",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "NextHD",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "IT Manager"
+  },
+  {
+   "role": "Agent Manager"
+  },
+  {
+   "role": "Agent"
+  },
+  {
+   "role": "IT Auditor"
+  },
+  {
+   "role": "Requester"
+  }
+ ],
+ "sequence_id": 0.0,
+ "shortcuts": [
+  {
+   "doc_view": "",
+   "label": "Detail Tiket Lengkap",
+   "link_to": "Detail Tiket Lengkap",
+   "report_ref_doctype": "NextHD Ticket",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "Detail Aset Lengkap",
+   "link_to": "Detail Aset Lengkap",
+   "report_ref_doctype": "NextHD Asset",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "Detail Known Error Lengkap",
+   "link_to": "Detail Known Error Lengkap",
+   "report_ref_doctype": "NextHD Known Error",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "Detail Problem Lengkap",
+   "link_to": "Detail Problem Lengkap",
+   "report_ref_doctype": "NextHD Problem",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "Detail Change Request Lengkap",
+   "link_to": "Detail Change Request Lengkap",
+   "report_ref_doctype": "NextHD Change Request",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "Aset Bermasalah",
+   "link_to": "Aset Bermasalah",
+   "report_ref_doctype": "NextHD Asset",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "Tiket per Agent",
+   "link_to": "Tiket per Agent",
+   "report_ref_doctype": "NextHD Ticket",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "SLA Compliance Bulanan",
+   "link_to": "SLA Compliance Bulanan",
+   "report_ref_doctype": "NextHD Ticket",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "Tiket per Bulan",
+   "link_to": "Tiket per Bulan",
+   "report_ref_doctype": "NextHD Ticket",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "Tiket per Kategori",
+   "link_to": "Tiket per Kategori",
+   "report_ref_doctype": "NextHD Ticket",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "Tiket per Prioritas",
+   "link_to": "Tiket per Prioritas",
+   "report_ref_doctype": "NextHD Ticket",
+   "type": "Report"
+  }
+ ],
+ "title": "NextHD Report",
+ "type": "Workspace"
+}
