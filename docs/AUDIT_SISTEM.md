@@ -193,7 +193,7 @@ cat /home/it/audit_result.txt
 | §1 Schema Drift | `[DRIFT DITEMUKAN]` + "Kolom ADA di DB tapi TIDAK ADA di JSON" = field siluman, akan **hilang** di install baru. Paling kritis untuk difix duluan |
 | §1 "Field ADA di JSON tapi TIDAK ADA di DB" | Tidak berbahaya — tinggal `bench migrate` di server ini, Frappe akan otomatis bikin kolomnya |
 | §2 Workflow | `is_active=0` atau jumlah transisi tidak sesuai (Ticket 7, Problem 6, CR 8) = ada yang belum di-migrate/rusak. `idx=0` count > 0 = ada duplikat belum dibersihkan. **Lihat catatan penting di "Update 25 Agustus 2026" di bawah — dedup di DB saja TIDAK CUKUP kalau fixture di repo juga masih kotor** |
-| §3 Workspace/Sidebar | `Workspace Sidebar Item` ini adalah tabel **turunan/auto-generate**, bukan sumber asli — lihat "Update 25 Agustus 2026 (Lanjutan)" di bawah. Sumber asli yang harus dicek/diedit adalah `Workspace.links`. **PENTING (26 Agustus):** jangan pernah kosongkan `Workspace.links` tanpa langsung mengisi ulang di transaksi yang sama — pernah menyebabkan seluruh sidebar hilang total, lihat "Update 26 Agustus 2026 (Lanjutan)" |
+| §3 Workspace/Sidebar | `Workspace Sidebar Item` ini adalah tabel **turunan/auto-generate**, bukan sumber asli — lihat "Update 25 Agustus 2026 (Lanjutan)" di bawah. Sumber asli yang harus dicek/diedit adalah `Workspace.links`. **PENTING (26 Agustus):** jangan pernah kosongkan `Workspace.links` tanpa langsung mengisi ulang di transaksi yang sama — pernah menyebabkan seluruh sidebar hilang total, lihat "Update 26 Agustus 2026 (Lanjutan)". **PENTING (27 Agustus):** kalau kasusnya adalah workspace LAIN (bukan NextHD sendiri) yang perlu 1 link sidebar mengarah ke sana, jalur yang benar bukan `Workspace.links` — lihat "Update 27 Agustus 2026" di bawah soal `Workspace Sidebar` + `export_sidebar()` dan jebakan lokasi file |
 | §5 Navigasi Terkunci | Kalau bukan `nexthd`, ini pelanggaran aturan kunci di `HANDOFF.md` — perlu dikoreksi manual |
 | §6 SLA Policy | `[TIDAK COCOK SOP]` = nilai di database beda dari SOP final 19 Agustus — kemungkinan besar karena instalasi baru pakai `install.py` yang belum diperbaiki (lihat catatan bug di bawah) |
 | §14 Fitur Foto | Kalau `False` untuk kedua DocType, berarti pekerjaan Devin soal fitur foto (item W) memang belum ter-push — konsisten dengan temuan sebelumnya |
@@ -520,6 +520,12 @@ Sidebar Item` yang tidak berasal dari `Workspace.links`.
 `workspace_sidebar/nexthd.json` (dipakai sejak sesi 24 Agustus) **salah alamat**. Sumber
 kebenaran yang benar adalah **`Workspace.links`**.
 
+> **Catatan (27 Agustus):** kesimpulan ini valid **khusus untuk menambah link BARU ke
+> sidebar workspace NextHD sendiri**, yang di-regenerate otomatis tiap migrate. Kalau
+> kasusnya adalah menambah 1 entri sidebar yang mengarah ke **workspace lain** (bukan
+> menambah entri di dalam NextHD), jalurnya berbeda lagi — lihat "Update 27 Agustus 2026"
+> di bawah.
+
 ### Perbaikan yang Dilakukan (via `Workspace.links`)
 
 Item "NextHD Report" generic dihapus dari `tabWorkspace Link`, diganti 6 link report langsung
@@ -748,4 +754,61 @@ mengejar solusi sidebar ini — sudah terbukti berisiko tinggi (insiden di atas)
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-26 (sore).*
+## Update 27 Agustus 2026 — Workspace Terpisah "NextHD Report" + 1 Link Sidebar "NextHD Reporting" (Kasus Berbeda dari `Workspace.links`)
+
+> **Konteks:** Berbeda dari kasus 25-26 Agustus (menambah 6 link *Report* langsung di dalam
+> `Workspace.links` milik NextHD), sesi ini menyangkut sebuah **workspace terpisah** bernama
+> `NextHD Report` (berisi 11 shortcut ke report), dan kebutuhan menambah **satu entri**
+> sidebar ("NextHD Reporting", link_type: `Workspace`) yang mengarah ke workspace itu. Detail
+> kronologi 4 lapis akar masalah ada di `docs/POLA_KERJA_DAN_BUG.md` §1.C dan §4 (bug session
+> 27 Agustus). Bagian ini hanya mencatat 2 temuan yang relevan untuk audit/instalasi baru.
+
+### Temuan 1 — Workspace Baru via `bench console` Insert Tidak Trigger Export Fixture
+
+Workspace yang dibuat lewat insert langsung ke database (`bench console`, bukan UI Workspace
+Editor) **tidak memicu** proses otomatis yang biasanya menulis file fixture JSON-nya. Baru
+setelah `developer_mode=1` diaktifkan dan `doc.save()` dipanggil manual, file fixture
+`nexthd/<module>/workspace/<nama_scrub>/<nama_scrub>.json` benar-benar tertulis ke disk.
+
+**Implikasi untuk audit/instalasi baru:** kalau ada Workspace yang ada di database tapi
+**tidak** punya file fixture JSON yang sesuai, curigai workspace itu pernah dibuat via
+insert manual — bukan bug Frappe.
+
+### Temuan 2 — Lokasi File Export `Workspace Sidebar` yang Sebenarnya (Koreksi Path)
+
+Fungsi `export_sidebar()` di controller `workspace_sidebar.py` menulis file ke:
+
+```
+<app_root>/<app>/workspace_sidebar/<judul_scrub>.json
+```
+
+Contoh nyata di project ini:
+
+```
+~/frappe/apps/nexthd/nexthd/workspace_sidebar/nexthd.json   <- BENAR, aktif dipakai
+```
+
+**BUKAN** di dalam folder module seperti yang diasumsikan di sesi-sesi sebelumnya (lihat
+`HANDOFF.md` bagian lama, `nexthd/next_helpdesk/workspace_sidebar/nexthd.json`) — path itu
+adalah **peninggalan lama/usang** yang sudah tidak pernah ditulis ulang oleh Frappe, dan
+sudah dihapus dari server. Kalau `sidebar.save()`/`export_sidebar()` tidak error tapi file
+tidak berubah, kemungkinan besar penyebabnya adalah mengecek path yang salah ini, bukan
+logika save yang gagal.
+
+**Prasyarat lain yang wajib benar sebelum `export_sidebar()` mau menulis file sama sekali:**
+field `app` (harus diisi nama app scrub, mis. `nexthd`) dan `standard` (harus `1`) pada
+dokumen `Workspace Sidebar` terkait.
+
+### Catatan yang Diperkuat Ulang
+
+- Menambah satu link sidebar yang mengarah ke **workspace lain** (bukan menambah item di
+  dalam sidebar NextHD sendiri) dilakukan lewat UI **"⋯" → Edit Sidebar**, bukan lewat
+  `Workspace.links` — dua mekanisme yang berbeda untuk dua kebutuhan yang berbeda pula
+  (lihat catatan di "Update 25 Agustus 2026 (Lanjutan)" di atas).
+- `is_hidden=1`/`public=0` tidak cocok untuk workspace yang aksesnya lewat link sidebar
+  biasa — sempat dicoba untuk workspace "NextHD Report" ini dan terbukti membuat link
+  hilang total. Sudah di-undo, workspace ini tetap `public=1, is_hidden=0`.
+
+---
+
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-27.*
