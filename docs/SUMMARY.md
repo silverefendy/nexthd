@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-28 (sesi lanjutan — fitur `NextHD Photo` (naming series `IMG-YYMM-####`, field Judul/Lokasi/Kategori, Dashboard Connections "Dipakai Di"), tombol admin "Reset Data Demo" terverifikasi end-to-end; 2 bug pending baru: `Link Type` kosong di Workspace Link "Reporting Data", rename Module "Next Helpdesk"→"NextHD" masih tertunda)
+> **Last updated:** 2026-08-28 (housekeeping — `HANDOFF.md` dipindah dari root repo ke `docs/HANDOFF.md`, semua file `.md` project sekarang konsisten berada di `docs/`; sesi fitur `NextHD Photo` (naming series `IMG-YYMM-####`, field Judul/Lokasi/Kategori, Dashboard Connections "Dipakai Di"), tombol admin "Reset Data Demo" terverifikasi end-to-end; 2 bug pending baru: `Link Type` kosong di Workspace Link "Reporting Data", rename Module "Next Helpdesk"→"NextHD" masih tertunda)
 
 ---
 
@@ -18,6 +18,7 @@
 | `docs/POLA_KERJA_DAN_BUG.md` | Frappe quirks (Desktop/Workspace/Dashboard Shortcut), aturan wajib saat coding/debug, riwayat bug lengkap |
 | `docs/PANDUAN_INSTALASI.md` | Instalasi, setup Telegram/SLA, alur deploy, referensi |
 | `docs/AUDIT_SISTEM.md` | Script audit lengkap (schema drift, Workspace, Workflow master data, SLA, fixtures) + script verifikasi ringan pasca-perbaikan + script gabungan cek semua isu Workspace/Sidebar/Dashboard. Dipakai on-demand untuk cek kesehatan server atau sebelum install ke server baru |
+| `docs/HANDOFF.md` | **Arsip historis** riwayat sesi 14–24 Agustus 2026 (dipindah dari root repo, 28 Agustus). Sebagian besar isinya sudah dimigrasikan ke file-file di atas — hanya dipakai untuk konteks sejarah, bukan rujukan status terkini |
 
 ---
 
@@ -120,7 +121,7 @@
 | I | Wipe data testing (versi lama/checklist) | Sudah **diimplementasikan versi ringkas** sebagai tombol "Reset Data Demo" (item HH, 28 Agustus) — desain lengkap dengan UI checkbox per DocType di `DAFTAR_FITUR.md` masih jadi opsi pengembangan lanjutan kalau dibutuhkan granularitas lebih | Claude (desain), Efendy (waktu eksekusi) |
 | J | Workflow — testing end-to-end di UI browser | Regression test backend sudah lulus 100% (2026-08-20). Belum ditest klik manual di browser untuk verifikasi tombol Actions & permission per role tampil benar | Efendy |
 | K | Role assignment ke user spesifik | `support@ciptamebel.co.id` → role IT Manager. Keputusan: sementara 1 akun shared dulu | Efendy |
-| L | File `HANDOFF_SLA_NextHD_2026-08-19.md` | Disebut di HANDOFF.md tapi tidak ada di repo. Kalau masih ada di server, perlu `git add` + commit sebelum hilang | Efendy |
+| L | File `HANDOFF_SLA_NextHD_2026-08-19.md` | Disebut di `docs/HANDOFF.md` tapi tidak ada di repo. Kalau masih ada di server, perlu `git add` + commit sebelum hilang | Efendy |
 | M | Guard permanen duplikasi workflow transition | Root cause **sekarang terkonfirmasi** (25 Agustus): `Workflow Transition` adalah fixture aktif di `hooks.py`, dan file fixture-nya menumpuk beberapa generasi export lama — dedup di database saja tidak permanen kalau fixture di repo tidak ikut dibersihkan. Sudah dibersihkan total 2× (commit `9cf994f`, lalu `322827f` untuk perbaiki `name` mismatch). Belum ada mekanisme pencegahan otomatis | Claude |
 | N | Pemetaan tanggal Cuti Bersama 2026 belum dicek silang ke SKB asli | Data ditambahkan berdasar asumsi pola umum kalender cuti bersama Indonesia, bukan dibaca langsung dari teks SKB 3 Menteri | Efendy |
 | O | Dashboard "Aset Bermasalah" (Number Card) | Usulan, belum dikerjakan | - |
@@ -149,7 +150,7 @@
 
 ## 3. Hal-hal yang SUDAH Selesai (Ringkasan)
 
-> Detail lengkap ada di `POLA_KERJA_DAN_BUG.md §4` dan riwayat update `HANDOFF.md`.
+> Detail lengkap ada di `POLA_KERJA_DAN_BUG.md §4` dan riwayat update `docs/HANDOFF.md` (arsip).
 
 | Item | Selesai |
 |---|---|
@@ -190,6 +191,7 @@
 | Dashboard Connections "Dipakai Di" pada `NextHD Photo` | ✅ Terpasang 28 Agustus via `get_dashboard_data()`, real-time dari child table `NextHD Photo Link` di semua parent (Ticket/Asset/Problem/Known Error), tidak ada risiko data tertimpa. **Perlu re-test dengan foto baru** — foto contoh lama sudah ikut terhapus tombol Reset Data Demo sebelum sempat ditest ulang |
 | Tombol "Reset Data Demo" (item HH) | ✅ Selesai & terverifikasi end-to-end 28 Agustus — System Manager only (cek backend), 2x konfirmasi (dialog + ketik `RESET`), backup otomatis via `frappe.utils.backups.new_backup()`, counter `tabSeries` ikut direset. Bug awal `subprocess.run(["bench",...])` gagal di web worker (`FileNotFoundError`) — diganti panggilan langsung ke fungsi Python `new_backup()`, tidak bergantung shell `PATH` |
 | Shortcut Workspace "Admin" (tombol Reset Data Demo) tidak muncul di UI | ✅ 28 Agustus. Root cause: Workspace v16 dikontrol field `content` (JSON blocks), bukan otomatis baca semua row `tabWorkspace Shortcut`. Fix: update `content` via `frappe.db.set_value()` langsung (skip validasi dokumen penuh karena bug lain — lihat item DD), dijalankan via `bench execute` (bukan `bench console`, supaya cabang `if/else` tidak salah parse indentasi) |
+| Housekeeping struktur dokumentasi — `HANDOFF.md` dipindah dari root repo ke `docs/HANDOFF.md` | ✅ 28 Agustus. `README.md` diperbarui (link dokumentasi mengikuti struktur `docs/` multi-file terbaru). Sekarang semua file `.md` project konsisten berada di `docs/` (README.md tetap di root sesuai konvensi GitHub) |
 
 ---
 
