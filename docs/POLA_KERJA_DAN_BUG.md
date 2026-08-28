@@ -3,7 +3,7 @@
 > Frappe quirks, aturan wajib saat coding/debug, dan riwayat bug per sesi.
 > File ini yang paling sering bertambah tiap sesi baru.
 >
-> **Last updated:** 2026-08-27
+> **Last updated:** 2026-08-28
 
 ---
 
@@ -83,6 +83,7 @@ manual (bukan hanya insert) untuk memaksa Frappe menulis file fixture-nya.
 - Block content untuk memunculkan kartu shortcut: `{"type": "shortcut", "data": {"shortcut_name": "<label>", "col": N}}` — `shortcut_name` harus **persis sama** dengan kolom `label` di `tabWorkspace Shortcut`, kalau tidak match, kartu di-skip diam-diam (sama seperti number card).
 - **Untuk `type = "Report"`, kolom `report_ref_doctype` WAJIB diisi** (DocType yang jadi rujukan report). Kalau kosong/`NULL`, Frappe kemungkinan besar gagal resolve report saat resolve config kartu, sehingga kartu **tidak ikut dirender** di dashboard — tidak ada error yang terlihat di UI atau log biasa. Lihat bug session 2026-08-26.
 - **Update `content` via SQL langsung TIDAK otomatis invalidate cache** — Frappe nge-cache konten Workspace di Redis per-app. Setelah `UPDATE tabWorkspace SET content=...` via SQL, WAJIB `bench clear-cache` + `bench clear-website-cache` (bukan cuma hard refresh browser) baru kartu baru muncul.
+- **Kartu shortcut TIDAK otomatis muncul hanya karena row-nya ada di `tabWorkspace Shortcut`** — sama seperti Number Card, harus ada blok referensinya di `Workspace.content`. Kasus nyata 28 Agustus: shortcut "Reset Data Demo" berhasil di-insert tapi tidak tampil sampai `content` diupdate untuk mereferensikannya (lihat bug session 2026-08-28).
 
 ### C. Sidebar Kiri — 4 Doctype Berlapis (KOREKSI 27 Agustus — baca sebelum edit sidebar apapun)
 
@@ -156,6 +157,16 @@ kedua doctype ini, export file fixture-nya HANYA terjadi lewat `doc.save()` resm
 `on_update()`/`before_save()` masing-masing controller) — bukan lewat `export-fixtures`. Jangan
 mengandalkan `export-fixtures` untuk mengamankan perubahan Workspace/Workspace Sidebar.
 
+### E. Web Worker vs Terminal — `PATH` Environment Terbatas (Ditemukan 28 Agustus)
+
+Kode Python yang dieksekusi dari klik tombol UI (proses web Frappe/gunicorn) **TIDAK** punya
+`PATH` environment selengkap sesi terminal SSH biasa. Memanggil binary shell seperti `bench`
+lewat `subprocess.run(["bench", ...])` di dalam kode yang jalan dari request web akan gagal
+dengan `FileNotFoundError: [Errno 2] No such file or directory: 'bench'`, meski perintah yang
+sama persis berjalan normal kalau dicoba manual di terminal. **Untuk kebutuhan seperti backup,
+selalu panggil fungsi internal Python-nya langsung** (mis. `frappe.utils.backups.new_backup()`),
+bukan shell out ke `bench`. Lihat bug session 2026-08-28 di §4.
+
 ---
 
 ## 2. Workspace Dashboard — Konfigurasi Saat Ini
@@ -186,6 +197,9 @@ Sections:
     Shortcuts (Report, report_ref_doctype terisi): Tiket per Bulan, Tiket per Agent,
     Tiket per Prioritas, Tiket per Kategori, SLA Compliance Bulanan (ref NextHD Ticket),
     Aset Bermasalah (ref NextHD Asset)
+
+  [Admin] (ditambah 28 Agustus)
+    Shortcuts: Reset Data Demo (Page kustom `nexthd-reset-data`, System Manager only)
 
 Sidebar kiri (Workspace Sidebar Item, ditambah 27 Agustus):
   "NextHD Reporting" → link ke Workspace "NextHD Report" (berisi 11 shortcut Detail Report Lengkap:
@@ -227,6 +241,9 @@ Karakter tab kerap **hilang saat proses copy-paste** dari chat ke terminal (terg
 
 **❌ SALAH — Jangan pakai nama fungsi `run`:**
 IPython punya automagic `%run` yang bisa "menangkap" pemanggilan `run()` sebagai magic command, bukan pemanggilan fungsi Python biasa — menghasilkan error aneh `Exception: File '()' not found`. Selalu pakai nama fungsi lain, misal `main_check()`, `main_test()`, dst.
+
+**❌ SALAH — Jangan tulis skrip Python bercabang (`if`/`for`) langsung ke `bench console` interaktif:**
+Untuk skrip yang perlu dijalankan sekali di server, lebih andal pakai `bench execute <module.fungsi>` (menjalankan 1 fungsi dari file `.py` yang sudah divalidasi `py_compile` terlebih dahulu) dibanding paste multi-baris ke `bench console` — console interaktif (IPython) kerap salah interpretasi baris kosong/indentasi dari heredoc. Dipakai untuk fix shortcut Workspace 27–28 Agustus.
 
 ### Tabel Aturan Wajib Lainnya
 
@@ -273,6 +290,8 @@ IPython punya automagic `%run` yang bisa "menangkap" pemanggilan `run()` sebagai
 | **Pola aman untuk logic side-effect di `on_update()`** | Kasus nyata (PR #8, 2026-08-22): logic pause/resume SLA + recalculate butuh update field di dalam `on_update()`. Devin menggunakan `self.db_set(...)` / `frappe.db.set_value(...)` langsung, BUKAN `self.save()`, sehingga tidak memicu infinite recursion (`on_update()` terpanggil lagi). Pola ini jadi referensi wajib untuk hook `on_update()`/`validate()` berikutnya yang butuh side-effect DB |
 | **Report shortcut URL selalu `/desk/query-report/<Nama Report>`** | Ini route standar Frappe untuk semua Query Report (dipakai sama persis oleh ERPNext dan app lain) — TIDAK bisa diubah jadi `/desk/nexthd/...` tanpa menulis ulang report sebagai custom Page (kehilangan fitur bawaan: filter builder, export, chart). Bukan bug, ini pola standar Frappe — jangan dianggap "belum sepenuhnya dari NextHD" |
 | **Memanggil fungsi backend asli untuk diagnosa "kenapa X tidak muncul di UI"** | Kasus nyata 27 Agustus: daripada terus menebak-nebak field mana yang salah, memanggil langsung `frappe.call(get_workspaces)` (fungsi asli `frappe.desk.desktop` yang dipakai untuk membangun sidebar) membuktikan backend sebenarnya sudah 100% benar — mempersempit pencarian ke arah frontend/lokasi file, bukan lagi ke data. **Pola ini berguna untuk kasus serupa lain**: cari fungsi resmi yang benar-benar dipanggil UI, panggil manual via console, baru simpulkan di lapisan mana masalahnya (backend vs frontend/cache/file) |
+| **Kode yang jalan dari klik tombol UI (web worker) TIDAK punya `PATH` selengkap terminal SSH** | Kasus nyata 28 Agustus: `subprocess.run(["bench", ...])` di dalam fungsi yang dipanggil dari tombol Desk gagal `FileNotFoundError: 'bench'`, padahal command sama persis jalan normal di terminal. **Untuk kebutuhan yang biasanya lewat CLI (backup, dll.) dari kode yang jalan di request web, selalu panggil fungsi Python internal-nya langsung**, jangan shell out ke binary `bench`. Lihat §1.E |
+| **Field reference balik many-to-many disimpan sebagai field tunggal** | Kasus nyata 28 Agustus (desain `NextHD Photo`): kalau 1 record bisa dipakai ulang di >1 dokumen berbeda (foto dipakai di beberapa Ticket/Asset), JANGAN simpan referensi baliknya sebagai field `reference_doctype`+`reference_name` tunggal — field itu akan tertimpa tiap kali dipakai di tempat baru, dan datanya jadi salah/hilang. Pakai `get_dashboard_data()` (badge Connections, real-time dari child table) sebagai gantinya — tidak ada risiko tertimpa, tapi trade-off-nya tidak bisa dipakai untuk filter Report View karena bukan field DB tersimpan |
 
 ---
 
@@ -490,6 +509,58 @@ Sesi ini melakukan verifikasi tambahan (di luar 4 file yang sudah dicek sebelumn
 - [ ] Putuskan apakah `developer_mode` perlu dimatikan kembali di server produksi
 - [ ] Tindak lanjut terpisah: pembersihan "Desktop Icon" Frappe terkait workspace ini (disinggung di akhir sesi, belum dibahas tuntas)
 
+### ✅ SELESAI — Bug Session 2026-08-28 (Naming Series & Field NextHD Photo, Dashboard Connections, Tombol Reset Data Demo)
+
+**Konteks:** Sesi lanjutan dari `RANGKUMAN_SESI_2026-08-28_PAGI.md` (troubleshooting bug field duplikat, naming series NextHD Photo). Fokus sesi ini: penyempurnaan `NextHD Photo` (naming series, field baru, referensi "dipakai di mana") dan tombol admin baru "Reset Data Demo".
+
+**1 — Naming Series `NextHD Photo` → `IMG-YYMM-####`:** `autoname` diubah `hash` → `naming_series:`, `naming_rule` → "By Naming Series field", field baru `naming_series` (Select, hidden, opsi `IMG-.YY.MM.-.####`). Terverifikasi dokumen baru bernama `IMG-2608-0001` dst. 2 data foto lama (nama hash lama) sudah ikut terhapus tombol Reset Data Demo (lihat bug #4 di bawah) sebelum sempat dites ulang dengan nama lama — otomatis tidak relevan lagi.
+
+**2 — Field baru + keputusan desain penting:** Ditambah `photo_title` (jadi `title_field`), `location`, `category` (Link → `NextHD Category`). Rencana awal field tunggal `reference_doctype`+`reference_name` **dibatalkan** setelah disadari 1 foto bisa dipakai ulang di >1 dokumen (child table `photos` di tiap parent bersifat independen) — field tunggal akan tertimpa. Solusinya di poin 3.
+
+**3 — Dashboard Connections "Dipakai Di":** Dipakai fitur bawaan Frappe `get_dashboard_data()` di `nexthd_photo.py` — badge "Connections" real-time dari child table `NextHD Photo Link` di 4 parent (Ticket/Asset/Problem/Known Error), bukan field statis. Trade-off: akurat & tanpa risiko tertimpa, tapi tidak bisa dipakai untuk filter/Report View. **Status test:** terpasang, tapi belum sempat ditest tuntas karena semua foto contoh keburu terhapus tombol Reset Data Demo — perlu foto baru untuk re-test.
+
+**4 — Tombol admin "Reset Data Demo":** Custom Page `nexthd-reset-data` (shortcut section baru "Admin" di Workspace NextHD) memanggil `reset_demo_data()` di `nexthd/api.py`. Desain final: hapus 6 DocType transaksional (Ticket, Problem, Change Request, Known Error, Asset, Photo) + child table terkait (Photo Link, Ticket Waiting Log, Problem Ticket), pertahankan data master (Category, Team, SLA Policy). Akses System Manager only (dicek di **backend** via `frappe.get_roles`, bukan cuma UI), 2x konfirmasi (dialog + wajib ketik `RESET` persis), backup otomatis sebelum hapus, counter `tabSeries` untuk semua prefix (TKT/PRB/CHG/AST/KE/IMG) ikut dihapus supaya penomoran mulai dari `0001` lagi. **Test sungguhan berhasil**: 14 Ticket, 15 Problem, 3 Change Request, 2 Known Error, 6 Asset, 4 Photo terhapus, backup terbuat, data master utuh, pesan sukses tampil di UI.
+
+**Bug #1 — `subprocess.run(["bench", ...])` gagal di web worker:**
+
+**Gejala:** `FileNotFoundError: [Errno 2] No such file or directory: 'bench'` saat tombol Reset Data Demo diklik dengan konfirmasi benar.
+
+**Root cause:** Proses web Frappe (yang menjalankan kode saat tombol diklik dari browser) berjalan dengan `PATH` environment terbatas — tidak mengenali `bench` sebagai command shell, berbeda dari terminal SSH biasa. Lihat aturan baru di §1.E.
+
+**Dampak:** Tidak ada — kode pakai `check=True` sehingga proses berhenti **sebelum** sempat menghapus data apa pun. Tidak ada kehilangan data.
+
+**Fix:** Ganti `subprocess.run(["bench", "--site", site, "backup"])` dengan pemanggilan langsung fungsi internal Python `frappe.utils.backups.new_backup(ignore_files=True)` — tidak bergantung shell `PATH` sama sekali.
+
+**Bug #2 — Shortcut Workspace "Admin" tidak muncul di UI:**
+
+**Gejala:** Row berhasil ter-insert ke `tabWorkspace Shortcut`, tapi tombol tidak muncul di halaman Workspace NextHD.
+
+**Root cause:** Tampilan Workspace dikontrol oleh field `content` (JSON blocks) di `tabWorkspace`, bukan otomatis mengambil semua row `tabWorkspace Shortcut` (lihat catatan baru di §1.B) — row shortcut ada di database tapi tidak direferensikan di `content`.
+
+**Percobaan pertama gagal:** `ws.save()` via `frappe.get_doc()` melempar `ValidationError: Link Type must be set first` — disebabkan bug lama yang **tidak terkait**, lihat bug #3 di bawah (masih pending).
+
+**Fix final:** Update field `content` langsung lewat `frappe.db.set_value()` (skip validasi dokumen penuh — yang bermasalah adalah data lain di child table berbeda, bukan `content` itu sendiri). Dijalankan via `bench execute` (bukan `bench console` interaktif, karena kode bercabang `if/else` rawan salah parse indentasi saat paste ke console — lihat aturan baru di §3).
+
+**Status:** ✅ Tombol berhasil muncul di section "Admin" pada Workspace NextHD.
+
+**Bug #3 — 🔴 PENDING — `Link Type must be set first` pada Workspace NextHD:**
+
+**Gejala:** `frappe.get_doc("Workspace", "NextHD").save()` gagal dengan `ValidationError: Link Type must be set first`.
+
+**Penyebab terkonfirmasi:** Row `tabWorkspace Link` (`name=u6nb1c41c1`, `parent='NextHD'`, label "Reporting Data", `link_to=/app/nexthd-report`, `link_type` **kosong**) — link ganjil yang sudah teridentifikasi di sesi pagi 28 Agustus (Masalah #2), belum diperbaiki.
+
+**Dampak saat ini:** Setiap kebutuhan mengubah Workspace NextHD lewat `frappe.get_doc().save()` (cara normal/aman) akan gagal karena validasi ini. Workaround sementara `frappe.db.set_value()` (skip validasi penuh) dipakai untuk bug #2 di atas — **tidak scalable** untuk perubahan struktural lebih besar ke depan.
+
+**Belum diperbaiki.** Opsi yang sudah disiapkan (belum dieksekusi): (A) ubah jadi link tipe benar, arahkan ke Workspace "NextHD Report" secara keseluruhan (bukan 1 report tunggal), atau (B) perbaiki `link_type` saja (isi nilai valid) tanpa ubah tujuan link. **Rekomendasi: selesaikan di sesi berikutnya** sebelum ada kebutuhan edit Workspace lain lagi.
+
+**Task masih pending — Rename Module "Next Helpdesk" → "NextHD":** Terkonfirmasi ulang di sesi ini `tabModule Def` masih bernama "Next Helpdesk", menyebabkan sidebar module-based (Report page, Page kustom seperti `nexthd-reset-data`) masih menampilkan header lama. Dikonfirmasi bukan Workspace terpisah yang nyasar (query `tabWorkspace WHERE name LIKE '%elpdesk%'` → kosong) — sumbernya murni nama `Module Def`. Solusi (dari sesi sebelumnya): rename `Module Def` + update `modules.txt`, risiko menengah, perlu sesi terpisah dengan backup.
+
+**Daftar tugas untuk sesi berikutnya:**
+- [ ] Re-test Dashboard Connections "Dipakai Di" pada `NextHD Photo` dengan data baru
+- [ ] Perbaiki `Link Type` kosong pada row "Reporting Data" di `tabWorkspace Link` (Opsi A atau B, bug #3)
+- [ ] Eksekusi rename Module "Next Helpdesk" → "NextHD" — sesi khusus, backup wajib
+- [ ] (Opsional) Log aktivitas reset (siapa, kapan) ke DocType audit terpisah; kunci tambahan supaya reset tidak sengaja dipakai di luar konteks demo/testing
+
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-27.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-28.*
