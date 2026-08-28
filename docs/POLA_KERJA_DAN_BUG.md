@@ -561,6 +561,18 @@ Sesi ini melakukan verifikasi tambahan (di luar 4 file yang sudah dicek sebelumn
 - [ ] Eksekusi rename Module "Next Helpdesk" → "NextHD" — sesi khusus, backup wajib
 - [ ] (Opsional) Log aktivitas reset (siapa, kapan) ke DocType audit terpisah; kunci tambahan supaya reset tidak sengaja dipakai di luar konteks demo/testing
 
+### ✅ SELESAI (data), 🔵 PERLU KONFIRMASI ULANG (kode) — Bug Session 2026-08-28 Lanjutan (Problem.related_asset Kosong Saat Convert dari Ticket)
+
+**Konteks:** Efendy membuat `TKT-2608-0001` dengan `affected_asset = AST-2608-0005`, lalu klik "Buat Problem dari Tiket" → `PRB-2608-0001` terbentuk tapi `related_asset` kosong. Saat mau lanjut bikin Change Request dari Problem, sistem minta pilih Asset lagi (padahal seharusnya sudah ke-link otomatis sesuai desain di `WORKFLOW.md` §"Alur Relasi Asset").
+
+**Fix data (langsung dijalankan):** `PRB-2608-0001.related_asset` di-backfill manual dari `TKT-2608-0001.affected_asset` via `frappe.db.set_value()` + commit. Terverifikasi: `related_asset = AST-2608-0005`.
+
+**Temuan penting — kode client script SUDAH BENAR:** Dump isi Client Script `a258744559` ("Buat Problem dari Tiket") dicek langsung dari database, dan baris `related_asset: frm.doc.affected_asset` **sudah ada** di dalam `frappe.client.insert` yang membuat Problem baru. Artinya root cause **kemungkinan besar cache browser** (versi script lama tanpa baris copy asset ini sempat ter-load sebelum versi yang benar), bukan bug aktif di kode server saat ini — konsisten dengan pola cache yang berulang kali ditemukan di project ini (lihat §1, §3).
+
+**Belum dikonfirmasi tuntas:** perlu 1 percobaan ulang (hard refresh dulu → ticket baru + asset → convert ke Problem) untuk memastikan ini murni insiden cache satu-kali, bukan bug yang masih bisa terjadi lagi. Kalau di percobaan baru masih gagal, berarti ada race condition/bug lain di client script yang perlu investigasi lebih lanjut (kandidat: field `affected_asset` belum ter-refresh di form saat tombol diklik).
+
+**Status:** Data untuk kasus TKT-2608-0001/PRB-2608-0001 sudah diperbaiki. Kode belum diubah — menunggu hasil test ulang sebelum diputuskan perlu PR fix atau tidak.
+
 ---
 
 *Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-28.*
