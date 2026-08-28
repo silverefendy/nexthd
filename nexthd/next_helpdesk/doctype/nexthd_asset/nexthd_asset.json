@@ -171,7 +171,7 @@
   {
    "fieldname": "peripheral_notes",
    "fieldtype": "Small Text",
-   "label": "Peripheral / Catatan",
+   "label": "Remarks / Catatan",
    "depends_on": "eval:in_list(['Laptop','PC','Server'], doc.asset_type)",
    "placeholder": "e.g. Monitor 24inch, Keyboard, Mouse, UPS"
   },

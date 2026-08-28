@@ -7,7 +7,11 @@
  "field_order": [
   "attribute_name",
   "attribute_value",
-  "unit"
+  "unit",
+  "brand",
+  "serial_number",
+  "sumber",
+  "catatan"
  ],
  "fields": [
   {
@@ -29,6 +33,30 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Unit"
+  },
+  {
+   "fieldname": "brand",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Brand"
+  },
+  {
+   "fieldname": "serial_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Serial Number"
+  },
+  {
+   "fieldname": "sumber",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Sumber"
+  },
+  {
+   "fieldname": "catatan",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Catatan"
   }
  ],
  "idx_unique": [],

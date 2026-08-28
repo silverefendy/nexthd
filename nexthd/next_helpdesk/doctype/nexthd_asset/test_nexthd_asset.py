@@ -23,6 +23,7 @@ class TestNextHDAsset(FrappeTestCase):
 		super().tearDown()
 		frappe.db.delete("NextHD Asset", {"asset_name": ["like", "%Test%"]})
 		frappe.db.delete("NextHD Asset Category", {"category_name": ["like", "%Test%"]})
+		frappe.set_user("Administrator")
 
 	def test_create_asset(self):
 		"""Test creating a basic asset"""
@@ -304,3 +305,138 @@ class TestNextHDAsset(FrappeTestCase):
 		self.assertEqual(asset.storage, "1TB NVMe SSD")
 		self.assertEqual(asset.os, "Windows 11")
 		self.assertEqual(asset.peripheral_notes, "Monitor 27inch, Keyboard, Mouse")
+
+	# EAV Test Cases - Session B
+
+	def test_asset_attribute_optional_fields(self):
+		"""Test inserting Asset Attribute with only attribute_name and attribute_value (new fields optional)"""
+		# Create a category first
+		category = frappe.get_doc({
+			"doctype": "NextHD Asset Category",
+			"category_name": "Test Optional Fields Category"
+		})
+		category.insert()
+
+		# Create asset with attribute row WITHOUT new optional fields
+		asset = frappe.get_doc({
+			"doctype": "NextHD Asset",
+			"asset_name": "Test Asset Optional Fields",
+			"asset_type": "Lainnya",
+			"status": "Aktif",
+			"asset_category": category.name
+		})
+
+		# Add attribute row with only required fields (attribute_name, attribute_value)
+		asset.append("asset_attributes", {
+			"attribute_name": "Resolution",
+			"attribute_value": "1920x1080"
+			# brand, serial_number, sumber, catatan NOT filled - should still work
+		})
+
+		asset.insert()
+
+		# Verify attribute was saved successfully
+		self.assertEqual(len(asset.asset_attributes), 1)
+		self.assertEqual(asset.asset_attributes[0].attribute_name, "Resolution")
+		self.assertEqual(asset.asset_attributes[0].attribute_value, "1920x1080")
+		# New fields should be empty/None
+		self.assertEqual(asset.asset_attributes[0].brand, "")
+		self.assertEqual(asset.asset_attributes[0].serial_number, "")
+		self.assertEqual(asset.asset_attributes[0].sumber, "")
+		self.assertEqual(asset.asset_attributes[0].catatan, "")
+
+	def test_asset_attribute_all_fields_filled(self):
+		"""Test inserting Asset Attribute with ALL fields filled (including new brand/serial_number/sumber/catatan)"""
+		# Create a category first
+		category = frappe.get_doc({
+			"doctype": "NextHD Asset Category",
+			"category_name": "Test All Fields Category"
+		})
+		category.insert()
+
+		# Create asset with attribute row with ALL fields filled
+		asset = frappe.get_doc({
+			"doctype": "NextHD Asset",
+			"asset_name": "Test Asset All Fields",
+			"asset_type": "Lainnya",
+			"status": "Aktif",
+			"asset_category": category.name
+		})
+
+		# Add attribute row with all fields filled
+		asset.append("asset_attributes", {
+			"attribute_name": "RAM",
+			"attribute_value": "32GB",
+			"unit": "GB",
+			"brand": "Kingston",
+			"serial_number": "KVR32E16S8-8",
+			"sumber": "PO-2026-001",
+			"catatan": "Upgrade from 16GB, purchased separately"
+		})
+
+		asset.insert()
+
+		# Verify all fields were saved correctly
+		self.assertEqual(len(asset.asset_attributes), 1)
+		self.assertEqual(asset.asset_attributes[0].attribute_name, "RAM")
+		self.assertEqual(asset.asset_attributes[0].attribute_value, "32GB")
+		self.assertEqual(asset.asset_attributes[0].unit, "GB")
+		self.assertEqual(asset.asset_attributes[0].brand, "Kingston")
+		self.assertEqual(asset.asset_attributes[0].serial_number, "KVR32E16S8-8")
+		self.assertEqual(asset.asset_attributes[0].sumber, "PO-2026-001")
+		self.assertEqual(asset.asset_attributes[0].catatan, "Upgrade from 16GB, purchased separately")
+
+	def test_regression_existing_asset_attribute_data(self):
+		"""Regression test: existing asset AST-2608-0001 should not be affected by new fields"""
+		# Check if the existing asset exists (migrated manually in Session A)
+		if frappe.db.exists("NextHD Asset", "AST-2608-0001"):
+			existing_asset = frappe.get_doc("NextHD Asset", "AST-2608-0001")
+			
+			# Verify the asset still exists and has its attributes
+			self.assertIsNotNone(existing_asset.name)
+			self.assertEqual(existing_asset.name, "AST-2608-0001")
+			
+			# Verify asset_attributes child table still has data
+			# (This record should have 5 attribute rows from manual migration)
+			self.assertGreaterEqual(len(existing_asset.asset_attributes), 1)
+			
+			# Verify original fields (attribute_name, attribute_value, unit) still work
+			first_attr = existing_asset.asset_attributes[0]
+			self.assertIsNotNone(first_attr.attribute_name)
+			self.assertIsNotNone(first_attr.attribute_value)
+			# New fields should be empty for existing data (not migrated)
+			self.assertEqual(first_attr.brand, "")
+			self.assertEqual(first_attr.serial_number, "")
+			self.assertEqual(first_attr.sumber, "")
+			self.assertEqual(first_attr.catatan, "")
+
+	def test_peripheral_notes_label_change(self):
+		"""Test that peripheral_notes label changed to 'Remarks / Catatan' but field still works"""
+		# Create a category first
+		category = frappe.get_doc({
+			"doctype": "NextHD Asset Category",
+			"category_name": "Test Label Change Category"
+		})
+		category.insert()
+
+		# Create asset with peripheral_notes filled
+		asset = frappe.get_doc({
+			"doctype": "NextHD Asset",
+			"asset_name": "Test Label Change Asset",
+			"asset_type": "PC",
+			"status": "Aktif",
+			"asset_category": category.name,
+			"peripheral_notes": "Monitor 24inch, Keyboard, Mouse, UPS"
+		})
+
+		asset.insert()
+
+		# Verify field still works (fieldname unchanged, only label changed)
+		self.assertEqual(asset.peripheral_notes, "Monitor 24inch, Keyboard, Mouse, UPS")
+		
+		# Verify fieldname is still "peripheral_notes" (not changed)
+		self.assertEqual(asset.meta.get_field("peripheral_notes").fieldname, "peripheral_notes")
+		
+		# Verify label is "Remarks / Catatan" (changed from "Peripheral / Catatan")
+		self.assertEqual(asset.meta.get_field("peripheral_notes").label, "Remarks / Catatan")
+
