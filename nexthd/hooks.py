@@ -190,7 +190,10 @@ fixtures = [
                 "cs_known_error_from_problem",
                 "cs_change_request_from_problem",
                 "cs_change_request_from_known_error",
-                "cs_change_request_from_asset"
+                "cs_change_request_from_asset",
+                "cs_lihat_aset_dari_change_request",
+                "cs_lihat_problem_dari_known_error",
+                "cs_lihat_problem_dari_change_request"
         ]]]},
         {"dt": "Property Setter", "filters": [["doc_type", "like", "NextHD%"]]},
         {"dt": "Web Form", "filters": [["name", "=", "Tiket Saya"]]},

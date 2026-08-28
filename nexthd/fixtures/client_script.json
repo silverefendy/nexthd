@@ -53,5 +53,38 @@
   "name": "cs_change_request_from_asset",
   "script": "\nfrappe.ui.form.on('NextHD Asset', {\n    refresh(frm) {\n        if (!frm.is_new()) {\n            frm.add_custom_button('Buat Change Request dari Asset', function() {\n                frappe.new_doc('NextHD Change Request', {\n                    title: frm.doc.asset_name,\n                    related_asset: frm.doc.name\n                }, function(new_doc) {\n                    new_doc.save().then(() => {\n                        frappe.show_alert({message: 'Change Request berhasil dibuat', indicator: 'green'});\n                        frappe.set_route('Form', 'NextHD Change Request', new_doc.name);\n                    });\n                });\n            });\n        }\n    }\n});\n",
   "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "NextHD Change Request",
+  "enabled": 1,
+  "modified": "2026-08-28 16:21:04.882504",
+  "module": null,
+  "name": "cs_lihat_aset_dari_change_request",
+  "script": "frappe.ui.form.on('NextHD Change Request', {\n    refresh: function(frm) {\n        if (frm.doc.related_asset) {\n            frm.add_custom_button(__('Lihat Aset Terkait'), function() {\n                frappe.set_route('Form', 'NextHD Asset', frm.doc.related_asset);\n            });\n        }\n    }\n});",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "NextHD Known Error",
+  "enabled": 1,
+  "modified": "2026-08-28 17:07:23.428395",
+  "module": null,
+  "name": "cs_lihat_problem_dari_known_error",
+  "script": "\nfrappe.ui.form.on('NextHD Known Error', {\n    refresh: function(frm) {\n        if (frm.doc.related_problem) {\n            frm.add_custom_button(__('Lihat Problem Terkait'), function() {\n                frappe.set_route('Form', 'NextHD Problem', frm.doc.related_problem);\n            });\n        }\n    }\n});\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "NextHD Change Request",
+  "enabled": 1,
+  "modified": "2026-08-28 17:07:23.490878",
+  "module": null,
+  "name": "cs_lihat_problem_dari_change_request",
+  "script": "\nfrappe.ui.form.on('NextHD Change Request', {\n    refresh: function(frm) {\n        if (frm.doc.related_problem) {\n            frm.add_custom_button(__('Lihat Problem Terkait'), function() {\n                frappe.set_route('Form', 'NextHD Problem', frm.doc.related_problem);\n            });\n        }\n    }\n});\n",
+  "view": "Form"
  }
 ]
