@@ -22,6 +22,7 @@ class TestNextHDAsset(FrappeTestCase):
 	def tearDown(self):
 		super().tearDown()
 		frappe.db.delete("NextHD Asset", {"asset_name": ["like", "%Test%"]})
+		frappe.db.delete("NextHD Asset Category", {"category_name": ["like", "%Test%"]})
 
 	def test_create_asset(self):
 		"""Test creating a basic asset"""
@@ -108,3 +109,198 @@ class TestNextHDAsset(FrappeTestCase):
 			})
 			asset.insert()
 			self.assertEqual(asset.asset_type, asset_type)
+
+	# EAV Test Cases - Session A
+
+	def test_create_asset_category_unique(self):
+		"""Test creating NextHD Asset Category with unique constraint"""
+		# Create first category
+		category1 = frappe.get_doc({
+			"doctype": "NextHD Asset Category",
+			"category_name": "Test Laptop Category",
+			"description": "Test description"
+		})
+		category1.insert()
+		self.assertEqual(category1.category_name, "Test Laptop Category")
+
+		# Try to create duplicate - should fail
+		category2 = frappe.get_doc({
+			"doctype": "NextHD Asset Category",
+			"category_name": "Test Laptop Category",
+			"description": "Another description"
+		})
+		with self.assertRaises(frappe.UniqueValidationError):
+			category2.insert()
+
+	def test_asset_category_required_field(self):
+		"""Test that asset_category field is required (reqd=1)"""
+		# First create a category to link to
+		category = frappe.get_doc({
+			"doctype": "NextHD Asset Category",
+			"category_name": "Test PC Category"
+		})
+		category.insert()
+
+		# Try to create asset without asset_category - should fail with MandatoryError
+		asset = frappe.get_doc({
+			"doctype": "NextHD Asset",
+			"asset_name": "Test PC Without Category",
+			"asset_type": "PC",
+			"status": "Aktif"
+			# Missing asset_category
+		})
+		with self.assertRaises(frappe.MandatoryError):
+			asset.insert()
+
+	def test_asset_with_category(self):
+		"""Test creating asset with asset_category filled"""
+		# Create a category
+		category = frappe.get_doc({
+			"doctype": "NextHD Asset Category",
+			"category_name": "Test Server Category"
+		})
+		category.insert()
+
+		# Create asset with category
+		asset = frappe.get_doc({
+			"doctype": "NextHD Asset",
+			"asset_name": "Test Server With Category",
+			"asset_type": "Server",
+			"status": "Aktif",
+			"asset_category": category.name
+		})
+		asset.insert()
+		self.assertEqual(asset.asset_category, category.name)
+
+	def test_asset_attributes_child_table(self):
+		"""Test inserting multiple rows to asset_attributes child table"""
+		# Create a category first
+		category = frappe.get_doc({
+			"doctype": "NextHD Asset Category",
+			"category_name": "Test Monitor Category"
+		})
+		category.insert()
+
+		# Create asset with attributes
+		asset = frappe.get_doc({
+			"doctype": "NextHD Asset",
+			"asset_name": "Test Monitor With Attributes",
+			"asset_type": "Lainnya",
+			"status": "Aktif",
+			"asset_category": category.name
+		})
+
+		# Add multiple attribute rows
+		asset.append("asset_attributes", {
+			"attribute_name": "Panel Type",
+			"attribute_value": "IPS",
+			"unit": ""
+		})
+		asset.append("asset_attributes", {
+			"attribute_name": "Refresh Rate",
+			"attribute_value": "144",
+			"unit": "Hz"
+		})
+		asset.append("asset_attributes", {
+			"attribute_name": "Power Consumption",
+			"attribute_value": "45",
+			"unit": "W"
+		})
+
+		asset.insert()
+
+		# Verify attributes were saved
+		self.assertEqual(len(asset.asset_attributes), 3)
+		self.assertEqual(asset.asset_attributes[0].attribute_name, "Panel Type")
+		self.assertEqual(asset.asset_attributes[0].attribute_value, "IPS")
+		self.assertEqual(asset.asset_attributes[1].unit, "Hz")
+		self.assertEqual(asset.asset_attributes[2].attribute_value, "45")
+
+	def test_asset_category_permission_agent_read_only(self):
+		"""Test that Agent role can read but not create/write/delete NextHD Asset Category"""
+		# Create a test user with Agent role
+		if not frappe.db.exists("User", "test_agent@example.com"):
+			agent_user = frappe.get_doc({
+				"doctype": "User",
+				"email": "test_agent@example.com",
+				"first_name": "Test",
+				"last_name": "Agent",
+				"username": "testagent"
+			})
+			agent_user.insert()
+			# Add Agent role (in real scenario this would be done via UI)
+			agent_user.add_roles("Agent")
+		else:
+			agent_user = frappe.get_doc("User", "test_agent@example.com")
+
+		# Create a category as Administrator first
+		category = frappe.get_doc({
+			"doctype": "NextHD Asset Category",
+			"category_name": "Test Permission Category"
+		})
+		category.insert()
+
+		# Switch to Agent role context
+		frappe.set_user("test_agent@example.com")
+
+		# Agent should be able to read
+		read_category = frappe.get_doc("NextHD Asset Category", category.name)
+		self.assertEqual(read_category.category_name, "Test Permission Category")
+
+		# Agent should NOT be able to create
+		new_category = frappe.get_doc({
+			"doctype": "NextHD Asset Category",
+			"category_name": "Agent Should Not Create"
+		})
+		with self.assertRaises(frappe.PermissionError):
+			new_category.insert()
+
+		# Agent should NOT be able to write
+		read_category.description = "Agent modified this"
+		with self.assertRaises(frappe.PermissionError):
+			read_category.save()
+
+		# Agent should NOT be able to delete
+		with self.assertRaises(frappe.PermissionError):
+			read_category.delete()
+
+		# Switch back to Administrator
+		frappe.set_user("Administrator")
+
+	def test_regression_old_fields_still_work(self):
+		"""Regression test: old fields (cpu, brand, etc.) should still work"""
+		# Create a category first
+		category = frappe.get_doc({
+			"doctype": "NextHD Asset Category",
+			"category_name": "Test PC Old Fields"
+		})
+		category.insert()
+
+		# Create asset with old fields still populated
+		asset = frappe.get_doc({
+			"doctype": "NextHD Asset",
+			"asset_name": "Test PC Old Fields",
+			"asset_type": "PC",
+			"status": "Aktif",
+			"asset_category": category.name,
+			"brand": "Dell",
+			"model": "OptiPlex 7090",
+			"serial_number": "SN123456",
+			"cpu": "Intel Core i7-11700",
+			"ram": "32GB DDR4",
+			"storage": "1TB NVMe SSD",
+			"os": "Windows 11",
+			"peripheral_notes": "Monitor 27inch, Keyboard, Mouse"
+		})
+
+		asset.insert()
+
+		# Verify all old fields are still accessible
+		self.assertEqual(asset.brand, "Dell")
+		self.assertEqual(asset.model, "OptiPlex 7090")
+		self.assertEqual(asset.serial_number, "SN123456")
+		self.assertEqual(asset.cpu, "Intel Core i7-11700")
+		self.assertEqual(asset.ram, "32GB DDR4")
+		self.assertEqual(asset.storage, "1TB NVMe SSD")
+		self.assertEqual(asset.os, "Windows 11")
+		self.assertEqual(asset.peripheral_notes, "Monitor 27inch, Keyboard, Mouse")

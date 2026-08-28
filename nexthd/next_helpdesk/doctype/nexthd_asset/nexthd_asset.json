@@ -14,6 +14,7 @@
   "location",
   "assigned_to",
   "status",
+  "asset_category",
   "purchase_date",
   "warranty_until",
   "section_pc",
@@ -46,7 +47,9 @@
   "section_lainnya",
   "other_description",
   "section_photos",
-  "photos"
+  "photos",
+  "section_attributes",
+  "asset_attributes"
  ],
  "fields": [
   {
@@ -85,6 +88,13 @@
    "fieldtype": "Select",
    "label": "Status",
    "options": "Aktif\nRusak\nDiperbaiki\nDihapus",
+   "reqd": 1
+  },
+  {
+   "fieldname": "asset_category",
+   "fieldtype": "Link",
+   "label": "Asset Category",
+   "options": "NextHD Asset Category",
    "reqd": 1
   },
   {
@@ -286,6 +296,17 @@
    "fieldtype": "Table",
    "label": "Foto/Gambar",
    "options": "NextHD Photo Link"
+  },
+  {
+   "fieldname": "section_attributes",
+   "fieldtype": "Section Break",
+   "label": "Spesifikasi (EAV)"
+  },
+  {
+   "fieldname": "asset_attributes",
+   "fieldtype": "Table",
+   "label": "Asset Attributes",
+   "options": "NextHD Asset Attribute"
   }
  ],
  "idx_unique": [],
