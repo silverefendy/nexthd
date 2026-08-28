@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-26 (sesi lanjutan — dashboard shortcut "NextHD Photo" + 6 Report via `Workspace Shortcut` diperbaiki (`report_ref_doctype` + cache); item AA sidebar kiri via `Workspace.links` masih menunggu `bench migrate`)
+> **Last updated:** 2026-08-28 (sesi lanjutan — fitur `NextHD Photo` (naming series `IMG-YYMM-####`, field Judul/Lokasi/Kategori, Dashboard Connections "Dipakai Di"), tombol admin "Reset Data Demo" terverifikasi end-to-end; 2 bug pending baru: `Link Type` kosong di Workspace Link "Reporting Data", rename Module "Next Helpdesk"→"NextHD" masih tertunda)
 
 ---
 
@@ -49,7 +49,8 @@
 - Priority otomatis dari matriks Impact × Urgency, dengan override manual untuk Agent Manager/IT Manager (PR #7) — **✅ live + terverifikasi**
 - Multi-tim dengan assignment agent
 - Custom reports: Tiket per Bulan, Tiket per Agent, Tiket per Kategori, Tiket per Prioritas (breach SLA), SLA Compliance Bulanan, Aset Bermasalah — **kartu shortcut dashboard "Laporan" sudah ditambah (26 Agustus, fix `report_ref_doctype`+cache, menunggu konfirmasi visual)**, sidebar kiri submenu masih di item AA di bawah
-- Foto/gambar reusable & bisa di-link antar Ticket/Problem/Asset/Known Error (PR #9) — **✅ live + terverifikasi 24 Agustus**, termasuk sidebar & dashboard Number Card. **Shortcut dashboard "NextHD Photo" (kartu terpisah di section Konfigurasi) ditambah 26 Agustus**, sempat tidak muncul karena cache — sudah difix, menunggu konfirmasi visual
+- Foto/gambar reusable & bisa di-link antar Ticket/Problem/Asset/Known Error (PR #9) — **✅ live + terverifikasi 24 Agustus**, termasuk sidebar & dashboard Number Card. **Shortcut dashboard "NextHD Photo" (kartu terpisah di section Konfigurasi) ditambah 26 Agustus**, sempat tidak muncul karena cache — sudah difix, menunggu konfirmasi visual. **28 Agustus:** naming series diubah ke `IMG-YYMM-####`, field Judul Foto/Lokasi/Kategori ditambah, dan badge "Dipakai Di" (Dashboard Connections, real-time dari child table, tidak disimpan sebagai field) terpasang di form Photo — **✅ terpasang, perlu re-test dengan foto baru**
+- Tombol admin "Reset Data Demo" (hapus semua data transaksi untuk testing, System Manager only, 2x konfirmasi + backup otomatis) — **✅ live + terverifikasi end-to-end 28 Agustus**
 - **Rencana ke depan:** Knowledge Base publik (self-service), tag di tiket, CSAT — lihat `docs/DAFTAR_FITUR.md`
 
 ---
@@ -58,6 +59,18 @@
 
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `POLA_KERJA_DAN_BUG.md`.
 > Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/DAFTAR_FITUR.md`.
+
+### 🔴 Item DD — Bug Pending: `Link Type must be set first` pada Workspace NextHD (28 Agustus)
+
+| # | Item | Keterangan | PIC |
+|---|---|---|---|
+| DD | `frappe.get_doc("Workspace", "NextHD").save()` gagal validasi | Row `tabWorkspace Link` (`name=u6nb1c41c1`, label "Reporting Data", `link_to=/app/nexthd-report`) punya `link_type` kosong — link ganjil yang sudah teridentifikasi sejak sesi pagi 28 Agustus, belum diperbaiki. Setiap kebutuhan edit Workspace NextHD lewat `frappe.get_doc().save()` (cara normal) akan gagal karena validasi ini; workaround sementara `frappe.db.set_value()` (skip validasi penuh) dipakai untuk bug shortcut sidebar, **tidak scalable** untuk perubahan struktural lebih besar. Opsi fix: (A) ubah jadi link ke Workspace "NextHD Report" secara keseluruhan, atau (B) isi `link_type` dengan nilai valid tanpa ubah tujuan link. Detail di `docs/POLA_KERJA_DAN_BUG.md` bug session 28 Agustus | Claude + Efendy |
+
+### 🔴 Item EE — Task Pending: Rename Module "Next Helpdesk" → "NextHD"
+
+| # | Item | Keterangan | PIC |
+|---|---|---|---|
+| EE | `tabModule Def` masih bernama "Next Helpdesk" | Menyebabkan sidebar module-based (Report page, Page kustom seperti `nexthd-reset-data`) masih menampilkan header "Next Helpdesk", bukan "NextHD". Dikonfirmasi ulang 28 Agustus bukan Workspace nyasar, murni dari nama Module Def. Solusi: rename `Module Def` + update `modules.txt`, risiko menengah (mempengaruhi banyak referensi internal) — perlu sesi terpisah dengan backup wajib | Claude + Efendy |
 
 ### 🔶 Item BB — Dashboard Shortcut "NextHD Photo" & 6 Report (Menunggu Konfirmasi Visual, 26 Agustus)
 
@@ -94,6 +107,9 @@
 | H | `NextHD Holiday` di sidebar Workspace | `bench console`: query `tabWorkspace Sidebar Item` → Holiday ditemukan (`True`) | Efendy |
 | W | Fitur foto reusable (Ticket/Problem/Asset/Known Error) | [PR #9](https://github.com/silverefendy/nexthd/pull/9), commit `03a3c5d`, merged 24 Agustus. DocType `NextHD Photo`/`NextHD Photo Link` aktif, sidebar + Number Card "Total Foto Terupload" terverifikasi live via `bench console` 24 Agustus | Efendy |
 | X | `install.py` — nilai SLA default usang | Diperbaiki ke nilai SOP final 19 Agustus, di-commit `b3a24b2` → `2d795b9`, 24 Agustus. **Lihat juga item Z** — commit ini sempat merusak indentasi file, sudah diperbaiki ulang | Efendy |
+| FF | Naming Series `NextHD Photo` → `IMG-YYMM-####` | Diverifikasi: dokumen baru bernama `IMG-2608-0001` dst | Efendy |
+| GG | Field baru `NextHD Photo`: Judul Foto (`title_field`), Lokasi, Kategori (Link → `NextHD Category`) | Terpasang 28 Agustus | Efendy |
+| HH | Tombol "Reset Data Demo" — hapus semua data transaksi (System Manager only) | Test sungguhan berhasil: 14 Ticket, 15 Problem, 3 Change Request, 2 Known Error, 6 Asset, 4 Photo terhapus; backup otomatis, data master tidak ikut terhapus, penomoran `tabSeries` ikut direset | Efendy |
 
 > **Catatan Item E:** user test `test.requester@ciptamebel.co.id` sendiri belum pernah kirim `/start`+`/link` ke bot (field `telegram_chat_id` masih kosong untuk akun ini) — tapi ini bukan bug, cuma user dummy tsb memang belum di-link manual. Bot-nya sendiri sudah terbukti bekerja pakai akun Telegram lain.
 
@@ -101,7 +117,7 @@
 
 | # | Fitur | Keterangan | PIC |
 |---|---|---|---|
-| I | Wipe data testing | Desain sudah disepakati: UI checkbox per DocType, hanya data transaksional, prefix naming_series dibaca dinamis dari meta. Belum diimplementasi | Claude (desain), Efendy (waktu eksekusi) |
+| I | Wipe data testing (versi lama/checklist) | Sudah **diimplementasikan versi ringkas** sebagai tombol "Reset Data Demo" (item HH, 28 Agustus) — desain lengkap dengan UI checkbox per DocType di `DAFTAR_FITUR.md` masih jadi opsi pengembangan lanjutan kalau dibutuhkan granularitas lebih | Claude (desain), Efendy (waktu eksekusi) |
 | J | Workflow — testing end-to-end di UI browser | Regression test backend sudah lulus 100% (2026-08-20). Belum ditest klik manual di browser untuk verifikasi tombol Actions & permission per role tampil benar | Efendy |
 | K | Role assignment ke user spesifik | `support@ciptamebel.co.id` → role IT Manager. Keputusan: sementara 1 akun shared dulu | Efendy |
 | L | File `HANDOFF_SLA_NextHD_2026-08-19.md` | Disebut di HANDOFF.md tapi tidak ada di repo. Kalau masih ada di server, perlu `git add` + commit sebelum hilang | Efendy |
@@ -169,7 +185,12 @@
 | Duplikasi Workflow Transition round 3 — root cause fixture di repo (bukan Workflow Action Master) ditemukan & diperbaiki | ✅ 25 Agustus, fixture ditulis ulang (commit `9cf994f`), lalu `name` disamakan dengan DB (commit `322827f`). Belum diuji lewat migrate baru |
 | Root cause sidebar dikoreksi total — `Workspace.links` (bukan `Workspace Sidebar Item`) adalah sumber asli | ✅ 25 Agustus. Percobaan pertama sempat menghapus data sidebar via migrate, di-restore dari backup. 6 link report berhasil dipindahkan ke `Workspace.links` (19 item total), migrate belum diuji — lihat item AA & `docs/AUDIT_SISTEM.md` |
 | Dashboard shortcut "NextHD Photo" + 6 Report ditambah ke `Workspace Shortcut` (item BB) | ✅ Diinsert 26 Agustus (7 shortcut baru, `content` 32 blok). Sempat tidak render — root cause `report_ref_doctype` kosong (6 Report) + cache Redis (Photo), keduanya sudah difix. Menunggu konfirmasi visual Efendy — lihat `docs/AUDIT_SISTEM.md` & `POLA_KERJA_DAN_BUG.md` |
+| Naming Series `NextHD Photo` → `IMG-YYMM-####` (item FF) | ✅ 28 Agustus, terverifikasi dokumen baru `IMG-2608-0001` |
+| Field baru `NextHD Photo` — Judul Foto, Lokasi, Kategori (item GG) | ✅ 28 Agustus. Reference balik "dipakai di mana" sengaja **tidak** disimpan sebagai field statis (risiko tertimpa kalau 1 foto dipakai di >1 dokumen) — dipindah ke Dashboard Connections |
+| Dashboard Connections "Dipakai Di" pada `NextHD Photo` | ✅ Terpasang 28 Agustus via `get_dashboard_data()`, real-time dari child table `NextHD Photo Link` di semua parent (Ticket/Asset/Problem/Known Error), tidak ada risiko data tertimpa. **Perlu re-test dengan foto baru** — foto contoh lama sudah ikut terhapus tombol Reset Data Demo sebelum sempat ditest ulang |
+| Tombol "Reset Data Demo" (item HH) | ✅ Selesai & terverifikasi end-to-end 28 Agustus — System Manager only (cek backend), 2x konfirmasi (dialog + ketik `RESET`), backup otomatis via `frappe.utils.backups.new_backup()`, counter `tabSeries` ikut direset. Bug awal `subprocess.run(["bench",...])` gagal di web worker (`FileNotFoundError`) — diganti panggilan langsung ke fungsi Python `new_backup()`, tidak bergantung shell `PATH` |
+| Shortcut Workspace "Admin" (tombol Reset Data Demo) tidak muncul di UI | ✅ 28 Agustus. Root cause: Workspace v16 dikontrol field `content` (JSON blocks), bukan otomatis baca semua row `tabWorkspace Shortcut`. Fix: update `content` via `frappe.db.set_value()` langsung (skip validasi dokumen penuh karena bug lain — lihat item DD), dijalankan via `bench execute` (bukan `bench console`, supaya cabang `if/else` tidak salah parse indentasi) |
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-26.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-28.*
