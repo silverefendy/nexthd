@@ -46,9 +46,17 @@ Setelah install, buat SLA Policy untuk setiap level prioritas:
 
 ## Dokumentasi
 
-Semua dokumentasi teknis (arsitektur, doctype, permission, workflow, riwayat bugfix, schema tabel, instalasi) sudah digabung ke satu file:
+Semua dokumentasi teknis (arsitektur, doctype, permission, workflow, riwayat bugfix, schema tabel, instalasi) ada di folder [`docs/`](docs/). Mulai dari:
 
-- [`docs/SUMMARY.md`](docs/SUMMARY.md) — Master documentation
+- [`docs/SUMMARY.md`](docs/SUMMARY.md) — Entry point / index dokumentasi
+- [`docs/FAQ_DEVELOPER.md`](docs/FAQ_DEVELOPER.md) — Wajib dibaca sebelum kontribusi kode
+- [`docs/ARSITEKTUR.md`](docs/ARSITEKTUR.md) — Struktur app, DocType, field, permission
+- [`docs/WORKFLOW.md`](docs/WORKFLOW.md) — State machine & notifikasi Telegram
+- [`docs/DAFTAR_FITUR.md`](docs/DAFTAR_FITUR.md) — Checklist lengkap semua fitur
+- [`docs/POLA_KERJA_DAN_BUG.md`](docs/POLA_KERJA_DAN_BUG.md) — Frappe quirks, aturan kerja, riwayat bug
+- [`docs/PANDUAN_INSTALASI.md`](docs/PANDUAN_INSTALASI.md) — Instalasi & setup
+- [`docs/AUDIT_SISTEM.md`](docs/AUDIT_SISTEM.md) — Script audit kesehatan server
+- [`docs/HANDOFF.md`](docs/HANDOFF.md) — Arsip riwayat sesi 14–24 Agustus 2026 (historis)
 
 ## Lisensi
 
