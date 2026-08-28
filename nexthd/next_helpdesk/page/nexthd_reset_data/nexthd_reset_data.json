@@ -1,0 +1,11 @@
+{
+ "doctype": "Page",
+ "module": "Next Helpdesk",
+ "name": "nexthd-reset-data",
+ "page_name": "nexthd-reset-data",
+ "title": "Reset Data Demo NextHD",
+ "roles": [
+  {"role": "System Manager"}
+ ],
+ "standard": "Yes"
+}

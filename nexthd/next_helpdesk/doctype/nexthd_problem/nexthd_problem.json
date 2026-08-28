@@ -14,6 +14,7 @@
   "col_info2",
   "priority",
   "category",
+  "related_asset",
   "section_detail",
   "root_cause",
   "workaround",
@@ -60,6 +61,12 @@
    "fieldtype": "Link",
    "label": "Category",
    "options": "NextHD Category"
+  },
+  {
+   "fieldname": "related_asset",
+   "fieldtype": "Link",
+   "label": "Aset Terkait",
+   "options": "NextHD Asset"
   },
   {
    "fieldname": "section_detail",

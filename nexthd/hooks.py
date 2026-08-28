@@ -193,13 +193,6 @@ fixtures = [
                 "cs_change_request_from_asset"
         ]]]},
         {"dt": "Property Setter", "filters": [["doc_type", "like", "NextHD%"]]},
-        {"dt": "DocField", "filters": [["parent", "in", [
-                "NextHD Problem",
-                "NextHD Change Request",
-                "NextHD Asset",
-                "NextHD Known Error",
-                "NextHD Ticket"
-        ]]]},
         {"dt": "Web Form", "filters": [["name", "=", "Tiket Saya"]]},
         {"dt": "Number Card", "filters": [["name", "in", [
                 "Tiket Baru",
