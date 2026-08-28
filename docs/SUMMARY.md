@@ -196,3 +196,17 @@
 ---
 
 *Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-28.*
+
+---
+
+## Update 2026-08-28 (Lanjutan #2) — Navigasi Relasi Antar Dokumen & Schema Drift Ditemukan
+
+**Konteks:** Menindaklanjuti investigasi "Connections Asset-Problem tidak muncul" dari sesi sebelumnya hari yang sama.
+
+**Temuan kritis:** Field `related_asset` di NextHD Problem sempat **hilang dari metadata Frappe** (schema drift) meski data & kolom fisik aman — root cause: fixture `DocField` di `hooks.py` sudah tidak terdaftar. Sudah direstore permanen ke `nexthd_problem.json`. **Ini memperkuat pentingnya menjalankan `docs/AUDIT_SISTEM.md §1` secara berkala** — drift semacam ini tidak menimbulkan error apa pun sampai field-nya dibutuhkan.
+
+**Ditutup:** Rencana pakai `internal_links`/`get_dashboard_data()` untuk memunculkan relasi forward-link di widget Connections — **dikonfirmasi tidak applicable** (hanya berlaku untuk child table). Diganti solusi tombol Client Script manual, sudah diimplementasi & live untuk semua pasangan relasi (Problem↔Asset, Problem↔Change Request, Problem↔Known Error, Problem↔Ticket, Change Request↔Asset, Change Request↔Problem, Known Error↔Problem). Detail lengkap di `POLA_KERJA_DAN_BUG.md §5`.
+
+**Bug tambahan difix:** `related_asset` tidak ter-copy otomatis saat "Buat Change Request dari Problem" (sekarang sudah), dan race condition di `frappe.client.set_value` yang menyebabkan field balik `Problem.change_request` gagal ter-set diam-diam (sudah difix + data lama di-backfill).
+
+**Item baru untuk sesi berikutnya:** Known Error tidak punya field balik ke Change Request yang dibuat darinya — belum ada tombol "Lihat Change Request Terkait" di Known Error. Prioritas rendah, bukan bug kritis.

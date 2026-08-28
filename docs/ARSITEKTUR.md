@@ -426,3 +426,17 @@ name, current
 *Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-23 18:30 WIB — §8 (Generalisasi
 Non-IT) dan §9 (Wipe Data Tool) dipindahkan ke `DAFTAR_FITUR.md` karena isinya rencana fitur,
 bukan arsitektur yang sudah ada.*
+
+---
+
+## Catatan Tambahan — Update 2026-08-28
+
+### Field `related_asset` di NextHD Problem — Riwayat Schema Drift
+
+Field ini **sempat hilang dari metadata** (28 Agustus 2026) meski kolom fisik & data di database tetap aman — root cause: sebelumnya hanya dilindungi fixture `DocField` terpisah yang sudah tidak terdaftar di `hooks.py`. Sekarang sudah dipindah permanen ke `nexthd_problem.json` (field_order + fields[], posisi setelah `category`), konsisten dengan field lain di DocType ini. Detail lengkap investigasi & fix di `POLA_KERJA_DAN_BUG.md §5`.
+
+**Pelajaran untuk field custom baru:** field yang ditambahkan manual via SQL raw HARUS langsung ditulis juga ke file `.json` DocType-nya sendiri — jangan hanya mengandalkan fixture `DocField` global terpisah sebagai satu-satunya pelindung dari `bench migrate`.
+
+### Pola Navigasi Timbal-Balik Antar Dokumen (Forward-Link)
+
+Karena `get_dashboard_data()`/`internal_links` Frappe **tidak mendukung** forward Link field biasa (dikonfirmasi 28 Agustus, lihat `POLA_KERJA_DAN_BUG.md §5`), navigasi antar dokumen yang berelasi one-to-one dipakai lewat tombol Client Script kustom (`frm.add_custom_button` + `frappe.set_route`), dan untuk relasi one-to-many (Problem → banyak Ticket) dipakai List View dengan filter. Daftar lengkap Client Script navigasi ada di `POLA_KERJA_DAN_BUG.md §5`.

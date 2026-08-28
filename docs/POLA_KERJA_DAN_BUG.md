@@ -576,3 +576,64 @@ Sesi ini melakukan verifikasi tambahan (di luar 4 file yang sudah dicek sebelumn
 ---
 
 *Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-28.*
+
+---
+
+## 5. Sesi 2026-08-28 (Lanjutan #2) — Schema Drift `related_asset`, Race Condition `set_value`, Navigasi Timbal-Balik
+
+### 🐛 Bug Ditemukan & Difix: Schema Drift Field `related_asset` di NextHD Problem
+
+**Gejala:** Field "Aset Terkait" (`related_asset`) tidak muncul sama sekali di form NextHD Problem, meski data `PRB-2608-0001.related_asset = AST-2608-0005` (dan problem lain) masih tersimpan benar di database.
+
+**Root cause:** `frappe.get_meta("NextHD Problem").get_field("related_asset")` mengembalikan `None` — baris `DocField`-nya hilang dari `tabDocField`, padahal kolom fisik `related_asset` (`varchar(140)`) di `tabNextHD Problem` masih ada dan datanya utuh. Field ini awalnya ditambahkan manual via SQL (15 Agustus, lihat riwayat lama), dan hanya dilindungi lewat fixture `DocField` terpisah — bukan lewat file `nexthd_problem.json` sendiri. Fixture `DocField` ternyata **sudah tidak terdaftar** di `hooks.py` (dikonfirmasi `grep` kosong), sehingga `bench migrate` berikutnya (untuk kebutuhan lain, tidak terkait) menghapus baris `DocField` yang cuma dilindungi jalur itu — kolom fisik & data dibiarkan (jadi "kolom siluman", persis pola yang diperingatkan di `AUDIT_SISTEM.md §1`).
+
+**Fix permanen:** Field `related_asset` ditambahkan langsung ke `nexthd/next_helpdesk/doctype/nexthd_problem/nexthd_problem.json` (di `field_order` dan `fields[]`, posisi setelah `category`) — dipindahkan dari bergantung ke fixture `DocField` terpisah, ke tersimpan permanen di file DocType sendiri (pola paling robust, konsisten dengan field lain).
+
+**Verifikasi tambahan yang dilakukan:** sebelum menghapus fixture `docfield.json` lama dari repo (yang sudah usang & menumpuk 3-4 generasi duplikat — pola sama seperti bug `workflow_transition.json` 25 Agustus), dijalankan script pembanding otomatis: semua field di meta/DB untuk 5 DocType (Problem, Asset, Known Error, Change Request, Ticket) dicek sudah tercakup di file JSON DocType masing-masing. Hasil: **semua AMAN**, `docfield.json` lama dihapus dari repo tanpa risiko kehilangan field.
+
+**Pelajaran:** field yang ditambah manual via SQL raw ke `tabDocField` idealnya langsung ditulis ke file `.json` DocType-nya sendiri (bukan cuma dilindungi fixture `DocField` global terpisah) — satu sumber kebenaran per DocType lebih robust daripada dua fixture terpisah yang bisa saling tidak sinkron.
+
+### 🐛 Bug Ditemukan & Difix: Race Condition `frappe.client.set_value` di Client Script
+
+**Gejala:** Setelah klik "Buat Change Request dari Problem", Change Request baru terbentuk dan ter-link benar ke Problem (`related_problem` terisi), TAPI field balik `Problem.change_request` tetap `None` — sehingga tombol "Buat Change Request dari Problem" tetap muncul lagi (seolah belum pernah dibuat) dan tidak ada cara navigasi balik dari Problem ke CR-nya.
+
+**Root cause:** Pola lama memanggil `frappe.call({method: 'frappe.client.set_value', ..., callback() { frm.reload_doc(); frappe.set_route(...); }})` — `frappe.set_route()` untuk pindah halaman dipanggil di dalam `callback()` yang sama, tapi `new_doc.save().then(() => {...})` di luarnya tidak mengembalikan/menunggu hasil `frappe.call()` dengan benar sebelum lanjut ke proses berikutnya, menyebabkan race condition antara commit `set_value` dan navigasi halaman.
+
+**Fix:** Rantai promise diperbaiki — `frappe.call({method: 'frappe.client.set_value', ...}).then(() => { frappe.set_route(...); })`, memastikan urutan: simpan CR → set field balik di Problem → baru pindah halaman. Data lama yang sudah telanjur `None` di-backfill lewat script yang scan semua `NextHD Change Request.related_problem` dan isi ulang `NextHD Problem.change_request` yang kosong.
+
+**Pelajaran:** pola `frm.reload_doc()` dipanggil bersamaan dengan `frappe.set_route()` ke halaman lain berisiko race condition — kalau memang mau pindah halaman setelah operasi async, taruh `set_route()` sebagai langkah PALING TERAKHIR di ujung rantai `.then()`, jangan campur dengan `reload_doc()` pada form yang segera ditinggalkan.
+
+### ✅ Ditutup: Investigasi "Connections Widget Tidak Muncul untuk Forward-Link" (dari sesi sebelumnya)
+
+**Keputusan final:** riset dokumentasi resmi Frappe (`docs.frappe.io/framework/user/en/basics/doctypes/actions-and-links`) mengonfirmasi `internal_links` di `get_dashboard_data()` **hanya berlaku untuk link di dalam child table** (pola: field di child table row menunjuk balik ke parent) — **BUKAN** untuk Link field biasa langsung di parent doctype seperti `Problem.related_asset` atau `Change Request.related_asset`. Opsi ini dikonfirmasi **tidak applicable**, bukan sekadar "belum diverifikasi" seperti dicatat sesi sebelumnya.
+
+**Solusi yang diterapkan (dan terbukti bekerja):** tombol Client Script manual per pasangan relasi forward-link, pola seragam:
+```javascript
+if (frm.doc.<fieldname>) {
+    frm.add_custom_button(__('Lihat <Target> Terkait'), function() {
+        frappe.set_route('Form', '<Target DocType>', frm.doc.<fieldname>);
+    });
+}
+```
+Untuk relasi one-to-many (Problem → banyak Ticket), polanya beda — buka List View dengan filter, bukan lompat ke 1 dokumen:
+```javascript
+frm.add_custom_button(__('Lihat Tiket Terkait'), function() {
+    frappe.set_route('List', 'NextHD Ticket', {'related_problem': frm.doc.name});
+});
+```
+
+**Client Script navigasi timbal-balik yang sekarang aktif (semua sudah di fixtures & di-push):**
+
+| Client Script | DocType | Tombol |
+|---|---|---|
+| `cs_change_request_from_problem` | NextHD Problem | Buat CR dari Problem, Lihat CR Terkait, (Lihat Aset Terkait — digabung dari script lama yang dinonaktifkan) |
+| `cs_known_error_from_problem` | NextHD Problem | Buat Known Error dari Problem, Lihat Known Error Terkait, Lihat Tiket Terkait (list) |
+| `cs_lihat_aset_dari_change_request` | NextHD Change Request | Lihat Aset Terkait |
+| `cs_lihat_problem_dari_change_request` | NextHD Change Request | Lihat Problem Terkait |
+| `cs_lihat_problem_dari_known_error` | NextHD Known Error | Lihat Problem Terkait |
+| `cs_change_request_from_known_error` | NextHD Known Error | Buat CR dari Known Error (belum ada tombol "Lihat CR", karena Known Error tidak punya field `change_request` — CR dibuat tapi tidak disimpan reference-nya balik ke Known Error, potensi item tindak lanjut) |
+| `cs_change_request_from_asset` | NextHD Asset | Buat CR dari Asset |
+
+**Client Script mati (dinonaktifkan, bukan dihapus):** `cs_lihat_aset_dari_problem` (`enabled=0`) — logic-nya sudah digabung ke `cs_change_request_from_problem`.
+
+**Catatan untuk sesi berikutnya:** Known Error tidak punya field balik ke Change Request yang dibuat darinya (`cs_change_request_from_known_error` cuma bikin CR baru, tidak simpan referensinya). Kalau dibutuhkan, pola fix-nya sama seperti yang dipakai di Problem — tambah field `change_request` di Known Error (schema drift check dulu sebelum nambah field baru) + update client script biar simpan reference + tombol "Lihat Change Request Terkait" di Known Error.
