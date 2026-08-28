@@ -6,7 +6,7 @@
 >
 > Status: ✅ Selesai & Live | 🔶 Sedang Dikerjakan/Menunggu Konfirmasi | ⬜ Belum Dikerjakan (Rencana)
 >
-> **Last updated:** 2026-08-24 (sesi lanjutan — verifikasi & dedup workflow)
+> **Last updated:** 2026-08-28 (sesi lanjutan — fitur NextHD Photo lanjutan & tombol Reset Data Demo)
 
 ---
 
@@ -41,6 +41,10 @@
 | Duplikasi Workflow Transition (round 2) — Ticket/Problem/Change Request | ✅ | Ditemukan tiap transisi terduplikasi persis 4× (Ticket 28→7, Problem 24→6, CR 32→8). **Root cause:** `Workflow Action Master` "Convert to Known Error" tidak pernah dibuat, membuat `wf.save()` gagal validasi di tengah proses dedup sebelumnya (data lama sempat masuk lewat jalur yang bypass validasi ORM). Master dibuat ulang, lalu dedup by-value (bukan cuma by-idx) berhasil untuk ketiganya. Backup tersimpan di `/home/it/workflow_transitions_backup.json` di server | 24 Agustus |
 | Cuti Bersama 2026 — 8 hari | ✅ | Ditambahkan ke `NextHD Holiday` (total jadi 25 record: 17 nasional + 8 cuti bersama). **⚠️ Pemetaan tanggal↔nama event asumsi Claude berdasar pola umum, belum dicek silang ke teks SKB asli** | 24 Agustus |
 | Script verifikasi ringan pasca-perbaikan | ✅ | Ditambahkan ke `AUDIT_SISTEM.md` — smoke test 9 titik spesifik (workflow, sidebar, number card, SLA, business hours, holiday, roles, photo doctype) | 24 Agustus |
+| Naming Series `NextHD Photo` → `IMG-YYMM-####` | ✅ | `autoname: hash` → `naming_series:`, `naming_rule` → "By Naming Series field", field `naming_series` (Select, hidden, opsi `IMG-.YY.MM.-.####`). Terverifikasi: dokumen baru `IMG-2608-0001` dst | 28 Agustus |
+| Field baru `NextHD Photo` — Judul Foto, Lokasi, Kategori | ✅ | `photo_title` (Data, jadi `title_field`), `location` (Data), `category` (Link → `NextHD Category`, reuse DocType existing). **Keputusan desain:** referensi balik "dipakai di dokumen mana" sengaja TIDAK disimpan sebagai field tunggal (`reference_doctype`/`reference_name`) karena 1 foto bisa dipakai ulang di >1 dokumen — field tunggal akan tertimpa. Solusi dipindah ke Dashboard Connections (baris di bawah) | 28 Agustus |
+| Dashboard Connections "Dipakai Di" pada `NextHD Photo` | ✅ | `get_dashboard_data()` di `nexthd_photo.py` — badge "Connections" real-time dihitung dari child table `NextHD Photo Link` di 4 parent (Ticket/Asset/Problem/Known Error), bukan field statis tersimpan. Trade-off: tidak bisa dipakai untuk filter/Report View (bukan field DB) — kalau nanti butuh laporan semacam itu perlu solusi tambahan terpisah. **Terpasang, perlu re-test dengan foto baru** (foto contoh lama sudah ikut terhapus tombol Reset Data Demo) | 28 Agustus |
+| Tombol admin "Reset Data Demo" | ✅ | Custom Page `nexthd-reset-data` (shortcut section "Admin" di Workspace NextHD) memanggil `reset_demo_data()` di `nexthd/api.py`. Hapus 6 DocType transaksional (Ticket, Problem, Change Request, Known Error, Asset, Photo) + child table terkait, pertahankan data master (Category, Team, SLA Policy). Akses System Manager only (dicek di backend via `frappe.get_roles`), 2x konfirmasi (dialog + ketik `RESET` persis), backup otomatis (`frappe.utils.backups.new_backup()`), counter `tabSeries` ikut direset. **Test sungguhan berhasil:** 14 Ticket, 15 Problem, 3 Change Request, 2 Known Error, 6 Asset, 4 Photo terhapus, backup terbuat, data master utuh | 28 Agustus |
 
 ---
 
@@ -49,6 +53,8 @@
 | Bug | Status | Keterangan | PIC |
 |---|---|---|---|
 | Business Hours "Sabtu" — `is_working_day=1` tidak konsisten dengan default `install.py` | 🔴 | Audit 24 Agustus menemukan production punya Sabtu sebagai hari kerja (`is_working_day=1`), padahal `install.py` (setelah patch hari yang sama) men-set default Sabtu **bukan** hari kerja (`0`). Belum diketahui mana yang benar — kalau Sabtu memang sengaja jadi hari kerja, `install.py` perlu disesuaikan lagi; kalau tidak, data production perlu dikoreksi ke `0`. **Belum ada tindakan diambil, menunggu keputusan Efendy** | Efendy (keputusan) → Claude (eksekusi) |
+| `Link Type must be set first` — `frappe.get_doc("Workspace","NextHD").save()` gagal | 🔴 | Row `tabWorkspace Link` (label "Reporting Data", `link_to=/app/nexthd-report`) punya `link_type` kosong. Setiap edit Workspace NextHD lewat cara normal (`doc.save()`) gagal validasi; workaround `frappe.db.set_value()` (skip validasi) dipakai sementara, tidak scalable. Opsi fix: (A) ubah link agar mengarah ke Workspace "NextHD Report" secara keseluruhan, atau (B) isi `link_type` dengan nilai valid tanpa ubah tujuan | Claude + Efendy |
+| Rename Module "Next Helpdesk" → "NextHD" belum dieksekusi | 🔴 | `tabModule Def` masih "Next Helpdesk" — sidebar module-based (Report page, Page kustom) masih menampilkan header lama. Dikonfirmasi 28 Agustus bukan Workspace nyasar. Perlu rename `Module Def` + update `modules.txt`, risiko menengah, sesi terpisah dengan backup | Claude + Efendy |
 
 ---
 
@@ -62,6 +68,7 @@
 | Merge tiket duplikat | ⬜ | Field `merged_into`, status "Digabung" | — |
 | Auto-suggest Knowledge Article saat bikin tiket | ⬜ | Search artikel Publik yang cocok sebelum tiket disubmit | Knowledge Article |
 | Dashboard trend chart | ⬜ | Tren volume tiket per minggu, breakdown kategori | — |
+| Wipe Data Testing Tool — versi lengkap (UI checkbox per DocType) | ⬜ | Versi ringkas sudah live sebagai tombol "Reset Data Demo" (28 Agustus, lihat tabel Fitur Inti) — desain lengkap dengan granularitas per-DocType di bawah masih opsional kalau dibutuhkan | Reset Data Demo |
 
 ### Detail Desain: Knowledge Article
 
@@ -98,7 +105,7 @@ baca, bukan submit. Detail teknis dicek saat implementasi.
 | Integrasi PRTG → auto-create tiket | ⬜ | PRTG deteksi server down → otomatis bikin tiket |
 | Arsip/retensi tiket lama | ⬜ | Tiket ditutup >1 tahun di-archive, bukan dihapus |
 | **Generalisasi ke domain non-IT** | ⬜ | Asset Category/Attribute jadi EAV supaya bisa dipakai domain lain (bengkel, mesin pabrik, dst) — desain lengkap di bawah. *(Dipindah dari `ARSITEKTUR.md §8`, 23 Agustus)* |
-| **Wipe Data Testing Tool** | ⬜ | `NextHD Data Wipe Tool`, whitelist DocType, konfirmasi eksplisit — desain lengkap di bawah. *(Dipindah dari `ARSITEKTUR.md §9`, 23 Agustus)* |
+| **Wipe Data Testing Tool (versi lengkap)** | ⬜ | `NextHD Data Wipe Tool`, whitelist DocType per-checkbox, konfirmasi eksplisit, dry-run preview — desain lengkap di bawah. **Versi ringkas (tanpa checkbox, hapus semua sekaligus) sudah live sebagai tombol "Reset Data Demo", 28 Agustus** — lihat tabel Fitur Inti. *(Dipindah dari `ARSITEKTUR.md §9`, 23 Agustus)* |
 
 ### Detail Desain: Generalisasi ke Domain Non-IT
 
@@ -134,9 +141,14 @@ pun dieksekusi. Tidak mendesak, ditunda sampai ada kebutuhan nyata pakai domain 
 **Yang tidak berubah:** semua field relasi ke Asset di DocType lain, Workflow, Client
 Script tombol otomatis — logicnya generik, tidak menyentuh field spesifik-domain.
 
-### Detail Desain: Wipe Data Testing Tool
+### Detail Desain: Wipe Data Testing Tool (Versi Lengkap)
 
-**Status:** Desain final disepakati 20 Agustus 2026, belum diimplementasi.
+**Status:** Desain final disepakati 20 Agustus 2026, belum diimplementasi sepenuhnya —
+**versi ringkas** (tombol "Reset Data Demo", hapus semua DocType transaksional sekaligus,
+tanpa checkbox per-DocType) **sudah live 28 Agustus** dan mencakup sebagian besar prinsip
+di bawah (whitelist hardcoded, backup otomatis, konfirmasi eksplisit, reset `tabSeries`).
+Bagian yang **belum** ada di versi live: UI checkbox pilih DocType satu-satu, dry-run/preview
+jumlah record sebelum hapus, dan log audit terpisah (siapa/kapan reset dijalankan).
 
 **Tujuan:** hapus data transaksional testing (Ticket, Problem, CR, Asset, Known Error)
 tanpa menyentuh data konfigurasi/master (Business Hours, Holiday, SLA Policy, Team,
@@ -167,10 +179,10 @@ input UI — supaya tidak bisa diakali lewat manipulasi request. Setelah wipe, `
 untuk prefix terkait juga direset supaya penomoran mulai bersih (berkaca dari bug counter
 tidak sinkron, 20 Agustus).
 
-**Belum diputuskan sebelum implementasi:**
-- Siapa yang boleh akses tool ini? (rekomendasi: IT Manager saja)
-- Perlu backup otomatis sebelum wipe?
-- Kapan waktu eksekusi pertama (status "nanti saja" per keputusan 20 Agustus)
+**Belum diputuskan sebelum implementasi (bagian yang belum ada di versi ringkas 28 Agustus):**
+- Perlu checkbox per-DocType (bukan hapus semua sekaligus)?
+- Perlu log aktivitas reset (siapa, kapan) ke DocType audit terpisah?
+- Perlu kunci tambahan supaya reset tidak sengaja dipakai di luar konteks demo/testing?
 
 ---
 
@@ -199,6 +211,9 @@ tidak sinkron, 20 Agustus).
 | Link Telegram untuk user test `test.requester` | ⬜ | Belum pernah kirim `/start`+`/link`, bukan bug | Efendy |
 | Konfirmasi `bench migrate` + `bench restart` sudah jalan pasca commit `a69df61` | ✅ | Terkonfirmasi 24 Agustus — sidebar & number card foto sudah muncul di production setelah fix tambahan (lihat root cause di tabel fitur di atas) | Efendy |
 | Pemetaan tanggal Cuti Bersama 2026 belum dicek silang ke SKB asli | ⬜ | Data ditambahkan berdasar asumsi pola umum kalender cuti bersama Indonesia, bukan dibaca langsung dari teks SKB 3 Menteri | Efendy |
+| Re-test Dashboard Connections "Dipakai Di" dengan foto baru | ⬜ | Foto contoh lama ikut terhapus tombol Reset Data Demo sebelum sempat ditest ulang — perlu buat foto baru → pakai di 1 Ticket → cek badge muncul di form Photo | Efendy |
+| `Link Type` kosong di `tabWorkspace Link` "Reporting Data" | 🔴 | Lihat tabel Bug Perlu Diperbaiki di atas | Claude + Efendy |
+| Rename Module "Next Helpdesk" → "NextHD" | 🔴 | Lihat tabel Bug Perlu Diperbaiki di atas | Claude + Efendy |
 
 ---
 
