@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-29 09:45 WIB (Item JJ selesai — field terstruktur lama di `NextHD Asset` (brand/model/cpu/ram/dst) dihapus karena duplikat dengan EAV, `search_fields` & report `Detail Aset Lengkap` disesuaikan; `test_nexthd_asset.py` dicatat sebagai pending untuk Devin)
+> **Last updated:** 2026-08-29 17:45 WIB (Item DD ditutup — bug `Link Type must be set first` pada Workspace NextHD sudah diperbaiki, termasuk regresi sidebar "NextHD Reporting" yang sempat hilang akibat proses fix, sudah dikembalikan dan diverifikasi permanen)
 
 ---
 
@@ -49,7 +49,7 @@
 - SLA monitoring otomatis berbasis jam kerja (warning 30 menit sebelum breach), termasuk **titik-mulai resolution saat "Mulai Kerjakan" + pause/resume saat "Menunggu User"** (PR #8, bugfix `76ce3e9`) — **✅ live + terverifikasi**
 - Priority otomatis dari matriks Impact × Urgency, dengan override manual untuk Agent Manager/IT Manager (PR #7) — **✅ live + terverifikasi**
 - Multi-tim dengan assignment agent
-- Custom reports: Tiket per Bulan, Tiket per Agent, Tiket per Kategori, Tiket per Prioritas (breach SLA), SLA Compliance Bulanan, Aset Bermasalah, Detail Aset Lengkap — **kartu shortcut dashboard "Laporan" sudah ditambah (26 Agustus, fix `report_ref_doctype`+cache, menunggu konfirmasi visual)**, sidebar kiri submenu masih di item AA di bawah
+- Custom reports: Tiket per Bulan, Tiket per Agent, Tiket per Kategori, Tiket per Prioritas (breach SLA), SLA Compliance Bulanan, Aset Bermasalah, Detail Aset Lengkap — **kartu shortcut dashboard "Laporan" sudah ditambah (26 Agustus, fix `report_ref_doctype`+cache, menunggu konfirmasi visual)**, sidebar kiri submenu 6 link Report masih di item AA, sidebar "NextHD Reporting" (11 shortcut Detail Report Lengkap) sudah live sejak 27 Agustus dan dikonfirmasi permanen 29 Agustus (lihat item DD)
 - Foto/gambar reusable & bisa di-link antar Ticket/Problem/Asset/Known Error (PR #9) — **✅ live + terverifikasi 24 Agustus**, termasuk sidebar & dashboard Number Card. **Shortcut dashboard "NextHD Photo" (kartu terpisah di section Konfigurasi) ditambah 26 Agustus**, sempat tidak muncul karena cache — sudah difix, menunggu konfirmasi visual. **28 Agustus:** naming series diubah ke `IMG-YYMM-####`, field Judul Foto/Lokasi/Kategori ditambah, dan badge "Dipakai Di" (Dashboard Connections, real-time dari child table, tidak disimpan sebagai field) terpasang di form Photo — **✅ terpasang, perlu re-test dengan foto baru**
 - Tombol admin "Reset Data Demo" (hapus semua data transaksi untuk testing, System Manager only, 2x konfirmasi + backup otomatis) — **✅ live + terverifikasi end-to-end 28 Agustus**
 - Generalisasi NextHD Asset ke pola EAV (`NextHD Asset Category` + `NextHD Asset Attribute`) — **✅ live 28 Agustus malam, terverifikasi aman 29 Agustus** (item II). **29 Agustus (lanjutan):** field terstruktur lama (brand/model/cpu/ram/storage/os/dst di section PC/Network/Printer) yang sudah duplikat dengan EAV **dihapus dari form**, `search_fields` & report `Detail Aset Lengkap` disesuaikan (item JJ)
@@ -62,23 +62,11 @@
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `POLA_KERJA_DAN_BUG.md`.
 > Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/DAFTAR_FITUR.md`.
 
-### ✅ Item JJ — SELESAI (29 Agustus, ~09:45 WIB): Cleanup Field Terstruktur Asset (Duplikat EAV)
+### ✅ Item DD — SELESAI (29 Agustus, ~17:45 WIB): Bug `Link Type must be set first` pada Workspace NextHD
 
 | # | Item | Keterangan | PIC |
 |---|---|---|---|
-| JJ | Hapus field terstruktur lama di `NextHD Asset` yang sudah duplikat dengan child table EAV (`asset_attributes`) | **Scope disepakati Efendy:** hapus semua field terstruktur di section PC/Laptop/Server (`brand`, `model`, `serial_number`, `cpu`, `ram`, `storage`, `os` + 4 column break), Network Device (`net_brand`, `net_model`, `net_serial_number`, `ip_address`, `mac_address`, `device_role` + 2 column break), Printer (`printer_brand`, `printer_model`, `printer_serial_number`, `printer_type`) — total 20 field + 4 column break. Field catatan bebas (`peripheral_notes`, `net_notes`, `printer_notes`, `other_description`) **dipertahankan semua**, section "Lainnya" tidak diubah. **Langkah verifikasi sebelum eksekusi:** (1) script `bench console` cek backfill EAV untuk 6/6 record Asset existing — semua nilai field lama sudah ketemu persis di `Asset Attribute`, aman; (2) cek referensi field di Property Setter/Client Script/Report/Print Format — ditemukan Property Setter `search_fields` (`asset_name,assigned_to,serial_number`) dan report `detail_aset_lengkap.py` (raw SQL baca kolom lama) yang perlu disesuaikan; Client Script & report lain ternyata false positive (substring match, bukan field asli). **Eksekusi:** `nexthd_asset.json` ditulis ulang (field_order dirapikan), `search_fields` diupdate jadi `asset_name,assigned_to`, `detail_aset_lengkap.py` ditulis ulang berbasis JOIN ke `NextHD Asset Attribute` (kolom baru: Spesifikasi/Brand/Serial Number/Sumber/Catatan, agregat via `GROUP_CONCAT`). `bench migrate` + clear-cache berhasil, sudah di-commit (`d964531`) dan push (`b148223`). **Terverifikasi Efendy via screenshot:** form Asset bersih (cuma catatan + EAV), report "Detail Aset Lengkap" tampil data EAV dengan benar, report "Aset Bermasalah" tetap normal, search Link ke Asset masih jalan. **Catatan:** commit yang sama ikut membawa perubahan tak terkait di `aset_bermasalah.json`/`.py` (filter `asset_type`→`asset_category`) — dikonfirmasi ini perubahan terpisah yang sudah ada di working directory sebelum sesi ini (bukan dari script Claude), sudah diverifikasi jalan normal via screenshot, tidak ada regresi. **Pending (belum digarap, prioritas rendah):** `test_nexthd_asset.py` masih punya beberapa test method (sekitar baris 272, 349, 408) yang meng-assert field lama (`asset.brand`, `.model`, `.serial_number`, dst) — akan gagal kalau dijalankan, perlu direvisi/dihapus di sesi Devin berikutnya | Claude + Efendy |
-
-### ✅ Item II — DITUTUP (29 Agustus, ~08:15 WIB): Struktur EAV `NextHD Asset` Dikonfirmasi Aman
-
-| # | Item | Keterangan | PIC |
-|---|---|---|---|
-| II | Investigasi struktur EAV `NextHD Asset` (`asset_category` `reqd=1`, `asset_attributes`) yang sempat dicurigai sebagai perubahan tak terdokumentasi | **Hasil investigasi (script `bench console` + `git log`) — semua AMAN:** DocType `NextHD Asset Category` & `NextHD Asset Attribute` sudah ada di database, kolom fisik `asset_category` sudah ter-migrate, **ke-6 record NextHD Asset existing (AST-2608-0001 s/d 0006) semua sudah terisi `asset_category`-nya (0 kosong)**, 7 record master Asset Category, 19 baris Asset Attribute sudah terpakai. **Siapa/kapan (dari `git log`):** commit `281072a` ("Update devin eav") dan `81889c0` ("Update devin attribute eav") oleh **silverefendy**, Jumat 28 Agustus 2026 23:07:42 WIB dan setelahnya — pekerjaan sah, sekadar belum sempat terdokumentasi/dilaporkan ke sesi chat sebelumnya, BUKAN perubahan liar/insiden. Tidak ada tindakan perbaikan yang diperlukan | Efendy (eksekusi), Claude (verifikasi) |
-
-### 🔴 Item DD — Bug Pending: `Link Type must be set first` pada Workspace NextHD (28 Agustus)
-
-| # | Item | Keterangan | PIC |
-|---|---|---|---|
-| DD | `frappe.get_doc("Workspace", "NextHD").save()` gagal validasi | Row `tabWorkspace Link` (`name=u6nb1c41c1`, label "Reporting Data", `link_to=/app/nexthd-report`) punya `link_type` kosong — link ganjil yang sudah teridentifikasi sejak sesi pagi 28 Agustus, belum diperbaiki. Setiap kebutuhan edit Workspace NextHD lewat `frappe.get_doc().save()` (cara normal) akan gagal karena validasi ini; workaround sementara `frappe.db.set_value()` (skip validasi penuh) dipakai untuk bug shortcut sidebar, **tidak scalable** untuk perubahan struktural lebih besar. Opsi fix: (A) ubah jadi link ke Workspace "NextHD Report" secara keseluruhan, atau (B) isi `link_type` dengan nilai valid tanpa ubah tujuan link. Detail di `docs/POLA_KERJA_DAN_BUG.md` bug session 28 Agustus | Claude + Efendy |
+| DD | `frappe.get_doc("Workspace", "NextHD").save()` gagal validasi | **Root cause:** row `tabWorkspace Link` (`name=u6nb1c41c1`, label "Reporting Data", `link_to=/app/nexthd-report`, `type=URL`, `link_type` kosong) — sisa percobaan lama yang tidak pernah valid (Page `nexthd-report` yang dimaksud tidak pernah ada di `tabPage`). **Percobaan gagal:** set `link_type="Workspace"` → ditolak (field cuma terima DocType/Page/Report); set `link_type="Page"` → `LinkValidationError` karena Page `nexthd-report` tidak eksis. **Fix final:** baris "Reporting Data" **dihapus total** dari `tabWorkspace Link` — fungsinya memang sudah digantikan sidebar "NextHD Reporting" (dibuat 27 Agustus lewat UI, mengarah ke Workspace "NextHD Report" berisi 11 shortcut report). Setelah dihapus, `doc.save()` berhasil dan menulis ulang fixture `nexthd/next_helpdesk/workspace/nexthd/nexthd.json`. **Regresi ditemukan & diperbaiki dalam sesi yang sama:** proses `doc.save()` di atas sempat menghapus item sidebar manual "NextHD Reporting" dari `Workspace Sidebar Item` (root cause: `Workspace Sidebar.standard` ternyata `0`, bukan `1` — menurut `POLA_KERJA_DAN_BUG.md §1.C`, `standard` harus `1` agar `export_sidebar()` menulis file & perubahan permanen). Fix: `standard` diset ke `1` via `frappe.db.set_value()`, lalu "NextHD Reporting" ditambahkan kembali lewat UI **"panah ke bawah (kiri atas) → Edit Sidebar"** (BUKAN via titik tiga kanan atas — lokasi menu berbeda dari dugaan awal). **Verifikasi akhir (semua ✅):** `doc.save()` Workspace NextHD jalan tanpa error berulang kali, sidebar "NextHD" tetap 16 item lengkap (termasuk "NextHD Reporting"), fixture `nexthd/nexthd/workspace_sidebar/nexthd.json` berisi label "NextHD Reporting". **Catatan tambahan:** saat diklik, "NextHD Reporting" berpindah ke Workspace "NextHD Report" yang sidebar-nya sendiri cuma 2 item (Dashboard + NextHD Report) — ini **bukan bug**, memang workspace itu didesain sebagai halaman kumpulan shortcut report, bukan hub navigasi. Detail kronologi lengkap di `docs/POLA_KERJA_DAN_BUG.md` bug session 29 Agustus | Claude + Efendy |
 
 ### 🔴 Item EE — Task Pending: Rename Module "Next Helpdesk" → "NextHD"
 
@@ -126,6 +114,7 @@
 | HH | Tombol "Reset Data Demo" — hapus semua data transaksi (System Manager only) | Test sungguhan berhasil: 14 Ticket, 15 Problem, 3 Change Request, 2 Known Error, 6 Asset, 4 Photo terhapus; backup otomatis, data master tidak ikut terhapus, penomoran `tabSeries` ikut direset | Efendy |
 | II | Generalisasi EAV `NextHD Asset` (`NextHD Asset Category` + `NextHD Asset Attribute`) | `bench console`: DocType ada di DB, kolom fisik ter-migrate, 6/6 record Asset existing sudah terisi `asset_category`. Commit `281072a`+`81889c0`, 28 Agustus 23:07 WIB | Efendy |
 | JJ | Cleanup field terstruktur Asset lama (duplikat EAV) + rewrite `Detail Aset Lengkap` | Field brand/model/cpu/ram/storage/os/dst (20 field + 4 column break) dihapus dari `nexthd_asset.json`; `search_fields` & report disesuaikan; commit `d964531` → `b148223`, 29 Agustus. Terverifikasi via screenshot: form bersih, report EAV jalan, search Asset jalan | Efendy |
+| DD | Bug `Link Type must be set first` pada Workspace NextHD | Row "Reporting Data" bermasalah dihapus, `doc.save()` berhasil. Regresi sidebar "NextHD Reporting" (sempat hilang, root cause `Workspace Sidebar.standard=0`) diperbaiki dalam sesi sama, dikonfirmasi permanen 29 Agustus ~17:45 WIB | Efendy |
 
 > **Catatan Item E:** user test `test.requester@ciptamebel.co.id` sendiri belum pernah kirim `/start`+`/link` ke bot (field `telegram_chat_id` masih kosong untuk akun ini) — tapi ini bukan bug, cuma user dummy tsb memang belum di-link manual. Bot-nya sendiri sudah terbukti bekerja pakai akun Telegram lain.
 
@@ -144,7 +133,7 @@
 | Q | Notifikasi Telegram untuk Problem/CR | Sengaja ditunda, fokus ke fitur lain dulu | - |
 | R | Laporan bulanan otomatis (jumlah tiket, MTTR) | Usulan, belum dikerjakan | - |
 | V | Link Telegram untuk user test `test.requester` | Belum pernah kirim `/start`+`/link` — kalau mau dites tuntas, tinggal eksekusi manual + rerun script verifikasi | Efendy |
-| W2 | `test_nexthd_asset.py` — test lama assert field yang sudah dihapus | Beberapa test method (sekitar baris 272, 349, 408) meng-assert `asset.brand`, `.model`, `.serial_number`, dst yang sudah tidak ada di form NextHD Asset (dihapus di item JJ, 29 Agustus). Test ini akan gagal kalau dijalankan — perlu direvisi/dihapus. Sengaja tidak digarap di sesi yang sama dengan item JJ supaya scope tidak melebar ke test suite; cocok untuk task Devin terpisah | Devin |
+| W2 | `test_nexthd_asset.py` — test lama assert field yang sudah dihapus, lebih luas dari dugaan awal | Beberapa test method (sekitar baris 272, 349, 408) meng-assert `asset.brand`, `.model`, `.serial_number`, dst yang sudah tidak ada di form NextHD Asset (dihapus di item JJ, 29 Agustus). **Update 29 Agustus (uji coba sesi lanjutan):** dari 16 test, 8 gagal — TAPI mayoritas kegagalan (6 test) ternyata bukan dari field yang dihapus, melainkan `MandatoryError: asset_category` (field wajib sejak migrasi EAV 28 Agustus, test lama tidak mengisi ini), 1 `DuplicateEntryError` (sisa data test tidak ke-cleanup), 2 `AssertionError` ekspektasi salah (`None` vs `""`). Cakupan masalah test suite ini lebih luas dari dugaan awal — perlu revisi menyeluruh, bukan cuma soal field lama. Testing sempat diaktifkan sementara (`allow_tests=true`) untuk diagnosa, sudah dimatikan lagi. Cocok untuk task Devin terpisah, prioritas rendah, tidak mendesak | Devin |
 
 > **Item S (Generalisasi non-IT/EAV) sudah dipindah ke tabel "SUDAH Live & Terverifikasi" di atas** (lihat item II & JJ) — dikerjakan 28-29 Agustus, terverifikasi aman. Tidak lagi berstatus wacana.
 >
@@ -211,10 +200,11 @@
 | Housekeeping struktur dokumentasi — `HANDOFF.md` dipindah dari root repo ke `docs/HANDOFF.md` | ✅ 28 Agustus. `README.md` diperbarui (link dokumentasi mengikuti struktur `docs/` multi-file terbaru). Sekarang semua file `.md` project konsisten berada di `docs/` (README.md tetap di root sesuai konvensi GitHub) |
 | Generalisasi EAV `NextHD Asset` (item II/S) — `NextHD Asset Category` + `NextHD Asset Attribute` | ✅ Dikerjakan 28 Agustus malam (commit `281072a`+`81889c0`, oleh Efendy/Devin), diverifikasi aman 29 Agustus pagi: DocType & kolom fisik ter-migrate, 6/6 record Asset existing sudah terisi kategorinya, 7 record master, 19 baris attribute terpakai |
 | Cleanup field terstruktur Asset lama + rewrite `Detail Aset Lengkap` berbasis EAV (item JJ) | ✅ 29 Agustus, commit `d964531` → `b148223`. 20 field + 4 column break dihapus dari `nexthd_asset.json`; Property Setter `search_fields` diupdate (`asset_name,assigned_to,serial_number` → `asset_name,assigned_to`); `detail_aset_lengkap.py` ditulis ulang pakai `LEFT JOIN` + `GROUP_CONCAT` ke `NextHD Asset Attribute`. Terverifikasi via screenshot Efendy: form bersih, report EAV jalan, report "Aset Bermasalah" tetap normal, search Link ke Asset jalan |
+| Bug `Link Type must be set first` pada Workspace NextHD (item DD) + regresi sidebar "NextHD Reporting" | ✅ 29 Agustus ~17:45 WIB. Row "Reporting Data" (`link_type` kosong, sisa percobaan lama yang tak pernah valid) dihapus dari `tabWorkspace Link`. `doc.save()` berhasil. Regresi: `doc.save()` sempat menghapus "NextHD Reporting" dari sidebar karena `Workspace Sidebar.standard=0` — diperbaiki ke `1`, item ditambahkan kembali via UI "Edit Sidebar" (menu di panah kiri atas, bukan titik tiga kanan atas), diverifikasi permanen via `bench console` berulang kali (`doc.save()` tetap sukses, 16 item sidebar tetap utuh, fixture ter-update) | Efendy |
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-29 09:45 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-29 17:45 WIB.*
 
 ---
 
@@ -279,3 +269,28 @@
 **Pelajaran:** kalau memakai `git add .` di server yang mungkin punya perubahan lain menumpuk, selalu `git status`/`git diff` dulu sebelum commit untuk memastikan tidak ada perubahan tak terduga ikut ter-commit tanpa direview — di kasus ini aman, tapi bisa jadi masalah kalau perubahan menumpuk itu ternyata belum siap/salah.
 
 **Pending untuk sesi berikutnya (item W2):** `test_nexthd_asset.py` perlu direvisi (hapus/update test yang assert field lama) — cocok untuk task Devin terpisah, tidak mendesak.
+
+---
+
+## Update 2026-08-29 17:45 WIB — Item DD Selesai: Bug Workspace Link + Regresi Sidebar "NextHD Reporting"
+
+**Konteks:** Menindaklanjuti item DD (pending sejak 28 Agustus) — bug `Link Type must be set first` yang menghalangi `doc.save()` normal pada Workspace NextHD.
+
+**Kronologi fix:**
+1. Row bermasalah `tabWorkspace Link` (`name=u6nb1c41c1`, label "Reporting Data", `link_type` kosong, `link_to=/app/nexthd-report`) dicek ulang — Page `nexthd-report` yang dituju **tidak pernah ada** di `tabPage` (yang eksis cuma `nexthd-reset-data`), jadi baris ini memang sejak awal tidak pernah valid/berfungsi.
+2. Dua percobaan set `link_type` (`Workspace`, lalu `Page`) sama-sama gagal validasi. Diputuskan **hapus total** baris tersebut — fungsinya sudah digantikan sidebar "NextHD Reporting" (dibuat 27 Agustus via UI, mengarah ke Workspace "NextHD Report" berisi 11 shortcut report).
+3. Setelah dihapus, `frappe.get_doc("Workspace", "NextHD").save()` **berhasil** — fixture `nexthd/next_helpdesk/workspace/nexthd/nexthd.json` ter-tulis ulang otomatis.
+
+**Regresi ditemukan dalam sesi yang sama:** setelah `doc.save()` di atas, item sidebar manual "NextHD Reporting" **hilang** dari `Workspace Sidebar Item` (15 item tersisa, semuanya auto-generate dari `Workspace.links`). Root cause: `Workspace Sidebar.standard` untuk record "NextHD" ternyata `0` (bukan `1`) — sesuai `POLA_KERJA_DAN_BUG.md §1.C`, `standard` harus `1` agar perubahan sidebar permanen dan `export_sidebar()` mau menulis file; kalau `0`, sidebar rawan tersapu ulang oleh proses lain (dalam kasus ini, kemungkinan besar oleh proses `doc.save()` Workspace itu sendiri yang memicu regenerasi).
+
+**Fix regresi:**
+1. `Workspace Sidebar.standard` diset dari `0` → `1` via `frappe.db.set_value()`.
+2. "NextHD Reporting" (`link_type: Workspace`, `link_to: NextHD Report`) ditambahkan kembali lewat UI — **catatan penting:** menu yang benar adalah ikon **panah ke bawah di kiri atas** halaman Workspace, bukan titik tiga (⋯) di kanan atas seperti dugaan sebelumnya di `POLA_KERJA_DAN_BUG.md §1.C`. Perlu koreksi kecil di dokumen tersebut untuk sesi berikutnya.
+3. Verifikasi berulang: `doc.save()` Workspace NextHD dipanggil lagi (2×) setelah fix — sidebar "NextHD" tetap 16 item lengkap (termasuk "NextHD Reporting") di kedua percobaan, tidak tersapu lagi.
+4. Fixture `nexthd/nexthd/workspace_sidebar/nexthd.json` dikonfirmasi berisi label "NextHD Reporting" (lokasi yang benar, sesuai `POLA_KERJA_DAN_BUG.md §1.C`).
+
+**Catatan tambahan (bukan bug):** saat "NextHD Reporting" diklik, tampilan berpindah ke Workspace "NextHD Report" yang sidebar-nya sendiri cuma 2 item (Dashboard + NextHD Report) — ini perilaku normal Frappe v16 (sidebar per-Workspace, bukan gabungan), bukan regresi lanjutan. Workspace "NextHD Report" dikonfirmasi masih utuh (`public=1`, `is_hidden=0`, 11 shortcut report).
+
+**Status akhir:** Item DD ditutup tuntas — bug asli dan regresi sampingannya sudah diverifikasi selesai, tidak ada data yang hilang permanen.
+
+**Pending untuk sesi berikutnya:** commit + push kode yang berubah oleh Efendy (`nexthd.json` Workspace fixture yang baru ter-generate, fixture Workspace Sidebar kalau ada perubahan file lain). Koreksi kecil di `POLA_KERJA_DAN_BUG.md §1.C` soal lokasi menu "Edit Sidebar" (panah kiri atas, bukan titik tiga kanan atas).
