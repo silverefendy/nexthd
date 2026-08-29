@@ -3,7 +3,7 @@
 > Frappe quirks, aturan wajib saat coding/debug, dan riwayat bug per sesi.
 > File ini yang paling sering bertambah tiap sesi baru.
 >
-> **Last updated:** 2026-08-28
+> **Last updated:** 2026-08-29
 
 ---
 
@@ -292,6 +292,9 @@ Untuk skrip yang perlu dijalankan sekali di server, lebih andal pakai `bench exe
 | **Memanggil fungsi backend asli untuk diagnosa "kenapa X tidak muncul di UI"** | Kasus nyata 27 Agustus: daripada terus menebak-nebak field mana yang salah, memanggil langsung `frappe.call(get_workspaces)` (fungsi asli `frappe.desk.desktop` yang dipakai untuk membangun sidebar) membuktikan backend sebenarnya sudah 100% benar — mempersempit pencarian ke arah frontend/lokasi file, bukan lagi ke data. **Pola ini berguna untuk kasus serupa lain**: cari fungsi resmi yang benar-benar dipanggil UI, panggil manual via console, baru simpulkan di lapisan mana masalahnya (backend vs frontend/cache/file) |
 | **Kode yang jalan dari klik tombol UI (web worker) TIDAK punya `PATH` selengkap terminal SSH** | Kasus nyata 28 Agustus: `subprocess.run(["bench", ...])` di dalam fungsi yang dipanggil dari tombol Desk gagal `FileNotFoundError: 'bench'`, padahal command sama persis jalan normal di terminal. **Untuk kebutuhan yang biasanya lewat CLI (backup, dll.) dari kode yang jalan di request web, selalu panggil fungsi Python internal-nya langsung**, jangan shell out ke binary `bench`. Lihat §1.E |
 | **Field reference balik many-to-many disimpan sebagai field tunggal** | Kasus nyata 28 Agustus (desain `NextHD Photo`): kalau 1 record bisa dipakai ulang di >1 dokumen berbeda (foto dipakai di beberapa Ticket/Asset), JANGAN simpan referensi baliknya sebagai field `reference_doctype`+`reference_name` tunggal — field itu akan tertimpa tiap kali dipakai di tempat baru, dan datanya jadi salah/hilang. Pakai `get_dashboard_data()` (badge Connections, real-time dari child table) sebagai gantinya — tidak ada risiko tertimpa, tapi trade-off-nya tidak bisa dipakai untuk filter Report View karena bukan field DB tersimpan |
+| **Sebelum menghapus field DocType yang dicurigai duplikat/usang, WAJIB 2 langkah verifikasi dulu** | Kasus nyata 29 Agustus (item JJ, cleanup EAV Asset): (1) **verifikasi backfill** — kalau field lama mau digantikan struktur baru (mis. EAV), cek dulu SEMUA record existing sudah punya data yang sama persis di struktur baru sebelum field lama dihapus; (2) **cek referensi** — grep field tersebut di Property Setter (`search_fields`, dsb.), Client Script, Report (`.py`/`.json`), dan Print Format. Field yang masih direferensikan tapi dihapus akan membuat fitur terkait diam-diam rusak/kosong (tanpa error) untuk data baru ke depannya, meski data lama tetap aman karena kolom fisik tidak ikut terhapus |
+| **Child table (Table fieldtype) TIDAK BISA dipakai di `search_fields` Property Setter** | Kasus nyata 29 Agustus: field `serial_number` dipindah dari DocField statis ke child table EAV (`asset_attributes`) — `search_fields` yang tadinya mereferensikan `serial_number` harus dihapus dari daftar (bukan diarahkan ke field child table), karena `search_fields` cuma bisa baca kolom di tabel utama DocType, bukan child table |
+| **`git add .` bisa membundel perubahan tak terkait ke commit yang sama** | Kasus nyata 29 Agustus: commit cleanup EAV Asset ikut membawa perubahan `aset_bermasalah.json`/`.py` yang sebenarnya sudah ada di working directory server sebelum sesi itu (kemungkinan sisa kerja sesi lain yang belum di-commit). Tidak berbahaya di kasus ini (sudah diverifikasi jalan normal), tapi **selalu `git status`/`git diff` dulu sebelum `git add .` + commit** kalau server punya kemungkinan perubahan menumpuk dari sesi/pekerjaan lain, supaya tidak ada perubahan tak terduga ikut ter-commit tanpa direview |
 
 ---
 
@@ -573,9 +576,41 @@ Sesi ini melakukan verifikasi tambahan (di luar 4 file yang sudah dicek sebelumn
 
 **Status:** Data untuk kasus TKT-2608-0001/PRB-2608-0001 sudah diperbaiki. Kode belum diubah — menunggu hasil test ulang sebelum diputuskan perlu PR fix atau tidak.
 
+### ✅ SELESAI — Bug Session 2026-08-29 (Cleanup Field Terstruktur NextHD Asset — Duplikat EAV, Item JJ)
+
+**Konteks:** Menindaklanjuti item II (28-29 Agustus) — struktur EAV `NextHD Asset` (`asset_category` + `asset_attributes`) dikonfirmasi sudah live sah (via Devin, 28 Agustus malam). Efendy meminta field terstruktur lama per `asset_type` (PC/Laptop/Server, Network Device, Printer) dihapus dari form karena sudah duplikat isinya dengan EAV. Field catatan bebas dipertahankan.
+
+**Langkah verifikasi (dilakukan berurutan, sebelum eksekusi apa pun — lihat aturan baru di §3):**
+
+1. **Verifikasi backfill EAV** — script `bench console` bandingkan 17 field lama (non-kosong) di 6 record `NextHD Asset` existing (`AST-2608-0001` s/d `0006`) vs baris `NextHD Asset Attribute` masing-masing. **Hasil: semua cocok persis, 0 data hilang** — aman untuk lanjut hapus field.
+2. **Cek referensi field** yang akan dihapus di 4 tempat:
+   - Property Setter `search_fields` (`NextHD Asset-main-search_fields`): isinya `asset_name,assigned_to,serial_number` — **field `serial_number` dipakai, wajib diupdate**.
+   - Client Script (scan semua yang `dt LIKE 'NextHD%'`): 2 hit awal (`cs_known_error_from_problem`, `a258744559`) — setelah dicek isi baris persisnya, **ternyata false positive** (substring "os" nyangkut di kata "phot**os**", bukan field `os` asli).
+   - Report modul "Next Helpdesk" (scan `query`+`json` di DB): 1 hit awal ("Tiket per Bulan") — juga **false positive** (substring "os" di "cl**os**ed_on").
+   - `grep` manual ke file `.py`/`.js` report & doctype Asset di repo (DB-level scan tidak menjangkau file report berbasis Python `execute()`): ditemukan **report `detail_aset_lengkap.py` melakukan raw SQL langsung baca 6 kolom yang akan dihapus** (`brand`, `model`, `serial_number`, `ip_address`, `mac_address`, `device_role`) — **wajib ditulis ulang**. Juga ditemukan `test_nexthd_asset.py` (test suite Devin) meng-assert beberapa field lama — **sengaja tidak digarap** di sesi ini (dicatat sebagai item W2 di `SUMMARY.md`, prioritas rendah untuk Devin).
+
+**Eksekusi:**
+- `nexthd_asset.json` ditulis ulang: 20 field (`brand`, `model`, `serial_number`, `cpu`, `ram`, `storage`, `os`, `net_brand`, `net_model`, `net_serial_number`, `ip_address`, `mac_address`, `device_role`, `printer_brand`, `printer_model`, `printer_serial_number`, `printer_type`) + 4 column break (`col_pc1`, `col_pc2`, `col_net1`, `col_net2`) dihapus dari `field_order` dan `fields`. Field catatan bebas (`peripheral_notes`, `net_notes`, `printer_notes`, `other_description`) dan section "Lainnya" **tidak diubah** — sesuai scope yang disepakati Efendy.
+- Property Setter `search_fields` diupdate via `frappe.db.set_value()`: `asset_name,assigned_to,serial_number` → `asset_name,assigned_to` (child table EAV tidak bisa dipakai di `search_fields` Link — lihat aturan baru di §3).
+- `detail_aset_lengkap.py` ditulis ulang total: `LEFT JOIN` ke `tabNextHD Asset Attribute`, kolom baru "Spesifikasi (EAV)" (agregat `attribute_name: attribute_value` per Asset via `GROUP_CONCAT ... ORDER BY att.idx`), plus kolom `brand`/`serial_number`/`sumber`/`catatan` yang ternyata sudah jadi kolom langsung di child table EAV (bukan cuma `attribute_name`/`attribute_value`/`unit` generik seperti desain awal di `DAFTAR_FITUR.md` — skema aktual dicek dulu via `DESCRIBE` sebelum menulis query).
+
+**Hasil `bench migrate` + verifikasi Efendy (screenshot, 3 halaman):**
+- Form `AST-2608-000X`: section PC/Network/Printer cuma tampil field catatan (Remarks/Catatan), EAV tetap terisi ✅
+- Report "Detail Aset Lengkap": kolom Spesifikasi (EAV)/Brand/dst terisi benar untuk semua 6 Asset ✅
+- Report "Aset Bermasalah": tetap tampil normal (2 asset bermasalah, chart & tabel jalan) ✅
+- Search Link ke Asset (field `affected_asset` di form Ticket): dropdown masih berfungsi ✅
+
+**Temuan sampingan (bukan bug, dicatat untuk kejelasan histori commit):** Commit yang sama (`d964531`, hasil `git add .`) ikut membawa perubahan tak terkait di `aset_bermasalah.json`/`.py` (filter diganti `asset_type` Select → `asset_category` Link). Dikonfirmasi via `git show d964531 -- <path>` bahwa perubahan ini **bukan** dari script Claude di sesi ini — sudah ada di working directory server sebelum sesi ini (kemungkinan sisa kerja Devin dari migrasi EAV 28 Agustus malam yang belum sempat di-commit terpisah). Sudah diverifikasi via screenshot jalan normal, tidak ada regresi.
+
+**Commit:** `d964531` (kerja utama Asset cleanup) → `b148223` (setelah merge dengan `e16e097` dari sesi lain pagi harinya).
+
+**Status:** ✅ Selesai & terverifikasi. Lihat item JJ di `SUMMARY.md §2` dan §3.1 di `ARSITEKTUR.md` untuk detail struktur final `NextHD Asset` pasca cleanup.
+
+**Pending untuk sesi berikutnya:** `test_nexthd_asset.py` (item W2) — beberapa test method meng-assert field yang sudah dihapus, akan gagal kalau dijalankan. Cocok untuk task Devin terpisah.
+
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-28.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-29.*
 
 ---
 
