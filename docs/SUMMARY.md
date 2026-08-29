@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-28 (housekeeping — `HANDOFF.md` dipindah dari root repo ke `docs/HANDOFF.md`, semua file `.md` project sekarang konsisten berada di `docs/`; sesi fitur `NextHD Photo` (naming series `IMG-YYMM-####`, field Judul/Lokasi/Kategori, Dashboard Connections "Dipakai Di"), tombol admin "Reset Data Demo" terverifikasi end-to-end; 2 bug pending baru: `Link Type` kosong di Workspace Link "Reporting Data", rename Module "Next Helpdesk"→"NextHD" masih tertunda)
+> **Last updated:** 2026-08-29 09:00 WIB (ditambahkan Item II — temuan risiko tinggi: struktur EAV `NextHD Asset` sudah live di repo `main` tanpa dokumentasi/verifikasi sebelumnya; sisanya tidak berubah dari 2026-08-28)
 
 ---
 
@@ -60,6 +60,14 @@
 
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `POLA_KERJA_DAN_BUG.md`.
 > Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/DAFTAR_FITUR.md`.
+
+### 🔴🔴 Item II — TEMUAN RISIKO TINGGI (29 Agustus, ~09:00 WIB): Struktur EAV `NextHD Asset` Sudah Live di Repo Tanpa Dokumentasi/Verifikasi
+
+| # | Item | Keterangan | PIC |
+|---|---|---|---|
+| II | `nexthd_asset.json` di `main` sudah berisi field `asset_category` (Link → `NextHD Asset Category`, **`reqd=1`**) dan `asset_attributes` (Table → `NextHD Asset Attribute`); folder DocType `nexthd_asset_category/` dan `nexthd_asset_attribute/` (lengkap `.json`+`.py`) juga sudah ada di repo | **Dikonfirmasi langsung dari GitHub API (29 Agustus, sesi ini)** — ini BUKAN cuma output layar sesi lalu, tapi sudah ter-commit penuh ke `main`. Strukturnya persis desain "Generalisasi Non-IT — Pendekatan B (EAV)" di `DAFTAR_FITUR.md` yang berstatus ⬜ **Belum Dikerjakan** (ditunda sampai ada kebutuhan nyata). **Belum diketahui:** (1) siapa/kapan commit ini dibuat — riwayat chat tidak mencatatnya, (2) apakah DocType `NextHD Asset Category`/`NextHD Asset Attribute` sudah ter-`bench migrate` ke database produksi, (3) apakah data existing `NextHD Asset` (asset lama) sudah punya `asset_category` terisi. **Risiko konkret:** kalau `asset_category` `reqd=1` di server tapi kategori belum diisi untuk asset lama, form create/edit NextHD Asset bisa gagal validasi total. **Sudah disiapkan script investigasi** (cek DocType exists, kolom fisik, data existing, meta reqd) — dijalankan Efendy, hasil ditunggu sebelum tindakan lanjutan apapun ke NextHD Asset | Claude + Efendy |
+
+> ⚠️ **Sampai investigasi ini tuntas, JANGAN create/edit record NextHD Asset apapun di UI produksi** — untuk menghindari kegagalan validasi tak terduga.
 
 ### 🔴 Item DD — Bug Pending: `Link Type must be set first` pada Workspace NextHD (28 Agustus)
 
@@ -128,7 +136,7 @@
 | P | SLA otomatis untuk Problem/Change Request | Saat ini SLA hanya untuk Ticket | - |
 | Q | Notifikasi Telegram untuk Problem/CR | Sengaja ditunda, fokus ke fitur lain dulu | - |
 | R | Laporan bulanan otomatis (jumlah tiket, MTTR) | Usulan, belum dikerjakan | - |
-| S | Generalisasi ke domain non-IT (Asset Category/Attribute EAV) | Rencana teknis ada di `DAFTAR_FITUR.md`, masih wacana | - |
+| S | Generalisasi ke domain non-IT (Asset Category/Attribute EAV) | Rencana teknis ada di `DAFTAR_FITUR.md` — **⚠️ per 29 Agustus, kodenya SUDAH ADA di repo (lihat Item II), status berubah dari "masih wacana" ke "sudah diimplementasi tanpa verifikasi", perlu investigasi urgent** | - |
 | V | Link Telegram untuk user test `test.requester` | Belum pernah kirim `/start`+`/link` — kalau mau dites tuntas, tinggal eksekusi manual + rerun script verifikasi | Efendy |
 
 > **Catatan:** rencana fitur besar (Knowledge Base publik, tag, CSAT, merge tiket, eskalasi
@@ -195,7 +203,7 @@
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-28.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-29 09:00 WIB.*
 
 ---
 
@@ -210,3 +218,20 @@
 **Bug tambahan difix:** `related_asset` tidak ter-copy otomatis saat "Buat Change Request dari Problem" (sekarang sudah), dan race condition di `frappe.client.set_value` yang menyebabkan field balik `Problem.change_request` gagal ter-set diam-diam (sudah difix + data lama di-backfill).
 
 **Item baru untuk sesi berikutnya:** Known Error tidak punya field balik ke Change Request yang dibuat darinya — belum ada tombol "Lihat Change Request Terkait" di Known Error. Prioritas rendah, bukan bug kritis.
+
+---
+
+## Update 2026-08-29 09:00 WIB — Temuan Item II: Struktur EAV NextHD Asset Sudah Live di Repo
+
+**Konteks:** Melanjutkan item pending dari `RANGKUMAN_SESI_2026-08-28_LANJUTAN_2` (§4 di rangkuman tersebut) soal output tak terduga terkait `nexthd_asset.json`.
+
+**Dikonfirmasi via GitHub API langsung (bukan asumsi):**
+- File `nexthd/next_helpdesk/doctype/nexthd_asset/nexthd_asset.json` di `main` sudah punya field `asset_category` (Link → `NextHD Asset Category`, **`reqd=1`**) dan `asset_attributes` (Table → `NextHD Asset Attribute`), berdampingan dengan field lama `asset_type` (Select).
+- Folder `nexthd/next_helpdesk/doctype/nexthd_asset_category/` dan `nexthd/next_helpdesk/doctype/nexthd_asset_attribute/` sudah ada lengkap (`.json` + `.py`).
+- Ini **identik** dengan desain "Generalisasi Non-IT — Pendekatan B (EAV)" di `DAFTAR_FITUR.md` yang sebelumnya berstatus ⬜ Belum Dikerjakan/wacana.
+
+**Belum diketahui:** siapa/kapan mengerjakan ini (tidak ada jejak di riwayat chat sesi manapun sejauh ini), apakah sudah `bench migrate` di server produksi, dan apakah data `NextHD Asset` existing sudah terisi `asset_category`-nya.
+
+**Tindakan diambil sesi ini:** dicatat sebagai **Item II** (risiko tinggi) di §2 dokumen ini, dan disiapkan script investigasi (cek DocType exists, kolom fisik tabel, isi data existing, status `reqd` di meta server) untuk dijalankan Efendy di server. **Rekomendasi: JANGAN create/edit NextHD Asset di UI sampai hasil investigasi keluar**, karena field `reqd=1` yang mungkin belum terisi untuk data lama berisiko membuat validasi form gagal total.
+
+**Langkah berikutnya:** setelah hasil script investigasi didapat dari Efendy, tentukan apakah perlu backfill data existing, migrate DocType baru, atau (kalau ternyata belum ter-migrate ke server) apakah perubahan ini perlu ditahan dulu dari `main` sampai siap dieksekusi dengan terkontrol.
