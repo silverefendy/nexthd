@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-29 08:15 WIB (Item II ditutup — struktur EAV `NextHD Asset` dikonfirmasi AMAN, sudah dikerjakan sah oleh Efendy/Devin 28 Agustus malam, migrate sudah jalan, data existing sudah lengkap; Item S dipindah dari "wacana" ke "selesai")
+> **Last updated:** 2026-08-29 09:45 WIB (Item JJ selesai — field terstruktur lama di `NextHD Asset` (brand/model/cpu/ram/dst) dihapus karena duplikat dengan EAV, `search_fields` & report `Detail Aset Lengkap` disesuaikan; `test_nexthd_asset.py` dicatat sebagai pending untuk Devin)
 
 ---
 
@@ -49,10 +49,10 @@
 - SLA monitoring otomatis berbasis jam kerja (warning 30 menit sebelum breach), termasuk **titik-mulai resolution saat "Mulai Kerjakan" + pause/resume saat "Menunggu User"** (PR #8, bugfix `76ce3e9`) — **✅ live + terverifikasi**
 - Priority otomatis dari matriks Impact × Urgency, dengan override manual untuk Agent Manager/IT Manager (PR #7) — **✅ live + terverifikasi**
 - Multi-tim dengan assignment agent
-- Custom reports: Tiket per Bulan, Tiket per Agent, Tiket per Kategori, Tiket per Prioritas (breach SLA), SLA Compliance Bulanan, Aset Bermasalah — **kartu shortcut dashboard "Laporan" sudah ditambah (26 Agustus, fix `report_ref_doctype`+cache, menunggu konfirmasi visual)**, sidebar kiri submenu masih di item AA di bawah
+- Custom reports: Tiket per Bulan, Tiket per Agent, Tiket per Kategori, Tiket per Prioritas (breach SLA), SLA Compliance Bulanan, Aset Bermasalah, Detail Aset Lengkap — **kartu shortcut dashboard "Laporan" sudah ditambah (26 Agustus, fix `report_ref_doctype`+cache, menunggu konfirmasi visual)**, sidebar kiri submenu masih di item AA di bawah
 - Foto/gambar reusable & bisa di-link antar Ticket/Problem/Asset/Known Error (PR #9) — **✅ live + terverifikasi 24 Agustus**, termasuk sidebar & dashboard Number Card. **Shortcut dashboard "NextHD Photo" (kartu terpisah di section Konfigurasi) ditambah 26 Agustus**, sempat tidak muncul karena cache — sudah difix, menunggu konfirmasi visual. **28 Agustus:** naming series diubah ke `IMG-YYMM-####`, field Judul Foto/Lokasi/Kategori ditambah, dan badge "Dipakai Di" (Dashboard Connections, real-time dari child table, tidak disimpan sebagai field) terpasang di form Photo — **✅ terpasang, perlu re-test dengan foto baru**
 - Tombol admin "Reset Data Demo" (hapus semua data transaksi untuk testing, System Manager only, 2x konfirmasi + backup otomatis) — **✅ live + terverifikasi end-to-end 28 Agustus**
-- Generalisasi NextHD Asset ke pola EAV (`NextHD Asset Category` + `NextHD Asset Attribute`) — **✅ live 28 Agustus malam, terverifikasi aman 29 Agustus** (lihat item S di bawah)
+- Generalisasi NextHD Asset ke pola EAV (`NextHD Asset Category` + `NextHD Asset Attribute`) — **✅ live 28 Agustus malam, terverifikasi aman 29 Agustus** (item II). **29 Agustus (lanjutan):** field terstruktur lama (brand/model/cpu/ram/storage/os/dst di section PC/Network/Printer) yang sudah duplikat dengan EAV **dihapus dari form**, `search_fields` & report `Detail Aset Lengkap` disesuaikan (item JJ)
 - **Rencana ke depan:** Knowledge Base publik (self-service), tag di tiket, CSAT — lihat `docs/DAFTAR_FITUR.md`
 
 ---
@@ -61,6 +61,12 @@
 
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `POLA_KERJA_DAN_BUG.md`.
 > Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/DAFTAR_FITUR.md`.
+
+### ✅ Item JJ — SELESAI (29 Agustus, ~09:45 WIB): Cleanup Field Terstruktur Asset (Duplikat EAV)
+
+| # | Item | Keterangan | PIC |
+|---|---|---|---|
+| JJ | Hapus field terstruktur lama di `NextHD Asset` yang sudah duplikat dengan child table EAV (`asset_attributes`) | **Scope disepakati Efendy:** hapus semua field terstruktur di section PC/Laptop/Server (`brand`, `model`, `serial_number`, `cpu`, `ram`, `storage`, `os` + 4 column break), Network Device (`net_brand`, `net_model`, `net_serial_number`, `ip_address`, `mac_address`, `device_role` + 2 column break), Printer (`printer_brand`, `printer_model`, `printer_serial_number`, `printer_type`) — total 20 field + 4 column break. Field catatan bebas (`peripheral_notes`, `net_notes`, `printer_notes`, `other_description`) **dipertahankan semua**, section "Lainnya" tidak diubah. **Langkah verifikasi sebelum eksekusi:** (1) script `bench console` cek backfill EAV untuk 6/6 record Asset existing — semua nilai field lama sudah ketemu persis di `Asset Attribute`, aman; (2) cek referensi field di Property Setter/Client Script/Report/Print Format — ditemukan Property Setter `search_fields` (`asset_name,assigned_to,serial_number`) dan report `detail_aset_lengkap.py` (raw SQL baca kolom lama) yang perlu disesuaikan; Client Script & report lain ternyata false positive (substring match, bukan field asli). **Eksekusi:** `nexthd_asset.json` ditulis ulang (field_order dirapikan), `search_fields` diupdate jadi `asset_name,assigned_to`, `detail_aset_lengkap.py` ditulis ulang berbasis JOIN ke `NextHD Asset Attribute` (kolom baru: Spesifikasi/Brand/Serial Number/Sumber/Catatan, agregat via `GROUP_CONCAT`). `bench migrate` + clear-cache berhasil, sudah di-commit (`d964531`) dan push (`b148223`). **Terverifikasi Efendy via screenshot:** form Asset bersih (cuma catatan + EAV), report "Detail Aset Lengkap" tampil data EAV dengan benar, report "Aset Bermasalah" tetap normal, search Link ke Asset masih jalan. **Catatan:** commit yang sama ikut membawa perubahan tak terkait di `aset_bermasalah.json`/`.py` (filter `asset_type`→`asset_category`) — dikonfirmasi ini perubahan terpisah yang sudah ada di working directory sebelum sesi ini (bukan dari script Claude), sudah diverifikasi jalan normal via screenshot, tidak ada regresi. **Pending (belum digarap, prioritas rendah):** `test_nexthd_asset.py` masih punya beberapa test method (sekitar baris 272, 349, 408) yang meng-assert field lama (`asset.brand`, `.model`, `.serial_number`, dst) — akan gagal kalau dijalankan, perlu direvisi/dihapus di sesi Devin berikutnya | Claude + Efendy |
 
 ### ✅ Item II — DITUTUP (29 Agustus, ~08:15 WIB): Struktur EAV `NextHD Asset` Dikonfirmasi Aman
 
@@ -119,6 +125,7 @@
 | GG | Field baru `NextHD Photo`: Judul Foto (`title_field`), Lokasi, Kategori (Link → `NextHD Category`) | Terpasang 28 Agustus | Efendy |
 | HH | Tombol "Reset Data Demo" — hapus semua data transaksi (System Manager only) | Test sungguhan berhasil: 14 Ticket, 15 Problem, 3 Change Request, 2 Known Error, 6 Asset, 4 Photo terhapus; backup otomatis, data master tidak ikut terhapus, penomoran `tabSeries` ikut direset | Efendy |
 | II | Generalisasi EAV `NextHD Asset` (`NextHD Asset Category` + `NextHD Asset Attribute`) | `bench console`: DocType ada di DB, kolom fisik ter-migrate, 6/6 record Asset existing sudah terisi `asset_category`. Commit `281072a`+`81889c0`, 28 Agustus 23:07 WIB | Efendy |
+| JJ | Cleanup field terstruktur Asset lama (duplikat EAV) + rewrite `Detail Aset Lengkap` | Field brand/model/cpu/ram/storage/os/dst (20 field + 4 column break) dihapus dari `nexthd_asset.json`; `search_fields` & report disesuaikan; commit `d964531` → `b148223`, 29 Agustus. Terverifikasi via screenshot: form bersih, report EAV jalan, search Asset jalan | Efendy |
 
 > **Catatan Item E:** user test `test.requester@ciptamebel.co.id` sendiri belum pernah kirim `/start`+`/link` ke bot (field `telegram_chat_id` masih kosong untuk akun ini) — tapi ini bukan bug, cuma user dummy tsb memang belum di-link manual. Bot-nya sendiri sudah terbukti bekerja pakai akun Telegram lain.
 
@@ -137,8 +144,9 @@
 | Q | Notifikasi Telegram untuk Problem/CR | Sengaja ditunda, fokus ke fitur lain dulu | - |
 | R | Laporan bulanan otomatis (jumlah tiket, MTTR) | Usulan, belum dikerjakan | - |
 | V | Link Telegram untuk user test `test.requester` | Belum pernah kirim `/start`+`/link` — kalau mau dites tuntas, tinggal eksekusi manual + rerun script verifikasi | Efendy |
+| W2 | `test_nexthd_asset.py` — test lama assert field yang sudah dihapus | Beberapa test method (sekitar baris 272, 349, 408) meng-assert `asset.brand`, `.model`, `.serial_number`, dst yang sudah tidak ada di form NextHD Asset (dihapus di item JJ, 29 Agustus). Test ini akan gagal kalau dijalankan — perlu direvisi/dihapus. Sengaja tidak digarap di sesi yang sama dengan item JJ supaya scope tidak melebar ke test suite; cocok untuk task Devin terpisah | Devin |
 
-> **Item S (Generalisasi non-IT/EAV) sudah dipindah ke tabel "SUDAH Live & Terverifikasi" di atas** (lihat item II) — dikerjakan 28 Agustus malam, terverifikasi aman 29 Agustus. Tidak lagi berstatus wacana.
+> **Item S (Generalisasi non-IT/EAV) sudah dipindah ke tabel "SUDAH Live & Terverifikasi" di atas** (lihat item II & JJ) — dikerjakan 28-29 Agustus, terverifikasi aman. Tidak lagi berstatus wacana.
 >
 > **Catatan lain:** rencana fitur besar (Knowledge Base publik, tag, CSAT, merge tiket, eskalasi
 > otomatis, dst) dipindahkan ke `docs/DAFTAR_FITUR.md` supaya tidak bercampur dengan open
@@ -202,10 +210,11 @@
 | Shortcut Workspace "Admin" (tombol Reset Data Demo) tidak muncul di UI | ✅ 28 Agustus. Root cause: Workspace v16 dikontrol field `content` (JSON blocks), bukan otomatis baca semua row `tabWorkspace Shortcut`. Fix: update `content` via `frappe.db.set_value()` langsung (skip validasi dokumen penuh karena bug lain — lihat item DD), dijalankan via `bench execute` (bukan `bench console`, supaya cabang `if/else` tidak salah parse indentasi) |
 | Housekeeping struktur dokumentasi — `HANDOFF.md` dipindah dari root repo ke `docs/HANDOFF.md` | ✅ 28 Agustus. `README.md` diperbarui (link dokumentasi mengikuti struktur `docs/` multi-file terbaru). Sekarang semua file `.md` project konsisten berada di `docs/` (README.md tetap di root sesuai konvensi GitHub) |
 | Generalisasi EAV `NextHD Asset` (item II/S) — `NextHD Asset Category` + `NextHD Asset Attribute` | ✅ Dikerjakan 28 Agustus malam (commit `281072a`+`81889c0`, oleh Efendy/Devin), diverifikasi aman 29 Agustus pagi: DocType & kolom fisik ter-migrate, 6/6 record Asset existing sudah terisi kategorinya, 7 record master, 19 baris attribute terpakai |
+| Cleanup field terstruktur Asset lama + rewrite `Detail Aset Lengkap` berbasis EAV (item JJ) | ✅ 29 Agustus, commit `d964531` → `b148223`. 20 field + 4 column break dihapus dari `nexthd_asset.json`; Property Setter `search_fields` diupdate (`asset_name,assigned_to,serial_number` → `asset_name,assigned_to`); `detail_aset_lengkap.py` ditulis ulang pakai `LEFT JOIN` + `GROUP_CONCAT` ke `NextHD Asset Attribute`. Terverifikasi via screenshot Efendy: form bersih, report EAV jalan, report "Aset Bermasalah" tetap normal, search Link ke Asset jalan |
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-29 08:15 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-29 09:45 WIB.*
 
 ---
 
@@ -239,3 +248,34 @@
 **Tidak ada tindakan perbaikan yang diperlukan.** Peringatan "jangan create/edit NextHD Asset" dari update sebelumnya (jam 09:00 pagi ini) **sudah dicabut** — form Asset aman dipakai normal.
 
 **Pelajaran untuk sesi berikutnya:** kalau menemukan perubahan kode/struktur yang tidak tercatat di riwayat chat, cek dulu `git log --oneline -- <path>` dan `git log -1 --format="%an %ad %s" -- <path>` sebelum menyimpulkan itu insiden — bisa jadi memang pekerjaan sah yang dilakukan di luar sesi chat tersebut (lewat Devin langsung, atau sesi lain).
+
+---
+
+## Update 2026-08-29 09:45 WIB — Item JJ Selesai: Cleanup Field Terstruktur Asset (Duplikat EAV)
+
+**Konteks:** Menindaklanjuti item II (EAV dikonfirmasi aman) — field terstruktur lama di `NextHD Asset` (per `asset_type`: PC/Laptop/Server, Network Device, Printer) sekarang sudah punya 2 tempat penyimpanan yang tumpang tindih dengan `asset_attributes` (EAV). Efendy minta field lama dihapus, field catatan bebas dipertahankan.
+
+**Langkah verifikasi sebelum eksekusi (wajib, sesuai pola project ini — jangan hapus field tanpa cek referensi & backfill dulu):**
+1. Script `bench console` bandingkan tiap field lama (non-kosong) di 6 Asset existing vs baris `NextHD Asset Attribute` — **semua cocok, 0 data hilang**.
+2. Cek referensi field yang akan dihapus di Property Setter, Client Script, Report, Print Format:
+   - Property Setter `search_fields` (`NextHD Asset-main-search_fields`) memakai `serial_number` — **wajib diupdate**.
+   - Report `detail_aset_lengkap.py` — raw SQL langsung baca 6 kolom yang akan dihapus — **wajib ditulis ulang**.
+   - Client Script (`a258744559`, `cs_known_error_from_problem`) dan report "Tiket per Bulan" sempat ke-flag tapi setelah dicek isi baris persisnya, ternyata **false positive** (substring match kata "os" di "phot**os**"/"cl**os**ed_on", bukan field `os` asli) — tidak perlu disentuh.
+   - `test_nexthd_asset.py` punya beberapa test method yang meng-assert field lama — akan gagal, **sengaja tidak digarap** di sesi ini (dicatat sebagai item W2, pending untuk Devin).
+
+**Eksekusi:**
+- `nexthd_asset.json`: 20 field (`brand`, `model`, `serial_number`, `cpu`, `ram`, `storage`, `os`, `net_brand`, `net_model`, `net_serial_number`, `ip_address`, `mac_address`, `device_role`, `printer_brand`, `printer_model`, `printer_serial_number`, `printer_type`) + 4 column break dihapus dari `field_order` dan `fields`. Field catatan bebas (`peripheral_notes`, `net_notes`, `printer_notes`, `other_description`) dan section "Lainnya" **tidak diubah**.
+- Property Setter `search_fields`: `asset_name,assigned_to,serial_number` → `asset_name,assigned_to` (child table EAV tidak bisa dipakai di `search_fields` Link).
+- `detail_aset_lengkap.py` ditulis ulang: `LEFT JOIN` ke `NextHD Asset Attribute`, kolom baru "Spesifikasi (EAV)" (agregat `attribute_name: attribute_value` via `GROUP_CONCAT`), plus kolom `brand`/`serial_number`/`sumber`/`catatan` yang ternyata sudah ada langsung sebagai kolom di child table EAV (bukan cuma `attribute_name`/`attribute_value`/`unit` generik seperti desain awal di `DAFTAR_FITUR.md`).
+
+**Hasil `bench migrate` + verifikasi Efendy (screenshot):**
+- Form NextHD Asset: section PC/Network/Printer cuma tampil field catatan, EAV tetap terisi ✅
+- Report "Detail Aset Lengkap": kolom Spesifikasi/Brand/dst terisi benar dari EAV ✅
+- Report "Aset Bermasalah": tetap tampil normal ✅
+- Search Link ke Asset (di form Ticket, field `affected_asset`) masih berfungsi ✅
+
+**Temuan sampingan (tidak berbahaya, dicatat untuk kejelasan):** commit yang sama (`d964531`) ikut membawa `git add .` perubahan tak terkait di `aset_bermasalah.json`/`.py` (filter diganti dari `asset_type` Select ke `asset_category` Link) — dikonfirmasi via `git show` bahwa ini **bukan** dari script Claude, melainkan perubahan yang sudah ada di working directory server sebelum sesi ini (kemungkinan sisa kerja Devin terkait migrasi EAV 28 Agustus malam yang belum sempat di-commit). Sudah diverifikasi jalan normal, tidak ada regresi — cuma "menumpang" commit karena `git add .`.
+
+**Pelajaran:** kalau memakai `git add .` di server yang mungkin punya perubahan lain menumpuk, selalu `git status`/`git diff` dulu sebelum commit untuk memastikan tidak ada perubahan tak terduga ikut ter-commit tanpa direview — di kasus ini aman, tapi bisa jadi masalah kalau perubahan menumpuk itu ternyata belum siap/salah.
+
+**Pending untuk sesi berikutnya (item W2):** `test_nexthd_asset.py` perlu direvisi (hapus/update test yang assert field lama) — cocok untuk task Devin terpisah, tidak mendesak.
