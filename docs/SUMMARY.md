@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-28 (housekeeping — `HANDOFF.md` dipindah dari root repo ke `docs/HANDOFF.md`, semua file `.md` project sekarang konsisten berada di `docs/`; sesi fitur `NextHD Photo` (naming series `IMG-YYMM-####`, field Judul/Lokasi/Kategori, Dashboard Connections "Dipakai Di"), tombol admin "Reset Data Demo" terverifikasi end-to-end; 2 bug pending baru: `Link Type` kosong di Workspace Link "Reporting Data", rename Module "Next Helpdesk"→"NextHD" masih tertunda)
+> **Last updated:** 2026-08-29 08:15 WIB (Item II ditutup — struktur EAV `NextHD Asset` dikonfirmasi AMAN, sudah dikerjakan sah oleh Efendy/Devin 28 Agustus malam, migrate sudah jalan, data existing sudah lengkap; Item S dipindah dari "wacana" ke "selesai")
 
 ---
 
@@ -52,6 +52,7 @@
 - Custom reports: Tiket per Bulan, Tiket per Agent, Tiket per Kategori, Tiket per Prioritas (breach SLA), SLA Compliance Bulanan, Aset Bermasalah — **kartu shortcut dashboard "Laporan" sudah ditambah (26 Agustus, fix `report_ref_doctype`+cache, menunggu konfirmasi visual)**, sidebar kiri submenu masih di item AA di bawah
 - Foto/gambar reusable & bisa di-link antar Ticket/Problem/Asset/Known Error (PR #9) — **✅ live + terverifikasi 24 Agustus**, termasuk sidebar & dashboard Number Card. **Shortcut dashboard "NextHD Photo" (kartu terpisah di section Konfigurasi) ditambah 26 Agustus**, sempat tidak muncul karena cache — sudah difix, menunggu konfirmasi visual. **28 Agustus:** naming series diubah ke `IMG-YYMM-####`, field Judul Foto/Lokasi/Kategori ditambah, dan badge "Dipakai Di" (Dashboard Connections, real-time dari child table, tidak disimpan sebagai field) terpasang di form Photo — **✅ terpasang, perlu re-test dengan foto baru**
 - Tombol admin "Reset Data Demo" (hapus semua data transaksi untuk testing, System Manager only, 2x konfirmasi + backup otomatis) — **✅ live + terverifikasi end-to-end 28 Agustus**
+- Generalisasi NextHD Asset ke pola EAV (`NextHD Asset Category` + `NextHD Asset Attribute`) — **✅ live 28 Agustus malam, terverifikasi aman 29 Agustus** (lihat item S di bawah)
 - **Rencana ke depan:** Knowledge Base publik (self-service), tag di tiket, CSAT — lihat `docs/DAFTAR_FITUR.md`
 
 ---
@@ -60,6 +61,12 @@
 
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `POLA_KERJA_DAN_BUG.md`.
 > Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/DAFTAR_FITUR.md`.
+
+### ✅ Item II — DITUTUP (29 Agustus, ~08:15 WIB): Struktur EAV `NextHD Asset` Dikonfirmasi Aman
+
+| # | Item | Keterangan | PIC |
+|---|---|---|---|
+| II | Investigasi struktur EAV `NextHD Asset` (`asset_category` `reqd=1`, `asset_attributes`) yang sempat dicurigai sebagai perubahan tak terdokumentasi | **Hasil investigasi (script `bench console` + `git log`) — semua AMAN:** DocType `NextHD Asset Category` & `NextHD Asset Attribute` sudah ada di database, kolom fisik `asset_category` sudah ter-migrate, **ke-6 record NextHD Asset existing (AST-2608-0001 s/d 0006) semua sudah terisi `asset_category`-nya (0 kosong)**, 7 record master Asset Category, 19 baris Asset Attribute sudah terpakai. **Siapa/kapan (dari `git log`):** commit `281072a` ("Update devin eav") dan `81889c0` ("Update devin attribute eav") oleh **silverefendy**, Jumat 28 Agustus 2026 23:07:42 WIB dan setelahnya — pekerjaan sah, sekadar belum sempat terdokumentasi/dilaporkan ke sesi chat sebelumnya, BUKAN perubahan liar/insiden. Tidak ada tindakan perbaikan yang diperlukan | Efendy (eksekusi), Claude (verifikasi) |
 
 ### 🔴 Item DD — Bug Pending: `Link Type must be set first` pada Workspace NextHD (28 Agustus)
 
@@ -111,6 +118,7 @@
 | FF | Naming Series `NextHD Photo` → `IMG-YYMM-####` | Diverifikasi: dokumen baru bernama `IMG-2608-0001` dst | Efendy |
 | GG | Field baru `NextHD Photo`: Judul Foto (`title_field`), Lokasi, Kategori (Link → `NextHD Category`) | Terpasang 28 Agustus | Efendy |
 | HH | Tombol "Reset Data Demo" — hapus semua data transaksi (System Manager only) | Test sungguhan berhasil: 14 Ticket, 15 Problem, 3 Change Request, 2 Known Error, 6 Asset, 4 Photo terhapus; backup otomatis, data master tidak ikut terhapus, penomoran `tabSeries` ikut direset | Efendy |
+| II | Generalisasi EAV `NextHD Asset` (`NextHD Asset Category` + `NextHD Asset Attribute`) | `bench console`: DocType ada di DB, kolom fisik ter-migrate, 6/6 record Asset existing sudah terisi `asset_category`. Commit `281072a`+`81889c0`, 28 Agustus 23:07 WIB | Efendy |
 
 > **Catatan Item E:** user test `test.requester@ciptamebel.co.id` sendiri belum pernah kirim `/start`+`/link` ke bot (field `telegram_chat_id` masih kosong untuk akun ini) — tapi ini bukan bug, cuma user dummy tsb memang belum di-link manual. Bot-nya sendiri sudah terbukti bekerja pakai akun Telegram lain.
 
@@ -128,10 +136,11 @@
 | P | SLA otomatis untuk Problem/Change Request | Saat ini SLA hanya untuk Ticket | - |
 | Q | Notifikasi Telegram untuk Problem/CR | Sengaja ditunda, fokus ke fitur lain dulu | - |
 | R | Laporan bulanan otomatis (jumlah tiket, MTTR) | Usulan, belum dikerjakan | - |
-| S | Generalisasi ke domain non-IT (Asset Category/Attribute EAV) | Rencana teknis ada di `DAFTAR_FITUR.md`, masih wacana | - |
 | V | Link Telegram untuk user test `test.requester` | Belum pernah kirim `/start`+`/link` — kalau mau dites tuntas, tinggal eksekusi manual + rerun script verifikasi | Efendy |
 
-> **Catatan:** rencana fitur besar (Knowledge Base publik, tag, CSAT, merge tiket, eskalasi
+> **Item S (Generalisasi non-IT/EAV) sudah dipindah ke tabel "SUDAH Live & Terverifikasi" di atas** (lihat item II) — dikerjakan 28 Agustus malam, terverifikasi aman 29 Agustus. Tidak lagi berstatus wacana.
+>
+> **Catatan lain:** rencana fitur besar (Knowledge Base publik, tag, CSAT, merge tiket, eskalasi
 > otomatis, dst) dipindahkan ke `docs/DAFTAR_FITUR.md` supaya tidak bercampur dengan open
 > items operasional di atas.
 
@@ -192,10 +201,11 @@
 | Tombol "Reset Data Demo" (item HH) | ✅ Selesai & terverifikasi end-to-end 28 Agustus — System Manager only (cek backend), 2x konfirmasi (dialog + ketik `RESET`), backup otomatis via `frappe.utils.backups.new_backup()`, counter `tabSeries` ikut direset. Bug awal `subprocess.run(["bench",...])` gagal di web worker (`FileNotFoundError`) — diganti panggilan langsung ke fungsi Python `new_backup()`, tidak bergantung shell `PATH` |
 | Shortcut Workspace "Admin" (tombol Reset Data Demo) tidak muncul di UI | ✅ 28 Agustus. Root cause: Workspace v16 dikontrol field `content` (JSON blocks), bukan otomatis baca semua row `tabWorkspace Shortcut`. Fix: update `content` via `frappe.db.set_value()` langsung (skip validasi dokumen penuh karena bug lain — lihat item DD), dijalankan via `bench execute` (bukan `bench console`, supaya cabang `if/else` tidak salah parse indentasi) |
 | Housekeeping struktur dokumentasi — `HANDOFF.md` dipindah dari root repo ke `docs/HANDOFF.md` | ✅ 28 Agustus. `README.md` diperbarui (link dokumentasi mengikuti struktur `docs/` multi-file terbaru). Sekarang semua file `.md` project konsisten berada di `docs/` (README.md tetap di root sesuai konvensi GitHub) |
+| Generalisasi EAV `NextHD Asset` (item II/S) — `NextHD Asset Category` + `NextHD Asset Attribute` | ✅ Dikerjakan 28 Agustus malam (commit `281072a`+`81889c0`, oleh Efendy/Devin), diverifikasi aman 29 Agustus pagi: DocType & kolom fisik ter-migrate, 6/6 record Asset existing sudah terisi kategorinya, 7 record master, 19 baris attribute terpakai |
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-28.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-29 08:15 WIB.*
 
 ---
 
@@ -210,3 +220,22 @@
 **Bug tambahan difix:** `related_asset` tidak ter-copy otomatis saat "Buat Change Request dari Problem" (sekarang sudah), dan race condition di `frappe.client.set_value` yang menyebabkan field balik `Problem.change_request` gagal ter-set diam-diam (sudah difix + data lama di-backfill).
 
 **Item baru untuk sesi berikutnya:** Known Error tidak punya field balik ke Change Request yang dibuat darinya — belum ada tombol "Lihat Change Request Terkait" di Known Error. Prioritas rendah, bukan bug kritis.
+
+---
+
+## Update 2026-08-29 08:15 WIB — Item II Ditutup: Struktur EAV NextHD Asset Terkonfirmasi Aman
+
+**Konteks:** Menindaklanjuti Item II (temuan sesi pagi ini) — struktur EAV `NextHD Asset` yang sempat dicurigai sebagai perubahan tak terdokumentasi/berisiko.
+
+**Hasil investigasi (script `bench console` dijalankan Efendy):**
+- `NextHD Asset Category` & `NextHD Asset Attribute`: ada di database ✅
+- Kolom fisik `asset_category` di `tabNextHD Asset`: sudah ter-migrate ✅
+- **6/6 record NextHD Asset existing (AST-2608-0001 s/d 0006) semua sudah terisi `asset_category`** — 0 record kosong ✅
+- 7 record master `NextHD Asset Category`, 19 baris `NextHD Asset Attribute` sudah dipakai ✅
+- `asset_category` memang `reqd=1` di meta server, tapi aman karena semua data existing sudah lengkap
+
+**Sumber perubahan (dari `git log`):** commit `281072a` ("Update devin eav") dan `81889c0` ("Update devin attribute eav"), author **silverefendy**, Jumat 28 Agustus 2026 pukul 23:07:42 WIB dan setelahnya. **Kesimpulan: ini pekerjaan sah Efendy sendiri (via Devin), bukan insiden atau perubahan tak terotorisasi** — sekadar belum sempat dilaporkan/didokumentasikan ke sesi chat Claude sebelumnya karena dikerjakan di luar percakapan tersebut.
+
+**Tidak ada tindakan perbaikan yang diperlukan.** Peringatan "jangan create/edit NextHD Asset" dari update sebelumnya (jam 09:00 pagi ini) **sudah dicabut** — form Asset aman dipakai normal.
+
+**Pelajaran untuk sesi berikutnya:** kalau menemukan perubahan kode/struktur yang tidak tercatat di riwayat chat, cek dulu `git log --oneline -- <path>` dan `git log -1 --format="%an %ad %s" -- <path>` sebelum menyimpulkan itu insiden — bisa jadi memang pekerjaan sah yang dilakukan di luar sesi chat tersebut (lewat Devin langsung, atau sesi lain).
