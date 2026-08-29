@@ -3,7 +3,7 @@
 > Referensi statis: infrastruktur, struktur app, DocType/field, permissions, schema DB, label ID.
 > Jarang berubah kecuali ada penambahan DocType atau perubahan infrastruktur.
 >
-> **Last updated:** 2026-08-20 14:40 WIB
+> **Last updated:** 2026-08-29 09:50 WIB
 
 ---
 
@@ -85,7 +85,7 @@ nexthd/
 
 ## 3. DocType & Field Penting
 
-### Non-Child DocType (12)
+### Non-Child DocType (12+2 EAV, lihat catatan)
 
 | DocType | Route | Naming Series |
 |---|---|---|
@@ -101,18 +101,24 @@ nexthd/
 | NextHD Team | nexthd-team | — |
 | NextHD Ticket | nexthd-ticket | `TKT-.YY.MM.-.####.` |
 | NextHD User Profile | nexthd-user-profile | — |
+| NextHD Asset Category | — (master, Link target dari `NextHD Asset.asset_category`) | — |
 
 > ⚠️ **Naming series diseragamkan ke format `YY.MM` (reset bulanan) pada 2026-08-15**, termasuk
 > NextHD Ticket yang sebelumnya sengaja tidak diubah (keputusan 14 Agustus dibatalkan). Dokumen
 > lama dengan format sebelumnya (`YYYY` atau `2026` statis) dibiarkan apa adanya, tidak di-rename.
 > Detail lengkap di `HANDOFF.md`.
 
-### Child DocType (2) — istable=1, tidak perlu di sidebar
+> **28 Agustus 2026 (malam):** `NextHD Asset Category` (master) ditambahkan sebagai bagian dari
+> migrasi `NextHD Asset` ke pola EAV. Dikerjakan oleh Efendy/Devin (commit `281072a`+`81889c0`),
+> terverifikasi aman 29 Agustus. Lihat §3.1 Detail Field NextHD Asset di bawah untuk detail lengkap.
+
+### Child DocType (3) — istable=1, tidak perlu di sidebar
 
 | DocType | Parent |
 |---|---|
 | NextHD Team Member | NextHD Team |
 | NextHD Problem Ticket | NextHD Problem |
+| NextHD Asset Attribute | NextHD Asset (EAV, ditambahkan 28 Agustus 2026) |
 
 ---
 
@@ -172,38 +178,84 @@ related_tickets       → Table: NextHD Problem Ticket
 > `known_error` sudah terisi (lewat cara a atau b), supaya tidak bisa pindah status tanpa Known
 > Error yang benar-benar terhubung. Detail lengkap riwayat perbaikan ini di `WORKFLOW.md`.
 
-### Detail Field: NextHD Asset (dengan field dinamis)
+### Detail Field: NextHD Asset (pola EAV — direvisi total 29 Agustus 2026)
+
+> ⚠️ **Riwayat perubahan struktur (baca dulu sebelum mengasumsikan field apa pun ada/tidak ada):**
+> 1. **Awal (7 Agustus – 28 Agustus siang):** field terstruktur statis per `asset_type`
+>    (`brand`, `model`, `serial_number`, `cpu`, `ram`, dst — lihat riwayat di git kalau perlu).
+> 2. **28 Agustus malam (commit `281072a`+`81889c0`, Efendy/Devin):** ditambahkan field
+>    `asset_category` (Link, `reqd=1`) dan `asset_attributes` (Table → `NextHD Asset Attribute`,
+>    EAV) **di samping** field lama — sempat tumpang tindih.
+> 3. **29 Agustus (commit `d964531`, item JJ):** field terstruktur lama **dihapus total** dari
+>    form karena sudah duplikat dengan EAV. Field catatan bebas dipertahankan.
+>
+> **Struktur final (29 Agustus 2026 dan seterusnya):**
 
 ```
 naming_series         → AST-.YY.MM.-.####.
 asset_name            → Data (required)
 asset_type            → Select: Laptop / PC / Server / Network Device / Printer / Lainnya
-location               → Data
-assigned_to            → Link: User
-status                 → Select: Aktif / Rusak / Diperbaiki / Dihapus
-purchase_date          → Date
-warranty_until          → Date
+location              → Data
+assigned_to           → Link: User
+status                → Select: Aktif / Rusak / Diperbaiki / Dihapus
+asset_category        → Link: NextHD Asset Category (required — ditambahkan 28 Agustus 2026)
+purchase_date         → Date
+warranty_until        → Date
 
-# Field dinamis — muncul sesuai asset_type (depends_on):
-[PC / Laptop / Server]
-  brand, model, serial_number, cpu, ram, storage, os, peripheral_notes
+# Field catatan bebas — muncul sesuai asset_type (depends_on), DIPERTAHANKAN saat cleanup 29 Agustus:
+[PC / Laptop / Server]  → peripheral_notes (Small Text)
+[Network Device]        → net_notes (Small Text)
+[Printer]               → printer_notes (Small Text)
+[Lainnya]               → other_description (Text Editor)
 
-[Network Device]
-  net_brand, net_model, net_serial_number, ip_address, mac_address, device_role, net_notes
-
-[Printer]
-  printer_brand, printer_model, printer_serial_number, printer_type, printer_notes
-
-[Lainnya]
-  other_description
+photos                 → Table: NextHD Photo Link (foto reusable, PR #9)
+asset_attributes       → Table: NextHD Asset Attribute (EAV, semua spesifikasi terstruktur sekarang di sini)
 ```
 
-> **Property Setter `search_fields`** (ditambahkan 2026-08-15): `asset_name,assigned_to,serial_number`
-> — dropdown Link ke NextHD Asset (di Ticket/Problem/Change Request) sekarang bisa dicari lewat nama
-> aset, nama user pemakai, atau serial number, tidak cuma nama aset saja.
+> ❌ **DIHAPUS 29 Agustus 2026 (item JJ)** — field-field ini TIDAK ADA lagi di form, meski kolom
+> fisik masih ada di database (pola lama project ini: hapus dari JSON tidak menghapus kolom
+> fisik, lihat `POLA_KERJA_DAN_BUG.md`): `brand`, `model`, `serial_number`, `cpu`, `ram`,
+> `storage`, `os` (section PC/Laptop/Server); `net_brand`, `net_model`, `net_serial_number`,
+> `ip_address`, `mac_address`, `device_role` (section Network Device); `printer_brand`,
+> `printer_model`, `printer_serial_number`, `printer_type` (section Printer). Data lama semua
+> sudah ter-backfill ke `asset_attributes` sebelum field dihapus (diverifikasi 6/6 record).
+> **Jangan tambahkan field ini lagi** — kalau butuh spesifikasi baru, tambahkan sebagai baris di
+> `asset_attributes` (EAV), bukan DocField statis baru.
 
-> ⚠️ **Struktur ini berencana direstrukturisasi** kalau generalisasi ke domain non-IT
-> dieksekusi — lihat `DAFTAR_FITUR.md` untuk desain lengkap sebelum menambah field IT-spesifik baru lagi.
+#### Detail Field: NextHD Asset Attribute (child table EAV)
+
+```
+attribute_name   → Data (nama atribut bebas, mis. "CPU", "RAM", "IP Address")
+attribute_value  → Data (nilai atribut)
+unit             → Data (opsional, mis. "GB")
+brand            → Data
+serial_number    → Data
+sumber           → Data
+catatan          → Text
+```
+
+> ⚠️ Skema child table ini **bukan cuma `attribute_name`/`attribute_value`/`unit`** generik
+> seperti desain awal di `DAFTAR_FITUR.md` — sudah berevolusi (via Devin, 28 Agustus malam)
+> punya kolom sendiri untuk `brand`/`serial_number`/`sumber`/`catatan` per baris. Diverifikasi
+> langsung via `DESCRIBE tabNextHD Asset Attribute` pada 29 Agustus. Kalau butuh field EAV
+> tambahan lagi, cek dulu skema aktual di database — jangan asumsikan dari dokumentasi desain
+> awal yang sudah usang.
+
+> **Property Setter `search_fields`** (ditambahkan 2026-08-15, **diupdate 29 Agustus 2026**):
+> semula `asset_name,assigned_to,serial_number`, sekarang **`asset_name,assigned_to`** — field
+> `serial_number` dihapus dari `search_fields` karena field-nya sendiri sudah dihapus dari
+> NextHD Asset (pindah ke EAV). Field di child table (Table/EAV) **tidak bisa** dipakai di
+> `search_fields` Link, jadi searchability by serial number untuk sementara tidak tersedia di
+> dropdown Link — data serial number sendiri tetap ada & bisa dilihat di `asset_attributes`.
+
+> **Report `Detail Aset Lengkap`** ditulis ulang 29 Agustus 2026 — sekarang `LEFT JOIN` ke
+> `NextHD Asset Attribute` dan menampilkan kolom "Spesifikasi (EAV)" (agregat
+> `attribute_name: attribute_value` per Asset via `GROUP_CONCAT`), plus kolom Brand/Serial
+> Number/Sumber/Catatan langsung dari EAV. File: `nexthd/next_helpdesk/report/detail_aset_lengkap/detail_aset_lengkap.py`.
+
+> ⚠️ **Pending:** `test_nexthd_asset.py` masih punya beberapa test method yang meng-assert
+> field lama (`asset.brand`, `.model`, `.serial_number`, dst) — akan gagal kalau dijalankan.
+> Belum direvisi (item W2 di `SUMMARY.md`), cocok untuk task Devin terpisah.
 
 ### Detail Field: NextHD Change Request
 
@@ -384,6 +436,15 @@ name, current
 > — `PRB-2608-` nyangkut `current=2` padahal data fisik sudah sampai `0005`. Cara cek & sinkron
 > ada di `POLA_KERJA_DAN_BUG.md §3`.
 
+### tabNextHD Asset Attribute (EAV, ditambahkan 28 Agustus 2026)
+```
+name, creation, modified, modified_by, owner, docstatus, idx,
+attribute_name, attribute_value, unit,
+parent, parentfield, parenttype,
+brand, serial_number, sumber, catatan
+```
+> Diverifikasi langsung via `DESCRIBE` pada 29 Agustus 2026. Lihat §3 "Detail Field: NextHD Asset Attribute" untuk penjelasan tiap kolom.
+
 ---
 
 ## 7. Bahasa Indonesia — Label Referensi
@@ -423,9 +484,11 @@ name, current
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-23 18:30 WIB — §8 (Generalisasi
-Non-IT) dan §9 (Wipe Data Tool) dipindahkan ke `DAFTAR_FITUR.md` karena isinya rencana fitur,
-bukan arsitektur yang sudah ada.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-29 09:50 WIB — Detail Field NextHD
+Asset direvisi total pasca cleanup EAV (item JJ): field terstruktur lama dihapus, ditambahkan
+detail skema `NextHD Asset Attribute` dan `NextHD Asset Category`. §8/§9 lama (Generalisasi
+Non-IT, Wipe Data Tool) tetap di `DAFTAR_FITUR.md`, sekarang sudah terealisasi sebagian
+(EAV live) — lihat `SUMMARY.md` item II/JJ untuk status terkini.*
 
 ---
 
