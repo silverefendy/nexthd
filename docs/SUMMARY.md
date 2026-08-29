@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-29 09:00 WIB (ditambahkan Item II — temuan risiko tinggi: struktur EAV `NextHD Asset` sudah live di repo `main` tanpa dokumentasi/verifikasi sebelumnya; sisanya tidak berubah dari 2026-08-28)
+> **Last updated:** 2026-08-29 08:15 WIB (Item II ditutup — struktur EAV `NextHD Asset` dikonfirmasi AMAN, sudah dikerjakan sah oleh Efendy/Devin 28 Agustus malam, migrate sudah jalan, data existing sudah lengkap; Item S dipindah dari "wacana" ke "selesai")
 
 ---
 
@@ -52,6 +52,7 @@
 - Custom reports: Tiket per Bulan, Tiket per Agent, Tiket per Kategori, Tiket per Prioritas (breach SLA), SLA Compliance Bulanan, Aset Bermasalah — **kartu shortcut dashboard "Laporan" sudah ditambah (26 Agustus, fix `report_ref_doctype`+cache, menunggu konfirmasi visual)**, sidebar kiri submenu masih di item AA di bawah
 - Foto/gambar reusable & bisa di-link antar Ticket/Problem/Asset/Known Error (PR #9) — **✅ live + terverifikasi 24 Agustus**, termasuk sidebar & dashboard Number Card. **Shortcut dashboard "NextHD Photo" (kartu terpisah di section Konfigurasi) ditambah 26 Agustus**, sempat tidak muncul karena cache — sudah difix, menunggu konfirmasi visual. **28 Agustus:** naming series diubah ke `IMG-YYMM-####`, field Judul Foto/Lokasi/Kategori ditambah, dan badge "Dipakai Di" (Dashboard Connections, real-time dari child table, tidak disimpan sebagai field) terpasang di form Photo — **✅ terpasang, perlu re-test dengan foto baru**
 - Tombol admin "Reset Data Demo" (hapus semua data transaksi untuk testing, System Manager only, 2x konfirmasi + backup otomatis) — **✅ live + terverifikasi end-to-end 28 Agustus**
+- Generalisasi NextHD Asset ke pola EAV (`NextHD Asset Category` + `NextHD Asset Attribute`) — **✅ live 28 Agustus malam, terverifikasi aman 29 Agustus** (lihat item S di bawah)
 - **Rencana ke depan:** Knowledge Base publik (self-service), tag di tiket, CSAT — lihat `docs/DAFTAR_FITUR.md`
 
 ---
@@ -61,13 +62,11 @@
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `POLA_KERJA_DAN_BUG.md`.
 > Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/DAFTAR_FITUR.md`.
 
-### 🔴🔴 Item II — TEMUAN RISIKO TINGGI (29 Agustus, ~09:00 WIB): Struktur EAV `NextHD Asset` Sudah Live di Repo Tanpa Dokumentasi/Verifikasi
+### ✅ Item II — DITUTUP (29 Agustus, ~08:15 WIB): Struktur EAV `NextHD Asset` Dikonfirmasi Aman
 
 | # | Item | Keterangan | PIC |
 |---|---|---|---|
-| II | `nexthd_asset.json` di `main` sudah berisi field `asset_category` (Link → `NextHD Asset Category`, **`reqd=1`**) dan `asset_attributes` (Table → `NextHD Asset Attribute`); folder DocType `nexthd_asset_category/` dan `nexthd_asset_attribute/` (lengkap `.json`+`.py`) juga sudah ada di repo | **Dikonfirmasi langsung dari GitHub API (29 Agustus, sesi ini)** — ini BUKAN cuma output layar sesi lalu, tapi sudah ter-commit penuh ke `main`. Strukturnya persis desain "Generalisasi Non-IT — Pendekatan B (EAV)" di `DAFTAR_FITUR.md` yang berstatus ⬜ **Belum Dikerjakan** (ditunda sampai ada kebutuhan nyata). **Belum diketahui:** (1) siapa/kapan commit ini dibuat — riwayat chat tidak mencatatnya, (2) apakah DocType `NextHD Asset Category`/`NextHD Asset Attribute` sudah ter-`bench migrate` ke database produksi, (3) apakah data existing `NextHD Asset` (asset lama) sudah punya `asset_category` terisi. **Risiko konkret:** kalau `asset_category` `reqd=1` di server tapi kategori belum diisi untuk asset lama, form create/edit NextHD Asset bisa gagal validasi total. **Sudah disiapkan script investigasi** (cek DocType exists, kolom fisik, data existing, meta reqd) — dijalankan Efendy, hasil ditunggu sebelum tindakan lanjutan apapun ke NextHD Asset | Claude + Efendy |
-
-> ⚠️ **Sampai investigasi ini tuntas, JANGAN create/edit record NextHD Asset apapun di UI produksi** — untuk menghindari kegagalan validasi tak terduga.
+| II | Investigasi struktur EAV `NextHD Asset` (`asset_category` `reqd=1`, `asset_attributes`) yang sempat dicurigai sebagai perubahan tak terdokumentasi | **Hasil investigasi (script `bench console` + `git log`) — semua AMAN:** DocType `NextHD Asset Category` & `NextHD Asset Attribute` sudah ada di database, kolom fisik `asset_category` sudah ter-migrate, **ke-6 record NextHD Asset existing (AST-2608-0001 s/d 0006) semua sudah terisi `asset_category`-nya (0 kosong)**, 7 record master Asset Category, 19 baris Asset Attribute sudah terpakai. **Siapa/kapan (dari `git log`):** commit `281072a` ("Update devin eav") dan `81889c0` ("Update devin attribute eav") oleh **silverefendy**, Jumat 28 Agustus 2026 23:07:42 WIB dan setelahnya — pekerjaan sah, sekadar belum sempat terdokumentasi/dilaporkan ke sesi chat sebelumnya, BUKAN perubahan liar/insiden. Tidak ada tindakan perbaikan yang diperlukan | Efendy (eksekusi), Claude (verifikasi) |
 
 ### 🔴 Item DD — Bug Pending: `Link Type must be set first` pada Workspace NextHD (28 Agustus)
 
@@ -119,6 +118,7 @@
 | FF | Naming Series `NextHD Photo` → `IMG-YYMM-####` | Diverifikasi: dokumen baru bernama `IMG-2608-0001` dst | Efendy |
 | GG | Field baru `NextHD Photo`: Judul Foto (`title_field`), Lokasi, Kategori (Link → `NextHD Category`) | Terpasang 28 Agustus | Efendy |
 | HH | Tombol "Reset Data Demo" — hapus semua data transaksi (System Manager only) | Test sungguhan berhasil: 14 Ticket, 15 Problem, 3 Change Request, 2 Known Error, 6 Asset, 4 Photo terhapus; backup otomatis, data master tidak ikut terhapus, penomoran `tabSeries` ikut direset | Efendy |
+| II | Generalisasi EAV `NextHD Asset` (`NextHD Asset Category` + `NextHD Asset Attribute`) | `bench console`: DocType ada di DB, kolom fisik ter-migrate, 6/6 record Asset existing sudah terisi `asset_category`. Commit `281072a`+`81889c0`, 28 Agustus 23:07 WIB | Efendy |
 
 > **Catatan Item E:** user test `test.requester@ciptamebel.co.id` sendiri belum pernah kirim `/start`+`/link` ke bot (field `telegram_chat_id` masih kosong untuk akun ini) — tapi ini bukan bug, cuma user dummy tsb memang belum di-link manual. Bot-nya sendiri sudah terbukti bekerja pakai akun Telegram lain.
 
@@ -136,10 +136,11 @@
 | P | SLA otomatis untuk Problem/Change Request | Saat ini SLA hanya untuk Ticket | - |
 | Q | Notifikasi Telegram untuk Problem/CR | Sengaja ditunda, fokus ke fitur lain dulu | - |
 | R | Laporan bulanan otomatis (jumlah tiket, MTTR) | Usulan, belum dikerjakan | - |
-| S | Generalisasi ke domain non-IT (Asset Category/Attribute EAV) | Rencana teknis ada di `DAFTAR_FITUR.md` — **⚠️ per 29 Agustus, kodenya SUDAH ADA di repo (lihat Item II), status berubah dari "masih wacana" ke "sudah diimplementasi tanpa verifikasi", perlu investigasi urgent** | - |
 | V | Link Telegram untuk user test `test.requester` | Belum pernah kirim `/start`+`/link` — kalau mau dites tuntas, tinggal eksekusi manual + rerun script verifikasi | Efendy |
 
-> **Catatan:** rencana fitur besar (Knowledge Base publik, tag, CSAT, merge tiket, eskalasi
+> **Item S (Generalisasi non-IT/EAV) sudah dipindah ke tabel "SUDAH Live & Terverifikasi" di atas** (lihat item II) — dikerjakan 28 Agustus malam, terverifikasi aman 29 Agustus. Tidak lagi berstatus wacana.
+>
+> **Catatan lain:** rencana fitur besar (Knowledge Base publik, tag, CSAT, merge tiket, eskalasi
 > otomatis, dst) dipindahkan ke `docs/DAFTAR_FITUR.md` supaya tidak bercampur dengan open
 > items operasional di atas.
 
@@ -200,10 +201,11 @@
 | Tombol "Reset Data Demo" (item HH) | ✅ Selesai & terverifikasi end-to-end 28 Agustus — System Manager only (cek backend), 2x konfirmasi (dialog + ketik `RESET`), backup otomatis via `frappe.utils.backups.new_backup()`, counter `tabSeries` ikut direset. Bug awal `subprocess.run(["bench",...])` gagal di web worker (`FileNotFoundError`) — diganti panggilan langsung ke fungsi Python `new_backup()`, tidak bergantung shell `PATH` |
 | Shortcut Workspace "Admin" (tombol Reset Data Demo) tidak muncul di UI | ✅ 28 Agustus. Root cause: Workspace v16 dikontrol field `content` (JSON blocks), bukan otomatis baca semua row `tabWorkspace Shortcut`. Fix: update `content` via `frappe.db.set_value()` langsung (skip validasi dokumen penuh karena bug lain — lihat item DD), dijalankan via `bench execute` (bukan `bench console`, supaya cabang `if/else` tidak salah parse indentasi) |
 | Housekeeping struktur dokumentasi — `HANDOFF.md` dipindah dari root repo ke `docs/HANDOFF.md` | ✅ 28 Agustus. `README.md` diperbarui (link dokumentasi mengikuti struktur `docs/` multi-file terbaru). Sekarang semua file `.md` project konsisten berada di `docs/` (README.md tetap di root sesuai konvensi GitHub) |
+| Generalisasi EAV `NextHD Asset` (item II/S) — `NextHD Asset Category` + `NextHD Asset Attribute` | ✅ Dikerjakan 28 Agustus malam (commit `281072a`+`81889c0`, oleh Efendy/Devin), diverifikasi aman 29 Agustus pagi: DocType & kolom fisik ter-migrate, 6/6 record Asset existing sudah terisi kategorinya, 7 record master, 19 baris attribute terpakai |
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-29 09:00 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-29 08:15 WIB.*
 
 ---
 
@@ -221,17 +223,19 @@
 
 ---
 
-## Update 2026-08-29 09:00 WIB — Temuan Item II: Struktur EAV NextHD Asset Sudah Live di Repo
+## Update 2026-08-29 08:15 WIB — Item II Ditutup: Struktur EAV NextHD Asset Terkonfirmasi Aman
 
-**Konteks:** Melanjutkan item pending dari `RANGKUMAN_SESI_2026-08-28_LANJUTAN_2` (§4 di rangkuman tersebut) soal output tak terduga terkait `nexthd_asset.json`.
+**Konteks:** Menindaklanjuti Item II (temuan sesi pagi ini) — struktur EAV `NextHD Asset` yang sempat dicurigai sebagai perubahan tak terdokumentasi/berisiko.
 
-**Dikonfirmasi via GitHub API langsung (bukan asumsi):**
-- File `nexthd/next_helpdesk/doctype/nexthd_asset/nexthd_asset.json` di `main` sudah punya field `asset_category` (Link → `NextHD Asset Category`, **`reqd=1`**) dan `asset_attributes` (Table → `NextHD Asset Attribute`), berdampingan dengan field lama `asset_type` (Select).
-- Folder `nexthd/next_helpdesk/doctype/nexthd_asset_category/` dan `nexthd/next_helpdesk/doctype/nexthd_asset_attribute/` sudah ada lengkap (`.json` + `.py`).
-- Ini **identik** dengan desain "Generalisasi Non-IT — Pendekatan B (EAV)" di `DAFTAR_FITUR.md` yang sebelumnya berstatus ⬜ Belum Dikerjakan/wacana.
+**Hasil investigasi (script `bench console` dijalankan Efendy):**
+- `NextHD Asset Category` & `NextHD Asset Attribute`: ada di database ✅
+- Kolom fisik `asset_category` di `tabNextHD Asset`: sudah ter-migrate ✅
+- **6/6 record NextHD Asset existing (AST-2608-0001 s/d 0006) semua sudah terisi `asset_category`** — 0 record kosong ✅
+- 7 record master `NextHD Asset Category`, 19 baris `NextHD Asset Attribute` sudah dipakai ✅
+- `asset_category` memang `reqd=1` di meta server, tapi aman karena semua data existing sudah lengkap
 
-**Belum diketahui:** siapa/kapan mengerjakan ini (tidak ada jejak di riwayat chat sesi manapun sejauh ini), apakah sudah `bench migrate` di server produksi, dan apakah data `NextHD Asset` existing sudah terisi `asset_category`-nya.
+**Sumber perubahan (dari `git log`):** commit `281072a` ("Update devin eav") dan `81889c0` ("Update devin attribute eav"), author **silverefendy**, Jumat 28 Agustus 2026 pukul 23:07:42 WIB dan setelahnya. **Kesimpulan: ini pekerjaan sah Efendy sendiri (via Devin), bukan insiden atau perubahan tak terotorisasi** — sekadar belum sempat dilaporkan/didokumentasikan ke sesi chat Claude sebelumnya karena dikerjakan di luar percakapan tersebut.
 
-**Tindakan diambil sesi ini:** dicatat sebagai **Item II** (risiko tinggi) di §2 dokumen ini, dan disiapkan script investigasi (cek DocType exists, kolom fisik tabel, isi data existing, status `reqd` di meta server) untuk dijalankan Efendy di server. **Rekomendasi: JANGAN create/edit NextHD Asset di UI sampai hasil investigasi keluar**, karena field `reqd=1` yang mungkin belum terisi untuk data lama berisiko membuat validasi form gagal total.
+**Tidak ada tindakan perbaikan yang diperlukan.** Peringatan "jangan create/edit NextHD Asset" dari update sebelumnya (jam 09:00 pagi ini) **sudah dicabut** — form Asset aman dipakai normal.
 
-**Langkah berikutnya:** setelah hasil script investigasi didapat dari Efendy, tentukan apakah perlu backfill data existing, migrate DocType baru, atau (kalau ternyata belum ter-migrate ke server) apakah perubahan ini perlu ditahan dulu dari `main` sampai siap dieksekusi dengan terkontrol.
+**Pelajaran untuk sesi berikutnya:** kalau menemukan perubahan kode/struktur yang tidak tercatat di riwayat chat, cek dulu `git log --oneline -- <path>` dan `git log -1 --format="%an %ad %s" -- <path>` sebelum menyimpulkan itu insiden — bisa jadi memang pekerjaan sah yang dilakukan di luar sesi chat tersebut (lewat Devin langsung, atau sesi lain).
