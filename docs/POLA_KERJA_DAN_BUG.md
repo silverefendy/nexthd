@@ -3,7 +3,7 @@
 > Frappe quirks, aturan wajib saat coding/debug, dan riwayat bug per sesi.
 > File ini yang paling sering bertambah tiap sesi baru.
 >
-> **Last updated:** 2026-08-29
+> **Last updated:** 2026-08-29 17:45 WIB
 
 ---
 
@@ -67,6 +67,12 @@ Kasus nyata 27 Agustus (lihat §4): Workspace "NextHD Report" dibuat via script 
 terlanjur dibuat via script, fix-nya: pastikan `developer_mode=1`, lalu panggil `doc.save()` sekali secara
 manual (bukan hanya insert) untuk memaksa Frappe menulis file fixture-nya.
 
+> ⚠️ **PENTING (ditemukan 29 Agustus, lihat §4 bug session terkait):** memanggil `doc.save()`
+> pada `Workspace` "NextHD" (misalnya untuk memperbaiki baris `Workspace.links` yang rusak)
+> bisa memicu efek samping tak terduga pada `Workspace Sidebar Item` — lihat catatan baru
+> di §C poin 2 & 3 di bawah soal `Workspace Sidebar.standard` sebelum memanggil `doc.save()`
+> pada Workspace mana pun yang punya item sidebar manual.
+
 **Number Cards di workspace:**
 - Buat dulu di `tabNumber Card` (via SQL)
 - Isi `number_card_name` di `tabWorkspace Number Card` (kolom kunci: `number_card_name`, bukan `card_name`)
@@ -85,7 +91,7 @@ manual (bukan hanya insert) untuk memaksa Frappe menulis file fixture-nya.
 - **Update `content` via SQL langsung TIDAK otomatis invalidate cache** — Frappe nge-cache konten Workspace di Redis per-app. Setelah `UPDATE tabWorkspace SET content=...` via SQL, WAJIB `bench clear-cache` + `bench clear-website-cache` (bukan cuma hard refresh browser) baru kartu baru muncul.
 - **Kartu shortcut TIDAK otomatis muncul hanya karena row-nya ada di `tabWorkspace Shortcut`** — sama seperti Number Card, harus ada blok referensinya di `Workspace.content`. Kasus nyata 28 Agustus: shortcut "Reset Data Demo" berhasil di-insert tapi tidak tampil sampai `content` diupdate untuk mereferensikannya (lihat bug session 2026-08-28).
 
-### C. Sidebar Kiri — 4 Doctype Berlapis (KOREKSI 27 Agustus — baca sebelum edit sidebar apapun)
+### C. Sidebar Kiri — 4 Doctype Berlapis (KOREKSI 27 & 29 Agustus — baca sebelum edit sidebar apapun)
 
 > ⚠️ **Koreksi dari catatan versi sebelumnya:** paragraf lama menyebut "3 tabel", tapi hasil
 > investigasi 27 Agustus menemukan lapisan ke-4 (`Workspace Sidebar` / `Workspace Sidebar Item`)
@@ -96,11 +102,22 @@ manual (bukan hanya insert) untuk memaksa Frappe menulis file fixture-nya.
    sebagai bagian dari dokumen Workspace itu sendiri. Bertahan lewat `bench migrate` selama
    tersimpan di file fixture Workspace (lihat §B). **Ini BUKAN sumber langsung yang dirender ke
    sidebar** — mengedit `Workspace.links` saja TIDAK otomatis membuat item baru muncul di sidebar kiri.
+   Baris di tabel ini juga divalidasi ketat oleh `doc.save()` Workspace (`link_type` wajib salah
+   satu dari DocType/Page/Report, dan `link_to` divalidasi sesuai `link_type`-nya) — baris yang
+   `link_type`-nya kosong/tidak valid akan membuat `doc.save()` Workspace **gagal total** dengan
+   `ValidationError: Link Type must be set first`, lihat bug session 29 Agustus di §4.
 2. **`Workspace Sidebar` (dokumen terpisah, 1 per workspace/app, contoh: dokumen bernama "NextHD")**
    — **inilah yang benar-benar dibaca untuk merender sidebar kiri.** Field pentingnya:
    - `app` — harus terisi nama app (`nexthd`), kalau kosong file fixture TIDAK akan ter-export.
-   - `standard` — harus `1` agar `export_sidebar()` mau menulis file. Kalau `0`, perubahan hanya
-     tersimpan di database dan akan hilang praktiknya (tidak permanen lintas deploy).
+   - `standard` — harus `1` agar `export_sidebar()` mau menulis file **dan** agar item sidebar
+     manual (yang ditambah lewat UI, bukan auto-generate dari `Workspace.links`) tidak rawan
+     tersapu. **Kasus nyata 29 Agustus:** `standard` sempat `0` di produksi (kemungkinan warisan
+     lama), dan saat `doc.save()` dipanggil pada `Workspace` "NextHD" untuk keperluan lain,
+     item sidebar manual "NextHD Reporting" ikut hilang dari `Workspace Sidebar Item` — diduga
+     kuat karena kondisi `standard=0` membuat sidebar rawan diregenerasi ulang murni dari
+     `Workspace.links` (yang memang tidak memuat item manual tsb). **Selalu cek dan pastikan
+     `standard=1` SEBELUM memanggil `doc.save()` pada Workspace mana pun yang sidebar-nya
+     berisi item manual**, dan verifikasi ulang isi sidebar SETELAH setiap `doc.save()`.
    - Item-itemnya disimpan di child table **`Workspace Sidebar Item`** (lihat poin 3).
 3. **`Workspace Sidebar Item`** (child table dari `Workspace Sidebar`) — daftar item aktual yang
    dirender di sidebar. Ini yang di-generate otomatis dari `Workspace.links` **untuk link
@@ -108,10 +125,11 @@ manual (bukan hanya insert) untuk memaksa Frappe menulis file fixture-nya.
    ke sini (Frappe v16 by design, dikonfirmasi 27 Agustus — jumlah item di sini normalnya lebih
    sedikit dari `Workspace.links`, selisihnya persis jumlah link Report — bukan bug, jangan
    "diperbaiki" lagi tanpa bukti baru).
-   - **Cara resmi menambah item baru ke sidebar:** lewat UI, klik **"⋯" (titik tiga di header
-     workspace) → Edit Sidebar**, lalu tambah item baru di sana. Ini akan menyimpan langsung ke
-     `Workspace Sidebar Item` — TIDAK perlu (dan tidak akan otomatis tersinkron) hanya dengan
-     mengedit `Workspace.links`.
+   - **Cara resmi menambah item baru ke sidebar:** lewat UI, klik ikon **panah ke bawah di
+     KIRI ATAS** halaman Workspace (⚠️ **koreksi 29 Agustus** — BUKAN titik tiga "⋯" di kanan
+     atas seperti tercatat di versi sebelumnya, dua menu ini berbeda) **→ Edit Sidebar**, lalu
+     tambah item baru di sana. Ini akan menyimpan langsung ke `Workspace Sidebar Item` — TIDAK
+     perlu (dan tidak akan otomatis tersinkron) hanya dengan mengedit `Workspace.links`.
 4. **`tabWorkspace Shortcut`** — **bukan bagian sidebar sama sekali**, ini kartu dashboard
    (lihat §B). Jangan disamakan hanya karena sama-sama "shortcut"-nya Workspace.
 
@@ -201,9 +219,10 @@ Sections:
   [Admin] (ditambah 28 Agustus)
     Shortcuts: Reset Data Demo (Page kustom `nexthd-reset-data`, System Manager only)
 
-Sidebar kiri (Workspace Sidebar Item, ditambah 27 Agustus):
+Sidebar kiri (Workspace Sidebar Item, ditambah 27 Agustus, diverifikasi permanen 29 Agustus):
   "NextHD Reporting" → link ke Workspace "NextHD Report" (berisi 11 shortcut Detail Report Lengkap:
-  Tiket, Aset, Known Error, Problem, Change Request)
+  Tiket, Aset, Known Error, Problem, Change Request). Total 16 item sidebar "NextHD"
+  (15 DocType/Dashboard + 1 "NextHD Reporting").
 ```
 
 ---
@@ -255,7 +274,7 @@ Untuk skrip yang perlu dijalankan sekali di server, lebih andal pakai `bench exe
 | **Karakter tab hilang saat paste ke terminal** | Tulis heredoc dengan indentasi 4-spasi (aman lewat clipboard), lalu jalankan `sed -i 's/^    /\t/' nama_file.py` di server sebelum eksekusi, supaya hasil akhirnya tetap tab murni seperti yang dibutuhkan IPython |
 | **Nama fungsi `run`** | Bentrok dengan IPython magic `%run` (automagic) — pakai nama lain seperti `main_check()` |
 | **Import via `from module import nama_fungsi`** | Kadang tidak ter-bind dengan benar di scope IPython saat dipiped dari file (nama fungsi jadi `NameError` walau tanpa error saat import). **Fix aman:** taruh import DI DALAM fungsi (`from ... import ...` sebagai baris pertama body), bukan di level top file |
-| `doc.save()` | Selalu gagal di production **kecuali `developer_mode=1` sedang aktif** (perlu untuk memicu export fixture Workspace/Workspace Sidebar — lihat §1.B & §1.C) atau untuk `doc.insert()` pada custom DocType baru yang memang perlu validasi Frappe. Untuk update data biasa tanpa kebutuhan trigger hook, tetap pakai SQL UPDATE + `frappe.db.commit()` |
+| `doc.save()` | Selalu gagal di production **kecuali `developer_mode=1` sedang aktif** (perlu untuk memicu export fixture Workspace/Workspace Sidebar — lihat §1.B & §1.C) atau untuk `doc.insert()` pada custom DocType baru yang memang perlu validasi Frappe. Untuk update data biasa tanpa kebutuhan trigger hook, tetap pakai SQL UPDATE + `frappe.db.commit()`. **Catatan 29 Agustus:** `doc.save()` pada `Workspace` juga menjalankan validasi penuh child table `links` (lihat §1.C poin 1) — pastikan semua baris `Workspace.links` valid sebelum memanggil ini |
 | **Field Link yang wajib diisi (`reqd=1`)** | Cek dulu via `frappe.get_meta(doctype)` — filter `f.reqd or f.fieldtype == "Link"`. Contoh: `NextHD Ticket` butuh `subject` dan `requested_by` — kalau test insert via console lupa isi ini, akan kena `MandatoryError` meski `calculate_sla()` sendiri sudah terpanggil dan sukses |
 | **Field Link ke master doctype** | Master record harus **sudah ada duluan** sebelum insert dokumen yang mereferensikannya |
 | Perubahan DB langsung | Export fixture → git commit → git push |
@@ -268,8 +287,8 @@ Untuk skrip yang perlu dijalankan sekali di server, lebih andal pakai `bench exe
 | **Workspace shortcut block bertipe Report** | Kolom `report_ref_doctype` di `tabWorkspace Shortcut` WAJIB diisi, kalau tidak kartu di-skip diam-diam dari dashboard (lihat §1.B) |
 | **Update `Workspace.content` via SQL langsung** | Tidak auto-invalidate cache Redis — WAJIB `bench clear-cache` + `bench clear-website-cache` setelahnya, baru hard refresh browser |
 | **Workspace baru dibuat via insert manual/script (bukan UI)** | File fixture JSON-nya TIDAK otomatis ter-generate — sidebar/dashboard bisa "kelihatan benar di database" tapi tidak pernah muncul di UI. Selalu buat Workspace baru lewat UI (New Workspace), atau kalau terlanjur via script, paksa `doc.save()` manual dengan `developer_mode=1` aktif (lihat §1.B & §4 sesi 27 Agustus) |
-| **Menambah item baru ke sidebar kiri** | HARUS lewat UI "⋯ → Edit Sidebar", BUKAN hanya mengedit `Workspace.links`. Setelah itu, verifikasi file fixture `Workspace Sidebar` ter-update di LOKASI YANG BENAR: `nexthd/nexthd/workspace_sidebar/<judul>.json` (bukan di dalam folder `next_helpdesk/`, lihat §1.C) |
-| **`Workspace Sidebar.app`/`.standard` kosong atau salah** | `export_sidebar()` hanya menulis file kalau `app` terisi nama app DAN `standard=1` DAN `developer_mode=1`. Cek ketiganya kalau file fixture tidak kunjung berubah meski `.save()` sudah dipanggil tanpa error |
+| **Menambah item baru ke sidebar kiri** | HARUS lewat UI (ikon **panah ke bawah di kiri atas** halaman Workspace → **Edit Sidebar** — ⚠️ koreksi 29 Agustus, BUKAN titik tiga "⋯" kanan atas seperti dicatat sebelumnya), BUKAN hanya mengedit `Workspace.links`. Setelah itu, verifikasi file fixture `Workspace Sidebar` ter-update di LOKASI YANG BENAR: `nexthd/nexthd/workspace_sidebar/<judul>.json` (bukan di dalam folder `next_helpdesk/`, lihat §1.C) |
+| **`Workspace Sidebar.app`/`.standard` kosong atau salah** | `export_sidebar()` hanya menulis file kalau `app` terisi nama app DAN `standard=1` DAN `developer_mode=1`. Cek ketiganya kalau file fixture tidak kunjung berubah meski `.save()` sudah dipanggil tanpa error. **Catatan 29 Agustus:** `standard=0` juga membuat item sidebar manual rawan **hilang** (bukan cuma "tidak ter-export") kalau ada proses lain (mis. `doc.save()` pada Workspace induk) yang memicu regenerasi — selalu pastikan `standard=1` sebelum melakukan perubahan apa pun ke Workspace/sidebar terkait |
 | **Menyembunyikan Workspace (`is_hidden=1`) yang diakses lewat sidebar link biasa** | JANGAN. Pola `hidden=1` pada workspace pendukung lain (Ticket Center, Asset Center, dll.) punya mekanisme akses berbeda yang belum sepenuhnya dipahami — menerapkannya ke workspace baru yang diakses via link sidebar biasa akan membuat link tersebut hilang total dari sidebar (terverifikasi 27 Agustus) |
 | `Workflow State` (fixtures) | Tidak punya kolom `workflow` — jangan filter berdasarkan itu. Master global, TIDAK masuk fixtures per-app |
 | Role assignment ke user | Via UI (User → Roles), TIDAK perlu SQL |
@@ -295,6 +314,8 @@ Untuk skrip yang perlu dijalankan sekali di server, lebih andal pakai `bench exe
 | **Sebelum menghapus field DocType yang dicurigai duplikat/usang, WAJIB 2 langkah verifikasi dulu** | Kasus nyata 29 Agustus (item JJ, cleanup EAV Asset): (1) **verifikasi backfill** — kalau field lama mau digantikan struktur baru (mis. EAV), cek dulu SEMUA record existing sudah punya data yang sama persis di struktur baru sebelum field lama dihapus; (2) **cek referensi** — grep field tersebut di Property Setter (`search_fields`, dsb.), Client Script, Report (`.py`/`.json`), dan Print Format. Field yang masih direferensikan tapi dihapus akan membuat fitur terkait diam-diam rusak/kosong (tanpa error) untuk data baru ke depannya, meski data lama tetap aman karena kolom fisik tidak ikut terhapus |
 | **Child table (Table fieldtype) TIDAK BISA dipakai di `search_fields` Property Setter** | Kasus nyata 29 Agustus: field `serial_number` dipindah dari DocField statis ke child table EAV (`asset_attributes`) — `search_fields` yang tadinya mereferensikan `serial_number` harus dihapus dari daftar (bukan diarahkan ke field child table), karena `search_fields` cuma bisa baca kolom di tabel utama DocType, bukan child table |
 | **`git add .` bisa membundel perubahan tak terkait ke commit yang sama** | Kasus nyata 29 Agustus: commit cleanup EAV Asset ikut membawa perubahan `aset_bermasalah.json`/`.py` yang sebenarnya sudah ada di working directory server sebelum sesi itu (kemungkinan sisa kerja sesi lain yang belum di-commit). Tidak berbahaya di kasus ini (sudah diverifikasi jalan normal), tapi **selalu `git status`/`git diff` dulu sebelum `git add .` + commit** kalau server punya kemungkinan perubahan menumpuk dari sesi/pekerjaan lain, supaya tidak ada perubahan tak terduga ikut ter-commit tanpa direview |
+| **Baris `Workspace.links` dengan `link_type` kosong/tidak valid memblokir `doc.save()` Workspace total** | Kasus nyata 29 Agustus (item DD): satu baris ganjil `link_type=""` di `tabWorkspace Link` membuat SETIAP `doc.save()` pada Workspace tersebut gagal (`ValidationError: Link Type must be set first`), bukan cuma saat baris itu diedit. `link_type` hanya boleh salah satu dari `DocType`/`Page`/`Report`, dan `link_to` divalidasi sesuai tipenya (untuk `Page`, `link_to` harus nama record `Page` yang benar-benar ada di `tabPage`, BUKAN path URL). Kalau baris semacam ini ditemukan dan tidak ada Page/Report/DocType tujuan yang valid, opsi teraman adalah **menghapus baris tersebut** (bukan memaksa isi `link_type` dengan nilai yang tidak sesuai maksud aslinya) |
+| **`doc.save()` pada Workspace bisa memicu regenerasi sidebar yang menyapu item manual, kalau `Workspace Sidebar.standard=0`** | Kasus nyata 29 Agustus (item DD, regresi): setelah `doc.save()` pada Workspace "NextHD" berhasil (fix baris `links` di atas), item sidebar manual "NextHD Reporting" hilang dari `Workspace Sidebar Item`. Root cause diduga kuat `Workspace Sidebar.standard=0` untuk record terkait. **WAJIB cek & set `standard=1` dulu** sebelum memanggil `doc.save()` pada Workspace yang sidebar-nya sudah berisi item manual, dan **verifikasi ulang isi sidebar setelah setiap `doc.save()`** untuk deteksi dini |
 
 ---
 
@@ -337,6 +358,13 @@ Untuk skrip yang perlu dijalankan sekali di server, lebih andal pakai `bench exe
 | 16 | NextHD Asset field statis saja | Tambah field dinamis per asset_type dengan `depends_on` |
 | 17 | NextHD Ticket tidak ada link ke Asset | Tambah field `affected_asset` → Link: NextHD Asset |
 | 18 | NextHD Problem field terlalu minimal | Tambah priority, category, workaround, known_error, change_request |
+
+> ⚠️ **Catatan silang (29 Agustus):** item #10 di tabel di atas (`standard=0` sengaja diset
+> 2026-08-09/11 supaya sidebar bisa diedit) kemungkinan besar adalah **asal-usul** kondisi
+> `standard=0` yang ditemukan lagi sebagai penyebab regresi di bug session 29 Agustus (§4
+> bawah) — nilai ini sepertinya tidak pernah dikembalikan ke `1` setelah edit selesai di
+> sesi lama tsb. Pelajaran: kalau sengaja set `standard=0` untuk keperluan edit sementara,
+> selalu kembalikan ke `1` begitu edit selesai.
 
 ### ✅ TERVERIFIKASI — 2026-08-11 (via screenshot user)
 
@@ -506,6 +534,11 @@ Sesi ini melakukan verifikasi tambahan (di luar 4 file yang sudah dicek sebelumn
 
 **Status akhir:** Sidebar "NextHD Reporting" tampil normal, mengarah ke Workspace "NextHD Report" berisi 11 shortcut report. §1.C di atas sudah direvisi total untuk mencerminkan pemahaman yang benar soal 4 lapisan doctype sidebar dan lokasi file fixture yang benar. Detail kronologi lengkap (termasuk semua script diagnostik yang dipakai) ada di riwayat chat sesi 26–27 Agustus.
 
+**⚠️ Koreksi 29 Agustus:** menu UI yang dipakai untuk "Edit Sidebar" di poin 4 di atas seharusnya
+tercatat sebagai ikon **panah ke bawah di kiri atas** halaman Workspace, BUKAN titik tiga "⋯"
+di kanan atas — dua menu berbeda ini sempat tertukar di catatan sejak sesi ini. Lihat §1.C
+untuk versi terkoreksi.
+
 **Langkah lanjutan yang masih tertunda:**
 - [ ] Commit & push semua file `.json` yang berubah (fixture Workspace baru, fixture Workspace Sidebar terupdate, penghapusan file lama)
 - [ ] Jalankan `bench migrate` untuk uji tahan (pastikan sidebar tidak hilang lagi setelah migrate)
@@ -540,27 +573,25 @@ Sesi ini melakukan verifikasi tambahan (di luar 4 file yang sudah dicek sebelumn
 
 **Root cause:** Tampilan Workspace dikontrol oleh field `content` (JSON blocks) di `tabWorkspace`, bukan otomatis mengambil semua row `tabWorkspace Shortcut` (lihat catatan baru di §1.B) — row shortcut ada di database tapi tidak direferensikan di `content`.
 
-**Percobaan pertama gagal:** `ws.save()` via `frappe.get_doc()` melempar `ValidationError: Link Type must be set first` — disebabkan bug lama yang **tidak terkait**, lihat bug #3 di bawah (masih pending).
+**Percobaan pertama gagal:** `ws.save()` via `frappe.get_doc()` melempar `ValidationError: Link Type must be set first` — disebabkan bug lama yang **tidak terkait**, lihat bug #3 di bawah (sudah ditutup, lihat bug session 29 Agustus).
 
 **Fix final:** Update field `content` langsung lewat `frappe.db.set_value()` (skip validasi dokumen penuh — yang bermasalah adalah data lain di child table berbeda, bukan `content` itu sendiri). Dijalankan via `bench execute` (bukan `bench console` interaktif, karena kode bercabang `if/else` rawan salah parse indentasi saat paste ke console — lihat aturan baru di §3).
 
 **Status:** ✅ Tombol berhasil muncul di section "Admin" pada Workspace NextHD.
 
-**Bug #3 — 🔴 PENDING — `Link Type must be set first` pada Workspace NextHD:**
+**Bug #3 — ✅ SELESAI 29 Agustus (lihat bug session 2026-08-29 di bawah) — `Link Type must be set first` pada Workspace NextHD:**
 
 **Gejala:** `frappe.get_doc("Workspace", "NextHD").save()` gagal dengan `ValidationError: Link Type must be set first`.
 
 **Penyebab terkonfirmasi:** Row `tabWorkspace Link` (`name=u6nb1c41c1`, `parent='NextHD'`, label "Reporting Data", `link_to=/app/nexthd-report`, `link_type` **kosong**) — link ganjil yang sudah teridentifikasi di sesi pagi 28 Agustus (Masalah #2), belum diperbaiki.
 
-**Dampak saat ini:** Setiap kebutuhan mengubah Workspace NextHD lewat `frappe.get_doc().save()` (cara normal/aman) akan gagal karena validasi ini. Workaround sementara `frappe.db.set_value()` (skip validasi penuh) dipakai untuk bug #2 di atas — **tidak scalable** untuk perubahan struktural lebih besar ke depan.
-
-**Belum diperbaiki.** Opsi yang sudah disiapkan (belum dieksekusi): (A) ubah jadi link tipe benar, arahkan ke Workspace "NextHD Report" secara keseluruhan (bukan 1 report tunggal), atau (B) perbaiki `link_type` saja (isi nilai valid) tanpa ubah tujuan link. **Rekomendasi: selesaikan di sesi berikutnya** sebelum ada kebutuhan edit Workspace lain lagi.
+**Status:** Sudah diperbaiki tuntas 29 Agustus — detail lengkap di bug session 2026-08-29 di bawah.
 
 **Task masih pending — Rename Module "Next Helpdesk" → "NextHD":** Terkonfirmasi ulang di sesi ini `tabModule Def` masih bernama "Next Helpdesk", menyebabkan sidebar module-based (Report page, Page kustom seperti `nexthd-reset-data`) masih menampilkan header lama. Dikonfirmasi bukan Workspace terpisah yang nyasar (query `tabWorkspace WHERE name LIKE '%elpdesk%'` → kosong) — sumbernya murni nama `Module Def`. Solusi (dari sesi sebelumnya): rename `Module Def` + update `modules.txt`, risiko menengah, perlu sesi terpisah dengan backup.
 
 **Daftar tugas untuk sesi berikutnya:**
 - [ ] Re-test Dashboard Connections "Dipakai Di" pada `NextHD Photo` dengan data baru
-- [ ] Perbaiki `Link Type` kosong pada row "Reporting Data" di `tabWorkspace Link` (Opsi A atau B, bug #3)
+- [x] ~~Perbaiki `Link Type` kosong pada row "Reporting Data" di `tabWorkspace Link` (Opsi A atau B, bug #3)~~ — selesai 29 Agustus
 - [ ] Eksekusi rename Module "Next Helpdesk" → "NextHD" — sesi khusus, backup wajib
 - [ ] (Opsional) Log aktivitas reset (siapa, kapan) ke DocType audit terpisah; kunci tambahan supaya reset tidak sengaja dipakai di luar konteks demo/testing
 
@@ -608,9 +639,43 @@ Sesi ini melakukan verifikasi tambahan (di luar 4 file yang sudah dicek sebelumn
 
 **Pending untuk sesi berikutnya:** `test_nexthd_asset.py` (item W2) — beberapa test method meng-assert field yang sudah dihapus, akan gagal kalau dijalankan. Cocok untuk task Devin terpisah.
 
+### ✅ SELESAI — Bug Session 2026-08-29 Lanjutan, ~17:45 WIB (Item DD: `Link Type must be set first` + Regresi Sidebar "NextHD Reporting")
+
+**Konteks:** Menindaklanjuti item DD yang sudah pending sejak 28 Agustus (lihat bug #3 di bug session 2026-08-28 di atas) — bug `ValidationError: Link Type must be set first` yang menghalangi `frappe.get_doc("Workspace", "NextHD").save()` berjalan normal.
+
+**Kronologi diagnosa & fix root cause asli:**
+
+1. Row bermasalah dicek ulang: `tabWorkspace Link` (`name=u6nb1c41c1`, `parent='NextHD'`, label "Reporting Data", `link_to=/app/nexthd-report`, `type=URL`, `link_type=""`).
+2. **Percobaan 1 (gagal):** set `link_type="Workspace"` → ditolak dengan pesan eksplisit `Link Type cannot be "Workspace". It should be one of "DocType", "Page", "Report"` — field `link_type` di `tabWorkspace Link` cuma menerima 3 nilai itu.
+3. **Percobaan 2 (gagal):** set `link_type="Page"` dengan `link_to` tetap `/app/nexthd-report` → `LinkValidationError: Could not find Row #20: Link To: /app/nexthd-report`, karena `link_type=Page` membuat Frappe memvalidasi `link_to` sebagai **nama record `Page`**, bukan path URL.
+4. **Verifikasi:** dicek `tabPage` — Page bernama `nexthd-report` **tidak pernah ada** (yang eksis cuma `nexthd-reset-data`). Kesimpulan: baris "Reporting Data" ini memang sejak awal tidak pernah valid/berfungsi, kemungkinan sisa percobaan lama yang gagal tervalidasi dan tidak pernah dibersihkan.
+5. **Fix final:** baris "Reporting Data" **dihapus total** dari `tabWorkspace Link` via `DELETE FROM tabWorkspace Link WHERE name = 'u6nb1c41c1'` — fungsinya sudah digantikan sidebar "NextHD Reporting" (dibuat 27 Agustus lewat UI, mengarah ke Workspace "NextHD Report" berisi 11 shortcut report).
+6. Setelah dihapus, `frappe.get_doc("Workspace", "NextHD").save(ignore_permissions=True)` **berhasil** — log konfirmasi: `Wrote document file for Workspace NextHD at .../nexthd/next_helpdesk/workspace/nexthd/nexthd.json`.
+
+**🐛 Regresi ditemukan dalam sesi yang sama:** setelah `doc.save()` di atas, item sidebar manual **"NextHD Reporting" hilang** dari `Workspace Sidebar Item` — tersisa 15 item (semuanya auto-generate dari `Workspace.links`, tipe DocType/Workspace saja).
+
+**Root cause regresi:** dicek `Workspace Sidebar.standard` untuk record "NextHD" — ternyata `0` (bukan `1`). Sesuai `§1.C` (versi sebelum revisi sesi ini), `standard` harus `1` agar `export_sidebar()` mau menulis file secara permanen. Diduga kuat kondisi `standard=0` inilah yang membuat sidebar rawan **diregenerasi ulang murni dari `Workspace.links`** (yang memang tidak memuat item manual "NextHD Reporting", karena item itu ditambahkan lewat UI "Edit Sidebar" langsung ke `Workspace Sidebar Item`, bukan lewat `Workspace.links`) — kemungkinan besar dipicu oleh proses `doc.save()` pada Workspace itu sendiri.
+
+**Fix regresi:**
+1. `Workspace Sidebar.standard` diset dari `0` → `1` via `frappe.db.set_value("Workspace Sidebar", "NextHD", "standard", 1)` + commit.
+2. "NextHD Reporting" (`link_type: Workspace`, `link_to: NextHD Report`) ditambahkan kembali lewat UI Edit Sidebar. **Catatan navigasi penting:** menu yang benar untuk ini adalah ikon **panah ke bawah di kiri atas** halaman Workspace — BUKAN titik tiga "⋯" di kanan atas seperti tercatat di dokumentasi sebelumnya (koreksi sudah diterapkan ke §1.C dan §3).
+3. Verifikasi berulang (2×): `doc.save()` Workspace NextHD dipanggil lagi setelah fix — sidebar "NextHD" tetap **16 item lengkap** (termasuk "NextHD Reporting") di kedua percobaan, tidak tersapu lagi.
+4. Fixture `nexthd/nexthd/workspace_sidebar/nexthd.json` dikonfirmasi via `grep` sudah berisi label "NextHD Reporting" (lokasi yang benar sesuai §1.C).
+
+**Catatan tambahan (dikonfirmasi bukan bug):** saat "NextHD Reporting" diklik, tampilan berpindah ke Workspace "NextHD Report" yang sidebar-nya sendiri cuma 2 item (Dashboard + NextHD Report) — sempat terlihat seperti "sidebar hilang" tapi ini perilaku normal Frappe v16 (sidebar dirender per-Workspace yang sedang aktif, bukan gabungan semua Workspace). Workspace "NextHD Report" dikonfirmasi masih utuh (`public=1`, `is_hidden=0`, 11 shortcut report, tidak terpengaruh sama sekali oleh insiden ini).
+
+**Status akhir:** Item DD ditutup tuntas — bug asli (`Link Type must be set first`) dan regresi sampingannya (sidebar "NextHD Reporting" hilang) sudah diverifikasi selesai. Tidak ada data yang hilang permanen di sepanjang proses ini.
+
+**Pelajaran utama untuk sesi berikutnya:**
+- Baris `Workspace.links` dengan `link_type` kosong/invalid memblokir `doc.save()` **secara total**, bukan cuma saat baris itu sendiri diedit — selalu bersihkan baris semacam ini secepatnya begitu ditemukan, jangan dibiarkan menumpuk.
+- `doc.save()` pada Workspace punya efek samping tak terduga terhadap sidebar kalau `Workspace Sidebar.standard=0` — **selalu cek & pastikan `standard=1` dulu**, dan **verifikasi ulang isi sidebar setelah setiap `doc.save()`** pada Workspace yang sidebar-nya sudah berisi item manual.
+- Menu UI "Edit Sidebar" ada di ikon panah kiri atas, bukan titik tiga kanan atas — koreksi ini penting supaya instruksi ke Efendy di sesi mendatang tidak salah arah lagi.
+
+**Pending untuk sesi berikutnya:** Efendy commit + push kode yang berubah (`nexthd.json` Workspace fixture yang baru ter-generate dari `doc.save()`, fixture Workspace Sidebar kalau ada perubahan file lain di server).
+
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-29.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-29 17:45 WIB.*
 
 ---
 
