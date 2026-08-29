@@ -7,11 +7,11 @@
  "doctype": "Report",
  "filters": [
   {
-   "fieldname": "asset_type",
-   "fieldtype": "Select",
-   "label": "Asset Type",
+   "fieldname": "asset_category",
+   "fieldtype": "Link",
+   "label": "Asset Category",
    "mandatory": 0,
-   "options": "Laptop\nPC\nServer\nNetwork Device\nPrinter\nLainnya",
+   "options": "NextHD Asset Category",
    "wildcard_filter": 0
   }
  ],

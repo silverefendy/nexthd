@@ -43,17 +43,17 @@ def get_columns(filters):
     ]
 
 def get_data(filters):
-    asset_type = filters.get("asset_type")
-    
+    asset_category = filters.get("asset_category")
+
     conditions = []
     params = {}
-    
-    if asset_type:
-        conditions.append("asset.asset_type = %(asset_type)s")
-        params["asset_type"] = asset_type
-    
+
+    if asset_category:
+        conditions.append("asset.asset_category = %(asset_category)s")
+        params["asset_category"] = asset_category
+
     where_clause = " AND ".join(conditions) if conditions else "1=1"
-    
+
     query = f"""
         SELECT
             asset.name AS aset,
@@ -104,18 +104,18 @@ def get_data(filters):
             ticket_count.ticket_count DESC,
             problem_count.problem_count DESC
     """
-    
+
     data = frappe.db.sql(query, params, as_dict=True)
     return data
 
 def get_chart_data(columns, data):
     if not data:
         return None
-    
+
     assets = [row.get("aset") for row in data]
     jumlah_tiket = [row.get("jumlah_tiket_terkait", 0) for row in data]
     jumlah_problem = [row.get("jumlah_problem_terkait", 0) for row in data]
-    
+
     return {
         "data": {
             "labels": assets,
