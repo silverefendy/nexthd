@@ -3,7 +3,7 @@
 > Instalasi, setup Telegram/SLA, alur deploy, dan referensi. Pembagian kerja tim ada di `FAQ_DEVELOPER.md`.
 > Dipakai sekali di awal atau saat butuh reinstall.
 >
-> **Last updated:** 2026-08-23 18:30 WIB (rename dari `SETUP_DAN_ROADMAP.md`, bagian Pembagian Kerja dipindah ke `FAQ_DEVELOPER.md`)
+> **Last updated:** 2026-08-30 (fix link mati §2 — `POLA_KERJA_DAN_BUG.md` sudah dihapus dari repo 30 Agustus, diganti pointer ke 3 file penggantinya)
 
 ---
 
@@ -81,12 +81,13 @@ bench restart   # wajib kalau ada perubahan hooks.py, logic Python, atau utils
 2. `docs/SUMMARY.md` ← entry point, termasuk daftar open items terkini
 3. `docs/ARSITEKTUR.md` ← DocType, field, permission, schema DB
 4. `docs/WORKFLOW.md` ← state machine + notifikasi Telegram
-5. `docs/POLA_KERJA_DAN_BUG.md` ← aturan wajib + riwayat bug (versi lengkap, FAQ_DEVELOPER.md cuma kurasi)
-6. `nexthd/next_helpdesk/doctype/*/README.md` (spek per-doctype)
-7. `nexthd/next_helpdesk/utils/email_helper.py` & `telegram.py`
-8. `nexthd/next_helpdesk/api/telegram_webhook.py`
-9. `nexthd/next_helpdesk/tasks.py`
-10. `nexthd/next_helpdesk/workflow/`
+5. `docs/POLA_KERJA.md` ← aturan wajib coding/debug + Frappe quirks (Workspace/Desktop Icon/Dashboard Shortcut)
+6. `docs/BUG_WORKSPACE_SIDEBAR.md` + `docs/BUG_HISTORY.md` ← riwayat bug lengkap per topik (pecahan dari `POLA_KERJA_DAN_BUG.md` lama, sudah dihapus dari repo 30 Agustus — kalau ada referensi lama ke nama file itu di tempat lain, dianggap usang)
+7. `nexthd/next_helpdesk/doctype/*/README.md` (spek per-doctype)
+8. `nexthd/next_helpdesk/utils/email_helper.py` & `telegram.py`
+9. `nexthd/next_helpdesk/api/telegram_webhook.py`
+10. `nexthd/next_helpdesk/tasks.py`
+11. `nexthd/next_helpdesk/workflow/`
 
 ---
 
@@ -102,4 +103,4 @@ bench restart   # wajib kalau ada perubahan hooks.py, logic Python, atau utils
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-23 18:30 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-30.*
