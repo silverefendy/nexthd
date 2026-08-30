@@ -1,14 +1,14 @@
 {
  "app": "nexthd",
  "charts": [],
- "content": "[{\"id\": \"hdr-main\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Operasional</b></span>\", \"col\": 12}}, {\"id\": \"sc-new-ticket\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"New Ticket\", \"col\": 3}}, {\"id\": \"sc-ticket-list\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"All Tickets\", \"col\": 3}}, {\"id\": \"sc-problem\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Problem\", \"col\": 3}}, {\"id\": \"sc-change\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Change Request\", \"col\": 3}}, {\"id\": \"hdr-stats\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Statistik Tiket</b></span>\", \"col\": 12}}, {\"id\": \"card-open\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Tiket Baru\"}}, {\"id\": \"card-inprogress\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Tiket Sedang Dikerjakan\"}}, {\"id\": \"card-waiting\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Menunggu User\"}}, {\"id\": \"card-resolved\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Tiket Selesai Bulan Ini\"}}, {\"id\": \"card-critical\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Tiket Prioritas Kritis\"}}, {\"id\": \"card-problem\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Problem Terbuka\"}}, {\"id\": \"card-photo\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Total Foto Terupload\"}}, {\"id\": \"card-sla-warning\", \"type\": \"number_card\", \"data\": {\"col\": 6, \"number_card_name\": \"SLA Hampir Breach\"}}, {\"id\": \"card-sla-breach\", \"type\": \"number_card\", \"data\": {\"col\": 6, \"number_card_name\": \"SLA Breach Resolusi\"}}, {\"id\": \"hdr-list\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Tiket Terbaru</b></span>\", \"col\": 12}}, {\"id\": \"ql-ticket\", \"type\": \"quick_list\", \"data\": {\"quick_list_name\": \"Open Tickets\", \"col\": 6}}, {\"id\": \"ql-critical\", \"type\": \"quick_list\", \"data\": {\"quick_list_name\": \"Critical Tickets\", \"col\": 6}}, {\"id\": \"hdr-config\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Konfigurasi</b></span>\", \"col\": 12}}, {\"id\": \"sc-settings\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Settings\", \"col\": 3}}, {\"id\": \"sc-sla\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD SLA Policy\", \"col\": 3}}, {\"id\": \"sc-holiday\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Holiday\", \"col\": 3}}, {\"id\": \"sc-team\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Team\", \"col\": 3}}, {\"id\": \"sc-category\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Category\", \"col\": 3}}, {\"id\": \"sc-photo\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Photo\", \"col\": 3}}, {\"id\": \"hdr-report\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Laporan</b></span>\", \"col\": 12}}, {\"id\": \"sc-rpt-bulan\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Tiket per Bulan\", \"col\": 4}}, {\"id\": \"sc-rpt-agent\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Tiket per Agent\", \"col\": 4}}, {\"id\": \"sc-rpt-prioritas\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Tiket per Prioritas\", \"col\": 4}}, {\"id\": \"sc-rpt-kategori\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Tiket per Kategori\", \"col\": 4}}, {\"id\": \"sc-rpt-sla\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"SLA Compliance Bulanan\", \"col\": 4}}, {\"id\": \"sc-rpt-asset\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Aset Bermasalah\", \"col\": 4}}]",
+ "content": "[{\"id\": \"hdr-main\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Operasional</b></span>\", \"col\": 12}}, {\"id\": \"sc-new-ticket\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"New Ticket\", \"col\": 3}}, {\"id\": \"sc-ticket-list\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"All Tickets\", \"col\": 3}}, {\"id\": \"sc-problem\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Problem\", \"col\": 3}}, {\"id\": \"sc-change\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Change Request\", \"col\": 3}}, {\"id\": \"hdr-stats\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Statistik Tiket</b></span>\", \"col\": 12}}, {\"id\": \"card-open\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Tiket Baru\"}}, {\"id\": \"card-inprogress\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Tiket Sedang Dikerjakan\"}}, {\"id\": \"card-waiting\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Menunggu User\"}}, {\"id\": \"card-resolved\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Tiket Selesai Bulan Ini\"}}, {\"id\": \"card-critical\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Tiket Prioritas Kritis\"}}, {\"id\": \"card-problem\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Problem Terbuka\"}}, {\"id\": \"card-photo\", \"type\": \"number_card\", \"data\": {\"col\": 4, \"number_card_name\": \"Total Foto Terupload\"}}, {\"id\": \"card-sla-warning\", \"type\": \"number_card\", \"data\": {\"col\": 6, \"number_card_name\": \"SLA Hampir Breach\"}}, {\"id\": \"card-sla-breach\", \"type\": \"number_card\", \"data\": {\"col\": 6, \"number_card_name\": \"SLA Breach Resolusi\"}}, {\"id\": \"hdr-list\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Tiket Terbaru</b></span>\", \"col\": 12}}, {\"id\": \"ql-ticket\", \"type\": \"quick_list\", \"data\": {\"quick_list_name\": \"Open Tickets\", \"col\": 6}}, {\"id\": \"ql-critical\", \"type\": \"quick_list\", \"data\": {\"quick_list_name\": \"Critical Tickets\", \"col\": 6}}, {\"id\": \"hdr-config\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Konfigurasi</b></span>\", \"col\": 12}}, {\"id\": \"sc-settings\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Settings\", \"col\": 3}}, {\"id\": \"sc-sla\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD SLA Policy\", \"col\": 3}}, {\"id\": \"sc-holiday\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Holiday\", \"col\": 3}}, {\"id\": \"sc-team\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Team\", \"col\": 3}}, {\"id\": \"sc-category\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Category\", \"col\": 3}}, {\"id\": \"sc-photo\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NextHD Photo\", \"col\": 3}}, {\"id\": \"hdr-report\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Laporan</b></span>\", \"col\": 12}}, {\"id\": \"sc-rpt-bulan\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Tiket per Bulan\", \"col\": 4}}, {\"id\": \"sc-rpt-agent\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Tiket per Agent\", \"col\": 4}}, {\"id\": \"sc-rpt-prioritas\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Tiket per Prioritas\", \"col\": 4}}, {\"id\": \"sc-rpt-kategori\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Tiket per Kategori\", \"col\": 4}}, {\"id\": \"sc-rpt-sla\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"SLA Compliance Bulanan\", \"col\": 4}}, {\"id\": \"sc-rpt-asset\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Aset Bermasalah\", \"col\": 4}}, {\"id\": \"hdr-admin\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Admin</b></span>\", \"col\": 12}}, {\"id\": \"sc-reset-demo\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Reset Data Demo\", \"col\": 3}}]",
  "creation": "2026-08-24 10:01:52.822585",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
  "hide_custom": 0,
  "icon": "activities",
- "idx": 1,
+ "idx": 2,
  "indicator_color": "blue",
  "is_hidden": 0,
  "label": "NextHD",
@@ -208,21 +208,10 @@
    "onboard": 0,
    "report_ref_doctype": "NextHD Asset",
    "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Reporting Data",
-   "link_count": 0,
-   "link_to": "Detail Aset Lengkap",
-   "link_type": "Report",
-   "onboard": 0,
-   "report_ref_doctype": "NextHD Asset",
-   "type": "Link"
   }
  ],
- "modified": "2026-08-27 13:27:46.296508",
- "modified_by": "support@ciptamebel.co.id",
+ "modified": "2026-08-29 23:58:15.086137",
+ "modified_by": "Administrator",
  "module": "Next Helpdesk",
  "name": "NextHD",
  "number_cards": [
@@ -411,6 +400,11 @@
    "link_to": "Aset Bermasalah",
    "report_ref_doctype": "NextHD Asset",
    "type": "Report"
+  },
+  {
+   "label": "Reset Data Demo",
+   "link_to": "nexthd-reset-data",
+   "type": "Page"
   }
  ],
  "title": "NextHD",

@@ -1,6 +1,6 @@
 {
  "app": "nexthd",
- "creation": "2026-08-26 19:18:46.344208",
+ "creation": "2026-08-29 10:40:55.123072",
  "docstatus": 0,
  "doctype": "Workspace Sidebar",
  "idx": 0,
@@ -85,6 +85,18 @@
    "keep_closed": 0,
    "label": "NextHD Asset",
    "link_to": "NextHD Asset",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "copy-check",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "NextHD Asset Category",
+   "link_to": "NextHD Asset Category",
    "link_type": "DocType",
    "show_arrow": 0,
    "type": "Link"
@@ -188,7 +200,7 @@
   {
    "child": 0,
    "collapsible": 1,
-   "icon": "newspaper",
+   "icon": "list",
    "indent": 0,
    "keep_closed": 0,
    "label": "NextHD Reporting",
@@ -198,8 +210,8 @@
    "type": "Link"
   }
  ],
- "modified": "2026-08-27 10:29:29.181042",
- "modified_by": "Administrator",
+ "modified": "2026-08-30 08:27:36.936086",
+ "modified_by": "support@ciptamebel.co.id",
  "module": "Next Helpdesk",
  "name": "NextHD",
  "owner": "Administrator",

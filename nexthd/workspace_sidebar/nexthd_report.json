@@ -1,0 +1,112 @@
+{
+ "app": "nexthd",
+ "creation": "2026-08-27 10:41:40.587309",
+ "docstatus": 0,
+ "doctype": "Workspace Sidebar",
+ "idx": 0,
+ "items": [
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "layout-dashboard",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Dashboard",
+   "link_to": "NextHD",
+   "link_type": "Workspace",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "list",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "NextHD Report",
+   "link_to": "NextHD Report",
+   "link_type": "Workspace",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "ticket",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "NextHD Ticket",
+   "link_to": "NextHD Ticket",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "bug",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "NextHD Problem",
+   "link_to": "NextHD Problem",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "tool",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "NextHD Change Request",
+   "link_to": "NextHD Change Request",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "alert-circle",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "NextHD Known Error",
+   "link_to": "NextHD Known Error",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "package",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "NextHD Asset",
+   "link_to": "NextHD Asset",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "copy-check",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "NextHD Asset Category",
+   "link_to": "NextHD Asset Category",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-08-30 10:15:12.762301",
+ "modified_by": "Administrator",
+ "module": "Next Helpdesk",
+ "name": "NextHD Report",
+ "owner": "support@ciptamebel.co.id",
+ "standard": 1,
+ "title": "NextHD Report"
+}
