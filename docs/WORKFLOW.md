@@ -3,7 +3,7 @@
 > State machine untuk Ticket, Problem, Change Request + sistem notifikasi Telegram.
 > File ini paling sering dirujuk saat debugging workflow.
 >
-> **Last updated:** 2026-08-22 00:45 WIB
+> **Last updated:** 2026-08-30 (fix §3 — contoh fixtures `hooks.py` usang, `Workspace Sidebar` sengaja TIDAK terdaftar di fixtures, dikonfirmasi via cek langsung ke server)
 
 ---
 
@@ -35,7 +35,7 @@
 
 > ⚠️ **Belum ada trigger notifikasi untuk NextHD Problem dan NextHD Change Request**
 > selain baris terakhir di atas (approval CR). Dicatat sebagai kandidat fitur tambahan
-> di `HANDOFF.md` sesi 2026-08-15.
+> sejak sesi 2026-08-15.
 
 > ⚠️ **Pesan "Peringatan SLA Response"** di `check_sla_response_breach()` (`tasks.py`) masih pakai
 > f-string mentah — belum dibungkus `frappe._()`. Luput dari scope PR #6 karena ada di `tasks.py`,
@@ -51,7 +51,7 @@
 
 ### Catatan i18n
 
-✅ **Sudah dikerjakan (PR #6, merged 2026-08-20):** semua string notifikasi di `telegram.py` sudah dibungkus `frappe._()`, terjemahan ditambahkan ke `id.csv`. **Belum di-deploy ke server produksi** — perlu `git pull` + `bench migrate` terlebih dulu.
+✅ **Sudah dikerjakan (PR #6, merged 2026-08-20):** semua string notifikasi di `telegram.py` sudah dibungkus `frappe._()`, terjemahan ditambahkan ke `id.csv`. Sudah live di produksi sejak 22 Agustus.
 
 ### Bug yang Sudah Difix di telegram.py
 
@@ -106,7 +106,7 @@ Terbuka → Investigasi ──[kondisi: known_error terisi]──▶ Known Error
 > transisi ini **diberi `condition: doc.known_error`** — sekarang tombol transisi hanya muncul
 > di Actions kalau field `known_error` di Problem sudah terisi. Ini menutup celah jebakan §4
 > tanpa perlu menghapus transisi selamanya (lebih robust terhadap re-import tidak sengaja di
-> masa depan). Detail teknis fix di `POLA_KERJA_DAN_BUG.md`.
+> masa depan). Detail teknis fix di `docs/BUG_HISTORY.md`.
 >
 > **Dua cara mencapai status Known Error yang sekarang valid:**
 > 1. Tombol custom **"Buat Known Error dari Problem"** (Client Script) — kalau Known Error
@@ -178,7 +178,7 @@ File JSON di `nexthd/next_helpdesk/workflow/`:
 - `nexthd_problem_workflow.json`
 - `nexthd_change_request_workflow.json`
 
-Didaftarkan di `hooks.py`:
+Didaftarkan di `hooks.py` (isi ringkas, dikonfirmasi via cek langsung ke server 30 Agustus 2026):
 
 ```python
 fixtures = [
@@ -189,16 +189,29 @@ fixtures = [
         "NextHD Ticket", "NextHD Problem", "NextHD Change Request"
     ]]]},
     {"dt": "Desktop Icon", "filters": [["app", "=", "nexthd"]]},
-    {"dt": "Workspace Sidebar", "filters": [["name", "=", "NextHD"]]}
+    {"dt": "Client Script", "filters": [["name", "in", [ ... 8 nama script ... ]]]},
+    {"dt": "Property Setter", "filters": [["doc_type", "like", "NextHD%"]]},
+    {"dt": "Web Form", "filters": [["name", "=", "Tiket Saya"]]},
+    {"dt": "Number Card", "filters": [["name", "in", [ ... ]]]}
+    # ... (kemungkinan ada entri lain, cek file asli untuk daftar lengkap)
 ]
 ```
 
-> ⚠️ `Workflow State` TIDAK perlu di fixtures — tidak punya kolom `workflow`, sifatnya global.
+> ⚠️ **`Workflow State` TIDAK perlu di fixtures** — tidak punya kolom `workflow`, sifatnya global.
+
+> ⚠️ **`Workspace Sidebar` SENGAJA TIDAK didaftarkan di fixtures.** Komentar di `hooks.py`
+> menjelaskan: Workspace dikelola via `workspace_json` (folder `nexthd/next_helpdesk/workspace/`),
+> bukan lewat fixtures — dua mekanisme ini **tidak boleh aktif bersamaan** karena menyebabkan
+> `bench migrate` menganggap Workspace sebagai orphan dan menghapusnya ("Removing orphan
+> Workspaces"). Detail arsitektur sidebar & mekanisme fixture-nya ada di `docs/POLA_KERJA.md §1`
+> dan `docs/BUG_WORKSPACE_SIDEBAR.md`. *(Versi dokumen ini sebelum 30 Agustus sempat salah
+> mencantumkan `Workspace Sidebar` di contoh fixtures di atas — sudah dikoreksi setelah
+> verifikasi langsung ke `hooks.py` di server.)*
 
 > ⚠️ **Fixture JSON = definisi saja, TIDAK otomatis aktif.** Wajib dicek manual:
 > 1. `Workflow.is_active = 1` untuk ketiga workflow
 > 2. Field `workflow_state` muncul di form (otomatis ditambah Frappe saat workflow aktif)
-> 3. Role per transition harus sudah di-assign ke user terkait (lihat `ARSITEKTUR.md §4`)
+> 3. Role per transition harus sudah di-assign ke user terkait (lihat `docs/ARSITEKTUR.md §4`)
 
 ---
 
@@ -346,8 +359,8 @@ muncul, field terisi = tombol muncul.
 
 ### ✅ RESOLVED (2026-08-19 & 2026-08-20) — Dedup Workflow Transition (Dua Kali)
 
-Ditemukan dua kali: pertama 2026-08-19 (prefix `ai9*`, filter per-nama), kedua 2026-08-20 (pola konsisten `idx = 0` di semua 3 workflow). Keduanya difix via SQL DELETE dan fixture di-export ulang. Regression test `apply_workflow()` lulus setelah fix kedua. Detail di `POLA_KERJA_DAN_BUG.md §4`.
+Ditemukan dua kali: pertama 2026-08-19 (prefix `ai9*`, filter per-nama), kedua 2026-08-20 (pola konsisten `idx = 0` di semua 3 workflow). Keduanya difix via SQL DELETE dan fixture di-export ulang. Regression test `apply_workflow()` lulus setelah fix kedua. Detail lanjutan (round 2 & 3, root cause fixture menumpuk generasi lama) ada di `docs/BUG_HISTORY.md` dan `docs/BUG_WORKSPACE_SIDEBAR.md`.
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-22 00:45 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-30.*
