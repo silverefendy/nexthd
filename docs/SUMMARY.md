@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-08-30 13:05 WIB (housekeeping dokumentasi — `POLA_KERJA_DAN_BUG.md` lama dihapus dari repo setelah isinya dipecah tuntas ke `POLA_KERJA.md`, `BUG_WORKSPACE_SIDEBAR.md`, `BUG_HISTORY.md`; tabel "Struktur Dokumentasi" & referensi di bawah diupdate mengikuti struktur baru; kebijakan `HANDOFF.md` sebagai "arsip beku" dicabut — sekarang jadi log aktif yang boleh dipangkas)
+> **Last updated:** 2026-08-30 15:20 WIB (`docs/HANDOFF.md` selesai dirombak — banner "arsip beku" dihapus, isi dipangkas dari ~39KB jadi log ringkas ~6KB, commit `89b76f0`. Restrukturisasi dokumentasi dinyatakan **TUNTAS**; review file besar lain — `ARSITEKTUR.md`/`DAFTAR_FITUR.md`/`AUDIT_SISTEM.md` — diputuskan **tidak perlu dipangkas** karena isinya berupa script siap-pakai & referensi teknis yang masih aktif dipakai, bukan kronologi usang seperti `HANDOFF.md`/`POLA_KERJA_DAN_BUG.md` dulu; risiko kehilangan script saat rangkuman lebih besar dari manfaat pemendekan)
 
 ---
 
@@ -20,7 +20,7 @@
 | `docs/BUG_HISTORY.md` | Riwayat bug lain di luar Workspace/Sidebar — SLA/Business Hours, Telegram, naming series, Asset EAV, navigasi relasi antar dokumen, dll |
 | `docs/PANDUAN_INSTALASI.md` | Instalasi, setup Telegram/SLA, alur deploy, referensi |
 | `docs/AUDIT_SISTEM.md` | Script audit lengkap (schema drift, Workspace, Workflow master data, SLA, fixtures) + script verifikasi ringan pasca-perbaikan + script gabungan cek semua isu Workspace/Sidebar/Dashboard. Dipakai on-demand untuk cek kesehatan server atau sebelum install ke server baru |
-| `docs/HANDOFF.md` | **Log riwayat sesi aktif** (bukan lagi arsip beku sejak 30 Agustus — kebijakan lama dicabut oleh Efendy). Berisi kronologi sesi 14 Agustus dst; boleh dipangkas berkala kalau ada entri yang sudah 100% terwakili di file lain. Rombak menyeluruh (hapus entri usang) masih pending — lihat item pending di §2 |
+| `docs/HANDOFF.md` | **Log riwayat sesi ringkas** (dirombak total 30 Agustus — bukan lagi kronologi naratif penuh, sekarang tabel log per-tanggal yang menunjuk ke file tematik untuk detail) |
 
 ---
 
@@ -64,14 +64,15 @@
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `docs/BUG_WORKSPACE_SIDEBAR.md` atau `docs/BUG_HISTORY.md` (sebelumnya `POLA_KERJA_DAN_BUG.md`, sudah dihapus 30 Agustus).
 > Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/DAFTAR_FITUR.md`.
 
-### 🔴 PENDING — Restrukturisasi Dokumentasi (Belum Tuntas, Prioritas Utama Sesi Berikutnya)
+### ✅ Restrukturisasi Dokumentasi — TUNTAS (30 Agustus)
 
 | # | Item | Keterangan | PIC |
 |---|---|---|---|
-| — | Rombak `docs/HANDOFF.md` | Kebijakan "arsip beku, tidak diubah" **sudah dicabut** (keputusan Efendy, 30 Agustus) — banner lama di bagian atas file itu masih perlu diganti. Review isi lama (sesi 14–24 Agustus): hapus entri yang 100% sudah terwakili di `SUMMARY.md`/`ARSITEKTUR.md`/`POLA_KERJA.md`/`BUG_WORKSPACE_SIDEBAR.md`/`BUG_HISTORY.md`, pertahankan detail teknis unik yang belum dipindahkan ke manapun. Ke depan dipakai sebagai log sesi yang dipangkas berkala, bukan menumpuk selamanya | Claude |
-| — | Review file lain yang berpotensi kepanjangan | `ARSITEKTUR.md`, `DAFTAR_FITUR.md`, `AUDIT_SISTEM.md`, `PANDUAN_INSTALASI.md` — rangkum kalau perlu, **tapi inti masalah + script wajib dipertahankan**, jangan hilang total | Claude |
+| — | Pecah `POLA_KERJA_DAN_BUG.md` (82KB) jadi 3 file | `POLA_KERJA.md` + `BUG_WORKSPACE_SIDEBAR.md` + `BUG_HISTORY.md`, file lama dihapus (commit `7e4c0d1`) | Claude |
+| — | Rombak `docs/HANDOFF.md` | Banner "arsip beku" dihapus, isi dipangkas dari kronologi naratif ~39KB jadi tabel log ringkas ~6KB per-tanggal yang menunjuk ke file tematik. Commit `89b76f0` | Claude |
+| — | Review `ARSITEKTUR.md`/`DAFTAR_FITUR.md`/`AUDIT_SISTEM.md`/`PANDUAN_INSTALASI.md` | **Diputuskan tidak perlu dirangkum.** Berbeda dari `HANDOFF.md`/`POLA_KERJA_DAN_BUG.md` (kronologi sesi yang menumpuk & banyak terduplikasi), keempat file ini isinya referensi teknis aktif (schema DB, script `bench console` siap pakai, panduan instalasi) yang masih relevan penuh — memangkasnya berisiko menghilangkan detail/script yang justru paling sering dipakai ulang. `PANDUAN_INSTALASI.md` (4.6KB) memang sudah ringkas | Claude |
 
-> **Progress restrukturisasi sampai sesi ini:** `POLA_KERJA_DAN_BUG.md` (82KB) sudah dipecah tuntas jadi `POLA_KERJA.md` (aturan wajib, commit `8338fa2`), `BUG_WORKSPACE_SIDEBAR.md` (commit `fb04898`), dan `BUG_HISTORY.md` (commit `08a801c`) — lalu file lama **sudah dihapus dari repo** (commit `7e4c0d1`, 30 Agustus). Tabel "Struktur Dokumentasi" di atas sudah mengikuti struktur baru ini.
+**Struktur dokumentasi final (10 file di `docs/`):** `SUMMARY.md` (index), `FAQ_DEVELOPER.md`, `DAFTAR_FITUR.md`, `ARSITEKTUR.md`, `WORKFLOW.md`, `POLA_KERJA.md`, `BUG_WORKSPACE_SIDEBAR.md`, `BUG_HISTORY.md`, `PANDUAN_INSTALASI.md`, `AUDIT_SISTEM.md`, `HANDOFF.md`.
 
 ### ✅ Item KK — SELESAI (30 Agustus): Sidebar "NextHD" +Asset Category, Sidebar "NextHD Report" Diperkaya
 
@@ -81,7 +82,9 @@
 
 > **Temuan sampingan penting (30 Agustus):** sidebar pendek yang muncul di halaman Report/DocType (mis. `/desk/query-report/...`) sempat diduga "Route History" (riwayat navigasi), tapi **terbukti salah** setelah dicek `tabRoute History` — isinya tidak cocok dengan yang tampil di UI. Kesimpulan final: itu adalah **"Module Sidebar"** bawaan Frappe — di-generate otomatis secara real-time dari kombinasi semua `Workspace`+`DocType`+`Report` yang punya `module='Next Helpdesk'`. **Bukan file, bukan dokumen tersimpan, tidak bisa diedit/ditambahkan** tanpa override kode inti Frappe (berisiko tinggi, konsisten dengan limitasi Frappe v16 yang sudah dikonfirmasi sebelumnya — GitHub Issue #36317). **Keputusan final Efendy: dibiarkan apa adanya, tidak perlu dikejar lagi.**
 
-> ⚠️ **PENDING — perlu ditindaklanjuti sesi berikutnya:** `bench migrate` belum pernah dijalankan sejak fix item DD (29 Agustus) maupun item KK (30 Agustus). Kedua faktor risiko regresi yang diketahui (`Workspace Sidebar.standard` dan `.app` untuk record "NextHD" & "NextHD Report") sudah diperbaiki ke nilai benar, tapi belum ada bukti empiris (belum diuji migrate sungguhan) bahwa keduanya bertahan. **Rekomendasi:** jalankan `bench migrate` sebagai uji tahan (aman, bukan operasi destruktif), lalu verifikasi ulang jumlah item sidebar "NextHD" (harus 17) dan "NextHD Report" (harus 8) + pastikan `doc.save()` pada Workspace "NextHD" masih berhasil tanpa error. Bisa digabung sekalian dengan uji migrate final untuk item AA (sidebar 6 link Report di `Workspace.links`) yang juga masih pending dari 25 Agustus.
+### 🔴 PRIORITAS SESI BERIKUTNYA — `bench migrate` Uji Tahan (Belum Pernah Dijalankan)
+
+`bench migrate` belum pernah dijalankan sejak fix item DD (29 Agustus) maupun item KK (30 Agustus). Kedua faktor risiko regresi yang diketahui (`Workspace Sidebar.standard` dan `.app` untuk record "NextHD" & "NextHD Report") sudah diperbaiki ke nilai benar, tapi belum ada bukti empiris (belum diuji migrate sungguhan) bahwa keduanya bertahan. **Rekomendasi:** jalankan `bench migrate` sebagai uji tahan (aman, bukan operasi destruktif), lalu verifikasi ulang jumlah item sidebar "NextHD" (harus 17) dan "NextHD Report" (harus 8) + pastikan `doc.save()` pada Workspace "NextHD" masih berhasil tanpa error. Bisa digabung sekalian dengan uji migrate final untuk item AA (sidebar 6 link Report di `Workspace.links`) yang juga masih pending dari 25 Agustus.
 
 ### ✅ Item DD — SELESAI (29 Agustus, ~17:45 WIB): Bug `Link Type must be set first` pada Workspace NextHD
 
@@ -147,7 +150,7 @@
 | I | Wipe data testing (versi lama/checklist) | Sudah **diimplementasikan versi ringkas** sebagai tombol "Reset Data Demo" (item HH, 28 Agustus) — desain lengkap dengan UI checkbox per DocType di `DAFTAR_FITUR.md` masih jadi opsi pengembangan lanjutan kalau dibutuhkan granularitas lebih | Claude (desain), Efendy (waktu eksekusi) |
 | J | Workflow — testing end-to-end di UI browser | Regression test backend sudah lulus 100% (2026-08-20). Belum ditest klik manual di browser untuk verifikasi tombol Actions & permission per role tampil benar | Efendy |
 | K | Role assignment ke user spesifik | `support@ciptamebel.co.id` → role IT Manager. Keputusan: sementara 1 akun shared dulu | Efendy |
-| L | File `HANDOFF_SLA_NextHD_2026-08-19.md` | Disebut di `docs/HANDOFF.md` tapi tidak ada di repo. Kalau masih ada di server, perlu `git add` + commit sebelum hilang | Efendy |
+| L | File `HANDOFF_SLA_NextHD_2026-08-19.md` | Disebut di riwayat lama, tidak ada di repo. Kalau masih ada di server, perlu `git add` + commit sebelum hilang | Efendy |
 | M | Guard permanen duplikasi workflow transition | Root cause **sekarang terkonfirmasi** (25 Agustus): `Workflow Transition` adalah fixture aktif di `hooks.py`, dan file fixture-nya menumpuk beberapa generasi export lama — dedup di database saja tidak permanen kalau fixture di repo tidak ikut dibersihkan. Sudah dibersihkan total 2× (commit `9cf994f`, lalu `322827f` untuk perbaiki `name` mismatch). Belum ada mekanisme pencegahan otomatis | Claude |
 | N | Pemetaan tanggal Cuti Bersama 2026 belum dicek silang ke SKB asli | Data ditambahkan berdasar asumsi pola umum kalender cuti bersama Indonesia, bukan dibaca langsung dari teks SKB 3 Menteri | Efendy |
 | O | Dashboard "Aset Bermasalah" (Number Card) | Usulan, belum dikerjakan | - |
@@ -178,7 +181,7 @@
 
 ## 3. Hal-hal yang SUDAH Selesai (Ringkasan)
 
-> Detail lengkap ada di `docs/BUG_WORKSPACE_SIDEBAR.md` + `docs/BUG_HISTORY.md` (pecahan dari `POLA_KERJA_DAN_BUG.md §4` lama, sudah dihapus 30 Agustus) dan riwayat update `docs/HANDOFF.md` (log sesi).
+> Detail lengkap ada di `docs/BUG_WORKSPACE_SIDEBAR.md` + `docs/BUG_HISTORY.md` dan log ringkas `docs/HANDOFF.md`.
 
 | Item | Selesai |
 |---|---|
@@ -225,10 +228,11 @@
 | Bug `Link Type must be set first` pada Workspace NextHD (item DD) + regresi sidebar "NextHD Reporting" | ✅ 29 Agustus ~17:45 WIB. Row "Reporting Data" (`link_type` kosong, sisa percobaan lama yang tak pernah valid) dihapus dari `tabWorkspace Link`. `doc.save()` berhasil. Regresi: `doc.save()` sempat menghapus "NextHD Reporting" dari sidebar karena `Workspace Sidebar.standard=0` — diperbaiki ke `1`, item ditambahkan kembali via UI "Edit Sidebar" (menu di panah kiri atas, bukan titik tiga kanan atas), diverifikasi permanen via `bench console` berulang kali (`doc.save()` tetap sukses, 16 item sidebar tetap utuh, fixture ter-update) | Efendy |
 | Sidebar "NextHD" +Asset Category, sidebar "NextHD Report" diperkaya 2→8 item, klarifikasi Module Sidebar bukan editable (item KK) | ✅ 30 Agustus. `Workspace Sidebar.app` untuk "NextHD Report" diperbaiki dari `None`→`nexthd` sebelum insert 6 item DocType via script `doc.append()`+`doc.save()` pada `Workspace Sidebar` (bukan `Workspace`, lebih aman). Fixture `nexthd_report.json` ter-commit pertama kali. Sidebar pendek di halaman Report/DocType dikonfirmasi sebagai Module Sidebar bawaan Frappe (auto-generate dari field `module`), bukan bug, diputuskan dibiarkan. Commit `beec05c` | Efendy |
 | Restrukturisasi `docs/POLA_KERJA_DAN_BUG.md` (82KB) jadi 3 file terpisah | ✅ 30 Agustus. Dipecah jadi `docs/POLA_KERJA.md` (aturan wajib, commit `8338fa2`), `docs/BUG_WORKSPACE_SIDEBAR.md` (riwayat bug Workspace/Sidebar, commit `fb04898`), `docs/BUG_HISTORY.md` (riwayat bug lain, commit `08a801c`). File lama dihapus dari repo (commit `7e4c0d1`) setelah semua konten dipastikan tersalin. Tabel "Struktur Dokumentasi" di file ini diupdate mengikuti struktur baru | Claude |
+| Rombak `docs/HANDOFF.md` — banner "arsip beku" dihapus, dipangkas jadi log ringkas | ✅ 30 Agustus, commit `89b76f0`. Dari ~39KB kronologi naratif penuh jadi ~6KB tabel log per-tanggal yang menunjuk ke file tematik. Restrukturisasi dokumentasi dinyatakan **TUNTAS** — 4 file besar lain (`ARSITEKTUR.md`, `DAFTAR_FITUR.md`, `AUDIT_SISTEM.md`, `PANDUAN_INSTALASI.md`) diputuskan **tidak perlu dipangkas**, karena isinya referensi teknis & script aktif yang masih dipakai, bukan kronologi usang | Claude |
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-30 13:05 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-30 15:20 WIB.*
 
 ---
 
@@ -246,135 +250,14 @@
 
 ---
 
-## Update 2026-08-29 08:15 WIB — Item II Ditutup: Struktur EAV NextHD Asset Terkonfirmasi Aman
+## Update 2026-08-30 15:20 WIB — Restrukturisasi Dokumentasi TUNTAS
 
-**Konteks:** Menindaklanjuti Item II (temuan sesi pagi ini) — struktur EAV `NextHD Asset` yang sempat dicurigai sebagai perubahan tak terdokumentasi/berisiko.
+**Konteks:** Menindaklanjuti pending item dari update 13:05 WIB (rombak `HANDOFF.md` + review file besar lain).
 
-**Hasil investigasi (script `bench console` dijalankan Efendy):**
-- `NextHD Asset Category` & `NextHD Asset Attribute`: ada di database ✅
-- Kolom fisik `asset_category` di `tabNextHD Asset`: sudah ter-migrate ✅
-- **6/6 record NextHD Asset existing (AST-2608-0001 s/d 0006) semua sudah terisi `asset_category`** — 0 record kosong ✅
-- 7 record master `NextHD Asset Category`, 19 baris `NextHD Asset Attribute` sudah dipakai ✅
-- `asset_category` memang `reqd=1` di meta server, tapi aman karena semua data existing sudah lengkap
+**Yang dikerjakan:**
+1. `docs/HANDOFF.md` dirombak total — banner "Status: ARSIP" (kebijakan yang sudah dicabut Efendy) dihapus, isi dipangkas dari kronologi naratif penuh 14–30 Agustus (~39KB) jadi tabel log ringkas per-tanggal (~6KB) yang menunjuk ke file tematik untuk detail lengkap. Commit `89b76f0`.
+2. Review 4 file besar lain (`ARSITEKTUR.md` 22KB, `DAFTAR_FITUR.md` 20KB, `AUDIT_SISTEM.md` 46KB, `PANDUAN_INSTALASI.md` 4.6KB) — **diputuskan tidak perlu dipangkas**. Berbeda dari `HANDOFF.md`/`POLA_KERJA_DAN_BUG.md` (lama) yang isinya kronologi sesi menumpuk dan banyak terduplikasi ke file lain, keempat file ini isinya referensi teknis aktif yang tidak terduplikasi: schema DB & field DocType (`ARSITEKTUR.md`), checklist fitur (`DAFTAR_FITUR.md`), script `bench console` siap pakai untuk audit server (`AUDIT_SISTEM.md`), dan panduan setup (`PANDUAN_INSTALASI.md`, sudah ringkas). Memangkas isinya berisiko menghilangkan script/detail yang justru paling sering dipakai ulang — manfaat pemendekan tidak sebanding risikonya.
 
-**Sumber perubahan (dari `git log`):** commit `281072a` ("Update devin eav") dan `81889c0` ("Update devin attribute eav"), author **silverefendy**, Jumat 28 Agustus 2026 pukul 23:07:42 WIB dan setelahnya. **Kesimpulan: ini pekerjaan sah Efendy sendiri (via Devin), bukan insiden atau perubahan tak terotorisasi** — sekadar belum sempat dilaporkan/didokumentasikan ke sesi chat Claude sebelumnya karena dikerjakan di luar percakapan tersebut.
+**Status akhir restrukturisasi dokumentasi (dimulai sejak pemecahan `POLA_KERJA_DAN_BUG.md` 82KB):** **TUNTAS**. Struktur final 11 file `.md` di `docs/` — lihat tabel "Struktur Dokumentasi" di bagian atas file ini.
 
-**Tidak ada tindakan perbaikan yang diperlukan.** Peringatan "jangan create/edit NextHD Asset" dari update sebelumnya (jam 09:00 pagi ini) **sudah dicabut** — form Asset aman dipakai normal.
-
-**Pelajaran untuk sesi berikutnya:** kalau menemukan perubahan kode/struktur yang tidak tercatat di riwayat chat, cek dulu `git log --oneline -- <path>` dan `git log -1 --format="%an %ad %s" -- <path>` sebelum menyimpulkan itu insiden — bisa jadi memang pekerjaan sah yang dilakukan di luar sesi chat tersebut (lewat Devin langsung, atau sesi lain).
-
----
-
-## Update 2026-08-29 09:45 WIB — Item JJ Selesai: Cleanup Field Terstruktur Asset (Duplikat EAV)
-
-**Konteks:** Menindaklanjuti item II (EAV dikonfirmasi aman) — field terstruktur lama di `NextHD Asset` (per `asset_type`: PC/Laptop/Server, Network Device, Printer) sekarang sudah punya 2 tempat penyimpanan yang tumpang tindih dengan `asset_attributes` (EAV). Efendy minta field lama dihapus, field catatan bebas dipertahankan.
-
-**Langkah verifikasi sebelum eksekusi (wajib, sesuai pola project ini — jangan hapus field tanpa cek referensi & backfill dulu):**
-1. Script `bench console` bandingkan tiap field lama (non-kosong) di 6 Asset existing vs baris `NextHD Asset Attribute` — **semua cocok, 0 data hilang**.
-2. Cek referensi field yang akan dihapus di Property Setter, Client Script, Report, Print Format:
-   - Property Setter `search_fields` (`NextHD Asset-main-search_fields`) memakai `serial_number` — **wajib diupdate**.
-   - Report `detail_aset_lengkap.py` — raw SQL langsung baca 6 kolom yang akan dihapus — **wajib ditulis ulang**.
-   - Client Script (`a258744559`, `cs_known_error_from_problem`) dan report "Tiket per Bulan" sempat ke-flag tapi setelah dicek isi baris persisnya, ternyata **false positive** (substring match kata "os" di "phot**os**"/"cl**os**ed_on", bukan field `os` asli) — tidak perlu disentuh.
-   - `test_nexthd_asset.py` punya beberapa test method yang meng-assert field lama — akan gagal, **sengaja tidak digarap** di sesi ini (dicatat sebagai item W2, pending untuk Devin).
-
-**Eksekusi:**
-- `nexthd_asset.json`: 20 field (`brand`, `model`, `serial_number`, `cpu`, `ram`, `storage`, `os`, `net_brand`, `net_model`, `net_serial_number`, `ip_address`, `mac_address`, `device_role`, `printer_brand`, `printer_model`, `printer_serial_number`, `printer_type`) + 4 column break dihapus dari `field_order` dan `fields`. Field catatan bebas (`peripheral_notes`, `net_notes`, `printer_notes`, `other_description`) dan section "Lainnya" **tidak diubah**.
-- Property Setter `search_fields`: `asset_name,assigned_to,serial_number` → `asset_name,assigned_to` (child table EAV tidak bisa dipakai di `search_fields` Link).
-- `detail_aset_lengkap.py` ditulis ulang: `LEFT JOIN` ke `NextHD Asset Attribute`, kolom baru "Spesifikasi (EAV)" (agregat `attribute_name: attribute_value` via `GROUP_CONCAT`), plus kolom `brand`/`serial_number`/`sumber`/`catatan` yang ternyata sudah ada langsung sebagai kolom di child table EAV (bukan cuma `attribute_name`/`attribute_value`/`unit` generik seperti desain awal di `DAFTAR_FITUR.md`).
-
-**Hasil `bench migrate` + verifikasi Efendy (screenshot):**
-- Form NextHD Asset: section PC/Network/Printer cuma tampil field catatan, EAV tetap terisi ✅
-- Report "Detail Aset Lengkap": kolom Spesifikasi/Brand/dst terisi benar dari EAV ✅
-- Report "Aset Bermasalah": tetap tampil normal ✅
-- Search Link ke Asset (di form Ticket, field `affected_asset`) masih berfungsi ✅
-
-**Temuan sampingan (tidak berbahaya, dicatat untuk kejelasan):** commit yang sama (`d964531`) ikut membawa `git add .` perubahan tak terkait di `aset_bermasalah.json`/`.py` (filter diganti dari `asset_type` Select ke `asset_category` Link) — dikonfirmasi via `git show` bahwa ini **bukan** dari script Claude, melainkan perubahan yang sudah ada di working directory server sebelum sesi ini (kemungkinan sisa kerja Devin terkait migrasi EAV 28 Agustus malam yang belum sempat di-commit). Sudah diverifikasi jalan normal, tidak ada regresi — cuma "menumpang" commit karena `git add .`.
-
-**Pelajaran:** kalau memakai `git add .` di server yang mungkin punya perubahan lain menumpuk, selalu `git status`/`git diff` dulu sebelum commit untuk memastikan tidak ada perubahan tak terduga ikut ter-commit tanpa direview — di kasus ini aman, tapi bisa jadi masalah kalau perubahan menumpuk itu ternyata belum siap/salah.
-
-**Pending untuk sesi berikutnya (item W2):** `test_nexthd_asset.py` perlu direvisi (hapus/update test yang assert field lama) — cocok untuk task Devin terpisah, tidak mendesak.
-
----
-
-## Update 2026-08-29 17:45 WIB — Item DD Selesai: Bug Workspace Link + Regresi Sidebar "NextHD Reporting"
-
-**Konteks:** Menindaklanjuti item DD (pending sejak 28 Agustus) — bug `Link Type must be set first` yang menghalangi `doc.save()` normal pada Workspace NextHD.
-
-**Kronologi fix:**
-1. Row bermasalah `tabWorkspace Link` (`name=u6nb1c41c1`, label "Reporting Data", `link_type` kosong, `link_to=/app/nexthd-report`) dicek ulang — Page `nexthd-report` yang dituju **tidak pernah ada** di `tabPage` (yang eksis cuma `nexthd-reset-data`), jadi baris ini memang sejak awal tidak pernah valid/berfungsi.
-2. Dua percobaan set `link_type` (`Workspace`, lalu `Page`) sama-sama gagal validasi. Diputuskan **hapus total** baris tersebut — fungsinya sudah digantikan sidebar "NextHD Reporting" (dibuat 27 Agustus via UI, mengarah ke Workspace "NextHD Report" berisi 11 shortcut report).
-3. Setelah dihapus, `frappe.get_doc("Workspace", "NextHD").save()` **berhasil** — fixture `nexthd/next_helpdesk/workspace/nexthd/nexthd.json` ter-tulis ulang otomatis.
-
-**Regresi ditemukan dalam sesi yang sama:** setelah `doc.save()` di atas, item sidebar manual "NextHD Reporting" **hilang** dari `Workspace Sidebar Item` (15 item tersisa, semuanya auto-generate dari `Workspace.links`). Root cause: `Workspace Sidebar.standard` untuk record "NextHD" ternyata `0` (bukan `1`) — `standard` harus `1` agar perubahan sidebar permanen dan `export_sidebar()` mau menulis file; kalau `0`, sidebar rawan tersapu ulang oleh proses lain (dalam kasus ini, kemungkinan besar oleh proses `doc.save()` Workspace itu sendiri yang memicu regenerasi).
-
-**Fix regresi:**
-1. `Workspace Sidebar.standard` diset dari `0` → `1` via `frappe.db.set_value()`.
-2. "NextHD Reporting" (`link_type: Workspace`, `link_to: NextHD Report`) ditambahkan kembali lewat UI — **catatan penting:** menu yang benar adalah ikon **panah ke bawah di kiri atas** halaman Workspace, bukan titik tiga (⋯) di kanan atas.
-3. Verifikasi berulang: `doc.save()` Workspace NextHD dipanggil lagi (2×) setelah fix — sidebar "NextHD" tetap 16 item lengkap (termasuk "NextHD Reporting") di kedua percobaan, tidak tersapu lagi.
-4. Fixture `nexthd/nexthd/workspace_sidebar/nexthd.json` dikonfirmasi berisi label "NextHD Reporting".
-
-**Catatan tambahan (bukan bug):** saat "NextHD Reporting" diklik, tampilan berpindah ke Workspace "NextHD Report" yang sidebar-nya sendiri cuma 2 item (Dashboard + NextHD Report) — ini perilaku normal Frappe v16 (sidebar per-Workspace, bukan gabungan), bukan regresi lanjutan. Workspace "NextHD Report" dikonfirmasi masih utuh (`public=1`, `is_hidden=0`, 11 shortcut report).
-
-**Status akhir:** Item DD ditutup tuntas — bug asli dan regresi sampingannya sudah diverifikasi selesai, tidak ada data yang hilang permanen.
-
-**Pending untuk sesi berikutnya:** commit + push kode yang berubah oleh Efendy (`nexthd.json` Workspace fixture yang baru ter-generate, fixture Workspace Sidebar kalau ada perubahan file lain).
-
----
-
-## Update 2026-08-30 — Item KK Selesai: Sidebar "NextHD" +Asset Category, Sidebar "NextHD Report" Diperkaya, Klarifikasi Module Sidebar
-
-**Konteks:** Efendy mengirim 3 screenshot menunjukkan sidebar berubah-ubah tergantung halaman: (1) `/desk/nexthd` — 16 item lengkap, (2) `/desk/nexthd-report` — cuma 2 item, (3) `/desk/query-report/...` — sidebar pendek berbeda lagi. Efendy tanya apakah bisa dibuat konsisten, dan minta ditambahkan "NextHD Asset Category" ke sidebar "NextHD" (DocType baru dari migrasi EAV 28-29 Agustus, belum sempat ditambahkan ke sidebar).
-
-**Investigasi 3 jenis sidebar (temuan penting):**
-- Sidebar (1) dan (2) sama-sama Workspace Sidebar sungguhan (dokumen `Workspace Sidebar` "NextHD" dan "NextHD Report") — beda isi karena beda Workspace yang sedang dibuka, bukan bug.
-- Sidebar (3) awalnya diduga "Route History" (riwayat navigasi) — **dicek via `tabRoute History`, terbukti TIDAK cocok**. Kesimpulan final setelah query lanjutan: itu adalah **"Module Sidebar"**, fitur bawaan Frappe yang **auto-generate secara real-time** dari kombinasi semua `Workspace`+`DocType`+`Report` dengan `module='Next Helpdesk'`. **Bukan file, bukan dokumen tersimpan** — tidak ada tempat untuk menambahkan item ke sana kecuali override kode inti Frappe (berisiko tinggi, konsisten dengan limitasi Frappe v16 GitHub Issue #36317 yang sudah dikonfirmasi sebelumnya di project ini). **Keputusan final Efendy: dibiarkan apa adanya, jangan diangkat lagi kecuali diminta eksplisit di masa depan.**
-
-**Eksekusi — Bagian 1: Tambah "NextHD Asset Category" ke Sidebar "NextHD"**
-- Via UI "Edit Sidebar" (ikon panah kiri atas — sesuai pola yang sudah dikonfirmasi benar di item DD).
-- Ditambahkan di idx=8 (setelah "NextHD Asset"), `link_type=DocType`, icon `copy-check`.
-- Total sidebar "NextHD" sekarang **17 item** — diverifikasi via `bench console`.
-
-**Eksekusi — Bagian 2: Lengkapi Sidebar "NextHD Report" dari 2 jadi 8 Item**
-- **Keputusan isi (dari Efendy):** DocType utama saja (Ticket, Problem, Change Request, Known Error, Asset, Asset Category) — laporan **tidak perlu** ditambahkan ke sidebar karena begitu masuk Workspace "NextHD Report", 11 shortcut report sudah otomatis tampil di body/dashboard workspace tersebut.
-- **Temuan sebelum eksekusi:** `Workspace Sidebar.app` untuk record "NextHD Report" ternyata `None` (beda dari "NextHD" yang sudah `nexthd`) — **wajib diperbaiki dulu** via `frappe.db.set_value("Workspace Sidebar", "NextHD Report", "app", "nexthd")`, karena `app` terisi + `standard=1` (sudah benar dari sesi sebelumnya) adalah dua syarat wajib supaya `export_sidebar()` menulis fixture secara permanen.
-- **Metode insert:** karena item yang ditambahkan banyak (6 sekaligus), dipakai script — bukan klik manual di UI satu-satu — dengan pola `doc = frappe.get_doc("Workspace Sidebar", "NextHD Report")`, lalu `doc.append("items", {...})` untuk tiap item, lalu `doc.save(ignore_permissions=True)`. **Ini pola resmi yang setara dengan tombol UI "Edit Sidebar"** (bukan raw SQL), sehingga idx/validasi otomatis benar dan fixture ter-export. **Penting:** `doc.save()` dipanggil pada dokumen `Workspace Sidebar` (bukan `Workspace`) — beda doctype dari yang menyebabkan regresi item DD kemarin, sehingga risikonya jauh lebih rendah.
-- Icon tiap item disamakan dengan icon yang sudah dipakai di sidebar "NextHD" untuk DocType yang sama (Ticket=`ticket`, Problem=`bug`, Change Request=`tool`, Known Error=`alert-circle`, Asset=`package`, Asset Category=`copy-check`) — konsistensi visual antar Workspace.
-- **Hasil akhir sidebar "NextHD Report" (8 item):** Dashboard → NextHD, NextHD Report → NextHD Report, lalu 6 DocType di atas berurutan.
-- **Verifikasi:** sidebar "NextHD" (17 item) dikonfirmasi **TIDAK terpengaruh** sama sekali oleh perubahan pada "NextHD Report" — dicek ulang jumlahnya tetap 17 setelah `doc.save()` pada "NextHD Report".
-
-**Temuan penting saat commit — fixture "NextHD Report" belum pernah masuk git:**
-`git status` menunjukkan `nexthd/workspace_sidebar/nexthd_report.json` berstatus **untracked** — file ini ternyata **belum pernah ter-commit sama sekali sejak Workspace "NextHD Report" dibuat 27 Agustus**, meski sudah aktif dipakai production selama ini. Sesi ini sekaligus melengkapi kekurangan lama itu.
-
-**Commit & Push:**
-```
-Commit: beec05c
-Message: "feat: tambah NextHD Asset Category ke sidebar NextHD, lengkapi sidebar NextHD Report dengan 6 DocType utama"
-Files: nexthd/workspace_sidebar/nexthd.json (modified), nexthd/workspace_sidebar/nexthd_report.json (NEW, pertama kali ter-commit)
-Push: berhasil ke origin/main (933ec10 → beec05c)
-```
-Efendy sempat `git pull origin main` dulu sebelum commit (fast-forward, menarik dokumentasi dari sesi Claude sebelumnya) — tidak ada konflik.
-
-**⚠️ Item pending untuk sesi berikutnya:**
-`bench migrate` sungguhan **belum pernah dijalankan** sejak semua fix sidebar (baik item DD 29 Agustus maupun item KK 30 Agustus). Kedua faktor risiko regresi yang diketahui dari kasus item DD (`Workspace Sidebar.standard` dan `.app`) sudah diperbaiki ke nilai benar untuk **kedua** record ("NextHD" dan "NextHD Report"), tapi klaim "aman dari regresi migrate" ini masih **teoritis, belum dibuktikan empiris**. Rekomendasi: jalankan `bench migrate` sebagai uji tahan (aman, bukan destruktif), lalu verifikasi jumlah item sidebar "NextHD" (harus 17) dan "NextHD Report" (harus 8), serta pastikan `doc.save()` pada Workspace "NextHD" masih berhasil tanpa error. Bisa sekalian digabung dengan uji migrate final untuk item AA (sidebar 6 link Report di `Workspace.links`) yang juga masih pending sejak 25 Agustus — satu kali migrate, verifikasi keduanya.
-
-**Pelajaran teknis baru:** `Workspace Sidebar.app` bisa kosong (`None`) untuk record yang dibuat lebih baru (kasus "NextHD Report", dibuat 27 Agustus) meski `standard` sudah benar — **kedua field ini (`app` DAN `standard`) harus dicek terpisah**, tidak bisa asumsi salah satu benar berarti keduanya benar. Selalu cek keduanya sebelum melakukan perubahan sidebar apa pun pada Workspace Sidebar manapun.
-
----
-
-## Update 2026-08-30 13:05 WIB — Restrukturisasi Dokumentasi: `POLA_KERJA_DAN_BUG.md` Dipecah & Dihapus
-
-**Konteks:** Menindaklanjuti keputusan Efendy untuk memecah `docs/POLA_KERJA_DAN_BUG.md` (82KB, sudah kepanjangan) jadi beberapa file lebih kecil, dan mencabut kebijakan lama "`HANDOFF.md` = arsip beku, tidak diubah".
-
-**Yang sudah dikerjakan (lintas sesi, dituntaskan sesi ini):**
-1. `docs/POLA_KERJA.md` dibuat — ekstrak §1-3 (aturan wajib & Frappe quirks) TANPA riwayat bug. Commit `8338fa2`.
-2. `docs/BUG_WORKSPACE_SIDEBAR.md` dibuat — ekstrak seluruh riwayat bug terkait Workspace/Desktop Icon/Sidebar/Dashboard Shortcut dari §4 (porsi terbesar, 12 sesi bug 24-29 Agustus). Commit `fb04898`.
-3. `docs/BUG_HISTORY.md` dibuat — ekstrak riwayat bug lain (SLA/Business Hours, Telegram, naming series, Asset EAV, navigasi relasi antar dokumen §5) yang tidak terkait Workspace/Sidebar. Commit `08a801c`.
-4. **File lama `docs/POLA_KERJA_DAN_BUG.md` dihapus dari repo** — commit `7e4c0d1`, setelah dipastikan seluruh isinya (termasuk semua script) sudah tersalin utuh ke 3 file di atas.
-5. Tabel "Struktur Dokumentasi" di file ini (`SUMMARY.md`) diupdate — baris `POLA_KERJA_DAN_BUG.md` diganti 3 baris baru; deskripsi `HANDOFF.md` diupdate (bukan lagi "arsip historis", tapi "log riwayat sesi aktif").
-6. Semua referensi silang ke `POLA_KERJA_DAN_BUG.md` di dalam file ini (§4 bug session references) diupdate mengarah ke `BUG_WORKSPACE_SIDEBAR.md` atau `BUG_HISTORY.md` sesuai isinya.
-
-**Masih pending untuk sesi berikutnya:**
-- **Rombak `docs/HANDOFF.md`** — banner lama "Status: ARSIP, tidak diubah" di bagian atas file itu masih perlu diganti/dihapus (kebijakannya sudah dicabut, tapi teks banner-nya sendiri belum diedit). Review isi lama (sesi 14-24 Agustus), hapus entri yang 100% sudah terwakili di dokumen lain.
-- Review `ARSITEKTUR.md`, `DAFTAR_FITUR.md`, `AUDIT_SISTEM.md`, `PANDUAN_INSTALASI.md` — rangkum kalau kepanjangan, tapi pertahankan inti masalah + script.
-
-**Catatan:** operasi pemecahan 82KB ini dikerjakan lintas beberapa giliran push (bukan sekali baca-tulis) sesuai rencana di handoff sebelumnya, untuk menghindari boros token dari bolak-balik baca file besar.
+**Untuk sesi berikutnya:** tidak ada lagi task restrukturisasi dokumentasi pending. Item teknis prioritas berikutnya: `bench migrate` uji tahan (belum pernah dijalankan sejak fix item DD & KK) — lihat §2 di atas.
