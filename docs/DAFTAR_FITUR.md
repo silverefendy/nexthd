@@ -6,7 +6,7 @@
 >
 > Status: ✅ Selesai & Live | 🔶 Sedang Dikerjakan/Menunggu Konfirmasi | ⬜ Belum Dikerjakan (Rencana)
 >
-> **Last updated:** 2026-08-28 (sesi lanjutan — fitur NextHD Photo lanjutan & tombol Reset Data Demo)
+> **Last updated:** 2026-08-30 (tambah spec Devin: Guard Duplikasi Workflow Transition — lihat Tier 1)
 
 ---
 
@@ -14,7 +14,7 @@
 
 | Fitur | Status | Keterangan | Bukti/Referensi |
 |---|---|---|---|
-| SLA sadar jam kerja (all-or-nothing) | ✅ | `business_hours.py`, resolusi diulang penuh dari jam kerja berikutnya kalau tidak muat | `POLA_KERJA_DAN_BUG.md §4`, 20 Agustus |
+| SLA sadar jam kerja (all-or-nothing) | ✅ | `business_hours.py`, resolusi diulang penuh dari jam kerja berikutnya kalau tidak muat | `docs/BUG_HISTORY.md`, 20 Agustus |
 | Tombol workflow "Mulai Kerjakan" | ✅ | Baru → Sedang Dikerjakan, catat `responded_on` | `nexthd_ticket_workflow.json` |
 | Field impact/urgency/waiting_log di form Ticket | ✅ | Ada di `field_order` | `nexthd_ticket.json` |
 | Priority matrix otomatis (Impact × Urgency) | ✅ | + override manual Agent Manager/IT Manager | [PR #7](https://github.com/silverefendy/nexthd/pull/7) |
@@ -26,7 +26,7 @@
 | Permission `reply` di Waiting Log | ✅ | Requester bisa isi reply sendiri | Terverifikasi `bench console`, 22 Agustus |
 | Sidebar Holiday di Workspace | ✅ | Terverifikasi via query | 22 Agustus |
 | Regression test 3 workflow | ✅ | Ticket, Problem, Change Request semua lulus | 20 Agustus |
-| Dedup transisi workflow duplikat | ✅ | 42 → 21 baris bersih (dedup pertama, 20 Agustus). **Duplikasi muncul lagi dan dibersihkan ulang 24 Agustus — lihat baris terpisah di bawah** | 20 Agustus |
+| Dedup transisi workflow duplikat | ✅ | 42 → 21 baris bersih (dedup pertama, 20 Agustus). **Duplikasi muncul lagi dan dibersihkan ulang 24 & 25 Agustus — lihat `docs/BUG_HISTORY.md` & `docs/WORKFLOW.md §5`. Guard pencegahan otomatis sekarang jadi task Devin, lihat Tier 1** | 20 Agustus |
 | Number Card dashboard | ✅ | Fix `number_card_name` | 21 Agustus |
 | Naming series seragam YY.MM | ✅ | Semua 6 DocType | 19 Agustus |
 | `FAQ_DEVELOPER.md` | ✅ | Kurasi masalah berulang untuk Devin | 22 Agustus |
@@ -38,13 +38,15 @@
 | NextHD Holiday 2026 — 17 hari libur nasional | ✅ | Diisi sesuai SKB 3 Menteri No. 1497/2025, 2/2025, 5/2025 (resmi Setneg) | 24 Agustus |
 | `install.py` — nilai SLA default diperbaiki | ✅ | `create_default_sla_policies()` diupdate ke nilai SOP final 19 Agustus (Kritis 15/60 `is_24x7=1`, Tinggi 30/240, Sedang 60/2880, Rendah 120/10080) — instalasi baru sekarang otomatis dapat nilai benar | Commit `b3a24b2` → `2d795b9`, 24 Agustus |
 | Sidebar "NextHD Photo" tidak muncul di UI meski data sudah live | ✅ | **Root cause:** `import_file_by_path(force=True)` berhasil sync field `number_cards`/`content` tapi TIDAK sync child table `links` (sidebar). **Fix:** append manual via `Workspace` doc ORM (`doc.append("links", ...)` + `doc.save()`), bukan reimport JSON | 24 Agustus |
-| Duplikasi Workflow Transition (round 2) — Ticket/Problem/Change Request | ✅ | Ditemukan tiap transisi terduplikasi persis 4× (Ticket 28→7, Problem 24→6, CR 32→8). **Root cause:** `Workflow Action Master` "Convert to Known Error" tidak pernah dibuat, membuat `wf.save()` gagal validasi di tengah proses dedup sebelumnya (data lama sempat masuk lewat jalur yang bypass validasi ORM). Master dibuat ulang, lalu dedup by-value (bukan cuma by-idx) berhasil untuk ketiganya. Backup tersimpan di `/home/it/workflow_transitions_backup.json` di server | 24 Agustus |
+| Duplikasi Workflow Transition (round 2) — Ticket/Problem/Change Request | ✅ | Ditemukan tiap transisi terduplikasi persis 4× (Ticket 28→7, Problem 24→6, CR 32→8). **Root cause dugaan awal:** `Workflow Action Master` "Convert to Known Error" tidak pernah dibuat. **Root cause sebenarnya (dikonfirmasi 25 Agustus):** fixture `workflow_transition.json` di repo menumpuk beberapa generasi export lama — lihat `docs/BUG_HISTORY.md` | 24–25 Agustus |
 | Cuti Bersama 2026 — 8 hari | ✅ | Ditambahkan ke `NextHD Holiday` (total jadi 25 record: 17 nasional + 8 cuti bersama). **⚠️ Pemetaan tanggal↔nama event asumsi Claude berdasar pola umum, belum dicek silang ke teks SKB asli** | 24 Agustus |
 | Script verifikasi ringan pasca-perbaikan | ✅ | Ditambahkan ke `AUDIT_SISTEM.md` — smoke test 9 titik spesifik (workflow, sidebar, number card, SLA, business hours, holiday, roles, photo doctype) | 24 Agustus |
 | Naming Series `NextHD Photo` → `IMG-YYMM-####` | ✅ | `autoname: hash` → `naming_series:`, `naming_rule` → "By Naming Series field", field `naming_series` (Select, hidden, opsi `IMG-.YY.MM.-.####`). Terverifikasi: dokumen baru `IMG-2608-0001` dst | 28 Agustus |
 | Field baru `NextHD Photo` — Judul Foto, Lokasi, Kategori | ✅ | `photo_title` (Data, jadi `title_field`), `location` (Data), `category` (Link → `NextHD Category`, reuse DocType existing). **Keputusan desain:** referensi balik "dipakai di dokumen mana" sengaja TIDAK disimpan sebagai field tunggal (`reference_doctype`/`reference_name`) karena 1 foto bisa dipakai ulang di >1 dokumen — field tunggal akan tertimpa. Solusi dipindah ke Dashboard Connections (baris di bawah) | 28 Agustus |
 | Dashboard Connections "Dipakai Di" pada `NextHD Photo` | ✅ | `get_dashboard_data()` di `nexthd_photo.py` — badge "Connections" real-time dihitung dari child table `NextHD Photo Link` di 4 parent (Ticket/Asset/Problem/Known Error), bukan field statis tersimpan. Trade-off: tidak bisa dipakai untuk filter/Report View (bukan field DB) — kalau nanti butuh laporan semacam itu perlu solusi tambahan terpisah. **Terpasang, perlu re-test dengan foto baru** (foto contoh lama sudah ikut terhapus tombol Reset Data Demo) | 28 Agustus |
 | Tombol admin "Reset Data Demo" | ✅ | Custom Page `nexthd-reset-data` (shortcut section "Admin" di Workspace NextHD) memanggil `reset_demo_data()` di `nexthd/api.py`. Hapus 6 DocType transaksional (Ticket, Problem, Change Request, Known Error, Asset, Photo) + child table terkait, pertahankan data master (Category, Team, SLA Policy). Akses System Manager only (dicek di backend via `frappe.get_roles`), 2x konfirmasi (dialog + ketik `RESET` persis), backup otomatis (`frappe.utils.backups.new_backup()`), counter `tabSeries` ikut direset. **Test sungguhan berhasil:** 14 Ticket, 15 Problem, 3 Change Request, 2 Known Error, 6 Asset, 4 Photo terhapus, backup terbuat, data master utuh | 28 Agustus |
+| Generalisasi NextHD Asset ke pola EAV | ✅ | `NextHD Asset Category` + `NextHD Asset Attribute` — lihat `docs/ARSITEKTUR.md §3` untuk detail lengkap | 28–29 Agustus |
+| Bug `Link Type must be set first` pada Workspace NextHD | ✅ | Row "Reporting Data" bermasalah dihapus dari `tabWorkspace Link` — lihat `docs/BUG_WORKSPACE_SIDEBAR.md` item DD | 29 Agustus |
 
 ---
 
@@ -52,9 +54,9 @@
 
 | Bug | Status | Keterangan | PIC |
 |---|---|---|---|
-| Business Hours "Sabtu" — `is_working_day=1` tidak konsisten dengan default `install.py` | 🔴 | Audit 24 Agustus menemukan production punya Sabtu sebagai hari kerja (`is_working_day=1`), padahal `install.py` (setelah patch hari yang sama) men-set default Sabtu **bukan** hari kerja (`0`). Belum diketahui mana yang benar — kalau Sabtu memang sengaja jadi hari kerja, `install.py` perlu disesuaikan lagi; kalau tidak, data production perlu dikoreksi ke `0`. **Belum ada tindakan diambil, menunggu keputusan Efendy** | Efendy (keputusan) → Claude (eksekusi) |
-| `Link Type must be set first` — `frappe.get_doc("Workspace","NextHD").save()` gagal | 🔴 | Row `tabWorkspace Link` (label "Reporting Data", `link_to=/app/nexthd-report`) punya `link_type` kosong. Setiap edit Workspace NextHD lewat cara normal (`doc.save()`) gagal validasi; workaround `frappe.db.set_value()` (skip validasi) dipakai sementara, tidak scalable. Opsi fix: (A) ubah link agar mengarah ke Workspace "NextHD Report" secara keseluruhan, atau (B) isi `link_type` dengan nilai valid tanpa ubah tujuan | Claude + Efendy |
-| Rename Module "Next Helpdesk" → "NextHD" belum dieksekusi | 🔴 | `tabModule Def` masih "Next Helpdesk" — sidebar module-based (Report page, Page kustom) masih menampilkan header lama. Dikonfirmasi 28 Agustus bukan Workspace nyasar. Perlu rename `Module Def` + update `modules.txt`, risiko menengah, sesi terpisah dengan backup | Claude + Efendy |
+| Rename Module "Next Helpdesk" → "NextHD" belum dieksekusi | 🔴 | `tabModule Def` masih "Next Helpdesk" — sidebar module-based (Report page, Page kustom) masih menampilkan header lama. Dikonfirmasi 28 Agustus bukan Workspace nyasar. Perlu rename `Module Def` + update `modules.txt`, risiko menengah, sesi terpisah dengan backup — lihat `docs/SUMMARY.md` item EE | Claude + Efendy |
+
+> **Catatan 30 Agustus:** dua bug lain yang sebelumnya tercatat di sini (Business Hours Sabtu, `Link Type must be set first`) **sudah selesai** — dipindah ke tabel "Fitur Inti" di atas / `docs/SUMMARY.md`. Cek `docs/SUMMARY.md §2` untuk daftar item pending terkini yang paling update (file ini diupdate lebih jarang dari `SUMMARY.md`).
 
 ---
 
@@ -62,6 +64,7 @@
 
 | Fitur | Status | Keterangan | Bergantung Pada |
 |---|---|---|---|
+| **Guard Duplikasi Workflow Transition** | ⬜ | Validasi otomatis di `Workflow.validate()` supaya duplikasi transisi tidak bisa tersimpan lagi — sudah 3× terjadi manual (20, 24, 25 Agustus). Spec lengkap di bawah | — |
 | Knowledge Article (`NextHD Knowledge Article`) | ⬜ | DocType baru, field `visibility` (Publik/Internal) — solusi mandiri untuk requester, terpisah dari Known Error (yang teknis, untuk Agent). Lihat detail desain di bawah | — |
 | Tag di Tiket | ⬜ | Pakai sistem tag bawaan Frappe (`Tag` + `_user_tags`), bukan field custom | — |
 | CSAT — survei kepuasan pasca-tiket | ⬜ | Field `csat_rating`, `csat_comment` di Ticket, trigger Telegram saat status "Selesai" | — |
@@ -69,6 +72,97 @@
 | Auto-suggest Knowledge Article saat bikin tiket | ⬜ | Search artikel Publik yang cocok sebelum tiket disubmit | Knowledge Article |
 | Dashboard trend chart | ⬜ | Tren volume tiket per minggu, breakdown kategori | — |
 | Wipe Data Testing Tool — versi lengkap (UI checkbox per DocType) | ⬜ | Versi ringkas sudah live sebagai tombol "Reset Data Demo" (28 Agustus, lihat tabel Fitur Inti) — desain lengkap dengan granularitas per-DocType di bawah masih opsional kalau dibutuhkan | Reset Data Demo |
+
+### Detail Desain: Guard Duplikasi Workflow Transition (Spec untuk Devin — ditambahkan 30 Agustus 2026)
+
+**Latar belakang:** Duplikasi `Workflow Transition` (kombinasi `state`+`action`+`next_state`
+sama muncul berkali-kali dalam satu Workflow) sudah terjadi 3× — 20, 24, dan 25 Agustus 2026.
+Root cause final (dikonfirmasi 25 Agustus, lihat `docs/BUG_HISTORY.md`) adalah fixture JSON
+di repo yang menumpuk beberapa generasi export lama, sudah dibersihkan permanen. Guard ini
+adalah **lapisan pencegahan tambahan** supaya kalaupun duplikasi tersebab hal lain di masa
+depan (reimport tidak sengaja, edit manual, dll), sistem menolak otomatis alih-alih diam-diam
+menyimpan data rusak.
+
+**Keputusan desain (Efendy, 30 Agustus):** dipilih dibanding alternatif "script deteksi manual
+periodik" (yang sudah ada di `docs/AUDIT_SISTEM.md`) karena guard otomatis tidak bergantung
+pada seseorang ingat menjalankan script — validasi terjadi di titik penyimpanan, permanen
+untuk semua jalur (UI, `bench console`, migrate, PR Devin lain).
+
+**Cakupan:** berlaku untuk ketiga Workflow custom project ini — `NextHD Ticket`,
+`NextHD Problem`, `NextHD Change Request`. **Tidak berlaku** untuk Workflow bawaan/DocType
+lain di luar NextHD (supaya tidak mempengaruhi bagian Frappe yang tidak terkait).
+
+**Implementasi yang disarankan — via `doc_events` hook (BUKAN modifikasi core Frappe):**
+
+Tambahkan validasi Python baru, didaftarkan di `hooks.py`:
+
+```python
+doc_events = {
+    # ... hook existing lainnya, jangan dihapus ...
+    "Workflow": {
+        "validate": "nexthd.next_helpdesk.utils.workflow_guard.validate_no_duplicate_transitions"
+    }
+}
+```
+
+File baru: `nexthd/next_helpdesk/utils/workflow_guard.py`
+
+```python
+import frappe
+
+NEXTHD_WORKFLOWS = {"NextHD Ticket", "NextHD Problem", "NextHD Change Request"}
+
+
+def validate_no_duplicate_transitions(doc, method):
+    """Cegah Workflow Transition duplikat tersimpan untuk 3 workflow NextHD.
+    Duplikat didefinisikan sebagai baris dengan kombinasi
+    (state, action, next_state) yang sama persis dalam satu Workflow.
+    """
+    if doc.name not in NEXTHD_WORKFLOWS:
+        return
+
+    seen = set()
+    duplicates = []
+    for row in doc.transitions:
+        key = (row.state, row.action, row.next_state)
+        if key in seen:
+            duplicates.append(f"{row.state} -> [{row.action}] -> {row.next_state}")
+        seen.add(key)
+
+    if duplicates:
+        frappe.throw(
+            frappe._(
+                "Ditemukan Workflow Transition duplikat, penyimpanan dibatalkan: {0}. "
+                "Hapus baris duplikat sebelum menyimpan ulang."
+            ).format(", ".join(duplicates))
+        )
+```
+
+**Kenapa `validate` (bukan `before_save`/`on_update`):** `validate` dijalankan sebelum data
+ditulis ke DB, jadi kalau ada duplikat, `frappe.throw()` membatalkan seluruh transaksi save —
+tidak ada data setengah-tersimpan.
+
+**⚠️ Risiko yang WAJIB ditest sebelum merge (bukan sekadar tempel kode):**
+1. **Proses fixture import saat `bench migrate`** — pastikan guard ini tidak memblokir
+   reimport fixture `workflow_transition.json` yang sah (fixture sekarang sudah bersih,
+   tapi perlu dipastikan proses reimport tidak secara sementara membuat state duplikat
+   di tengah proses sebelum akhirnya bersih).
+2. **`bench console` manual save** — pastikan pesan error `frappe.throw()` jelas dan
+   actionable buat Claude/Efendy saat debug via `bench console`, bukan traceback mentah.
+3. **Regression test 3 workflow** (sudah ada dari sesi 20 Agustus) — jalankan ulang setelah
+   guard terpasang, pastikan semua transisi valid existing tetap tersimpan normal.
+4. **Test simulasi duplikat sengaja** — di `bench console`, coba `doc.append("transitions", {...})`
+   dengan kombinasi yang sudah ada, panggil `doc.save()`, pastikan `frappe.throw()` terpicu
+   dengan pesan yang menyebutkan transisi mana yang duplikat.
+
+**Definition of Done:**
+- [ ] File `workflow_guard.py` dibuat, hook terdaftar di `hooks.py`
+- [ ] Test manual: simpan Workflow existing (Ticket/Problem/CR) tanpa perubahan — harus tetap sukses
+- [ ] Test manual: coba append transisi duplikat lalu save — harus gagal dengan pesan jelas
+- [ ] `bench migrate` uji tahan tidak menunjukkan error terkait guard ini
+- [ ] Regression test 3 workflow (dari sesi 20 Agustus) tetap lulus semua
+- [ ] Setelah merge & migrate di server, jalankan `check_workflow_transition_clean.py`
+      (`docs/AUDIT_SISTEM.md`) sekali lagi untuk konfirmasi tidak ada regresi
 
 ### Detail Desain: Knowledge Article
 
@@ -104,42 +198,8 @@ baca, bukan submit. Detail teknis dicek saat implementasi.
 | Bulk actions | ⬜ | Assign/tutup banyak tiket sekaligus |
 | Integrasi PRTG → auto-create tiket | ⬜ | PRTG deteksi server down → otomatis bikin tiket |
 | Arsip/retensi tiket lama | ⬜ | Tiket ditutup >1 tahun di-archive, bukan dihapus |
-| **Generalisasi ke domain non-IT** | ⬜ | Asset Category/Attribute jadi EAV supaya bisa dipakai domain lain (bengkel, mesin pabrik, dst) — desain lengkap di bawah. *(Dipindah dari `ARSITEKTUR.md §8`, 23 Agustus)* |
-| **Wipe Data Testing Tool (versi lengkap)** | ⬜ | `NextHD Data Wipe Tool`, whitelist DocType per-checkbox, konfirmasi eksplisit, dry-run preview — desain lengkap di bawah. **Versi ringkas (tanpa checkbox, hapus semua sekaligus) sudah live sebagai tombol "Reset Data Demo", 28 Agustus** — lihat tabel Fitur Inti. *(Dipindah dari `ARSITEKTUR.md §9`, 23 Agustus)* |
-
-### Detail Desain: Generalisasi ke Domain Non-IT
-
-**Status:** Rencana teknis disusun 15 Agustus 2026, belum ada jadwal eksekusi. Cakupan
-perubahan **terbatas ke seputar `NextHD Asset` saja** — 11 dari 12 DocType non-child
-(Ticket, Problem, Change Request, Known Error, dst) tidak perlu disentuh karena strukturnya
-sudah generik sejak awal.
-
-**Dua pendekatan dipertimbangkan:**
-
-| Pendekatan | Cara Kerja | Nambah Kategori Baru |
-|---|---|---|
-| A — Section per kategori (pola sekarang) | DocField tetap per kategori dengan `depends_on` | Butuh tambah DocField tiap kategori baru |
-| **B — Atribut dinamis (EAV)** ✅ direkomendasikan | Child table generik "Nama Atribut" + "Nilai" | Tidak butuh perubahan struktur |
-
-**Rancangan DocType baru:**
-
-`NextHD Asset Category` (master) — `category_name`, `description`. Menggantikan `asset_type`
-Select tertutup, jadi Link supaya kategori baru bisa ditambah dari UI tanpa edit kode.
-
-`NextHD Asset Attribute` (child table, parent = NextHD Asset) — `attribute_name`,
-`attribute_value`, `unit`. Contoh isi untuk kategori "Kendaraan": Plat Nomor, Tahun, KM
-Terakhir. Untuk "Mesin Produksi": Kapasitas, Jam Operasi.
-
-`NextHD Asset` disederhanakan jadi field universal saja (`asset_name`, `asset_category`,
-`location`, `assigned_to`, `status`, `purchase_date`, `warranty_until`,
-`asset_attributes` Table) — field IT-spesifik (`cpu`, `ram`, `mac_address`, dst) dipindah
-isinya jadi baris `asset_attributes`, bukan DocField terpisah.
-
-**Migrasi:** saat ini baru 1 record Asset live (`AST-2608-0001`) — migrasi ringan kapan
-pun dieksekusi. Tidak mendesak, ditunda sampai ada kebutuhan nyata pakai domain lain.
-
-**Yang tidak berubah:** semua field relasi ke Asset di DocType lain, Workflow, Client
-Script tombol otomatis — logicnya generik, tidak menyentuh field spesifik-domain.
+| **Generalisasi ke domain non-IT** | ✅ **sebagian sudah live** | EAV Asset (`NextHD Asset Category`+`Attribute`) sudah live 28-29 Agustus — lihat tabel Fitur Inti. Rencana perluasan ke DocType lain di luar Asset masih rencana |
+| **Wipe Data Testing Tool (versi lengkap)** | ⬜ | `NextHD Data Wipe Tool`, whitelist DocType per-checkbox, konfirmasi eksplisit, dry-run preview — desain lengkap di bawah. **Versi ringkas (tanpa checkbox, hapus semua sekaligus) sudah live sebagai tombol "Reset Data Demo", 28 Agustus** — lihat tabel Fitur Inti |
 
 ### Detail Desain: Wipe Data Testing Tool (Versi Lengkap)
 
@@ -207,23 +267,23 @@ tidak sinkron, 20 Agustus).
 | Testing end-to-end workflow di UI browser | ⬜ | Backend sudah lulus 100% (20 Agustus), belum ditest klik manual | Efendy |
 | Role assignment `support@ciptamebel.co.id` → IT Manager | ⬜ | Keputusan: sementara 1 akun shared dulu | Efendy |
 | File `HANDOFF_SLA_NextHD_2026-08-19.md` belum ter-commit | ⬜ | Cek di server, `git add` kalau masih ada | Efendy |
-| Guard permanen duplikasi workflow transition | 🔶 | Root cause **sekarang terkonfirmasi**: master data (`Workflow Action Master`) yang hilang membuat proses save/reimport sebelumnya gagal di tengah jalan dan meninggalkan baris duplikat. Dedup manual sudah dilakukan 2× (20 Agustus, 24 Agustus) — tapi belum ada mekanisme pencegahan otomatis supaya tidak terulang lagi di masa depan | Claude |
+| **Guard permanen duplikasi workflow transition** | 🔶 | **Naik status jadi task konkret 30 Agustus** — spec lengkap ditulis di Tier 1 di atas, siap untuk PR Devin | Devin |
 | Link Telegram untuk user test `test.requester` | ⬜ | Belum pernah kirim `/start`+`/link`, bukan bug | Efendy |
-| Konfirmasi `bench migrate` + `bench restart` sudah jalan pasca commit `a69df61` | ✅ | Terkonfirmasi 24 Agustus — sidebar & number card foto sudah muncul di production setelah fix tambahan (lihat root cause di tabel fitur di atas) | Efendy |
 | Pemetaan tanggal Cuti Bersama 2026 belum dicek silang ke SKB asli | ⬜ | Data ditambahkan berdasar asumsi pola umum kalender cuti bersama Indonesia, bukan dibaca langsung dari teks SKB 3 Menteri | Efendy |
 | Re-test Dashboard Connections "Dipakai Di" dengan foto baru | ⬜ | Foto contoh lama ikut terhapus tombol Reset Data Demo sebelum sempat ditest ulang — perlu buat foto baru → pakai di 1 Ticket → cek badge muncul di form Photo | Efendy |
-| `Link Type` kosong di `tabWorkspace Link` "Reporting Data" | 🔴 | Lihat tabel Bug Perlu Diperbaiki di atas | Claude + Efendy |
 | Rename Module "Next Helpdesk" → "NextHD" | 🔴 | Lihat tabel Bug Perlu Diperbaiki di atas | Claude + Efendy |
+| `bench migrate` uji tahan (item KK/AA) | 🔴 | Belum pernah dijalankan sejak fix sidebar 29-30 Agustus — lihat `docs/SUMMARY.md §2` untuk detail | Efendy |
 
 ---
 
 ## Urutan Eksekusi yang Disarankan (Tier 1)
 
-1. **Knowledge Article + Tag** — fondasi dulu, karena Auto-Suggest bergantung ke Knowledge Article
-2. **CSAT** — independen, bisa paralel dengan #1
-3. **Dashboard Trend Chart** — independen, quick win terpisah
-4. **Merge Tiket Duplikat** — bisa nunggu sampai ada kejadian nyata yang butuh ini
-5. Tier 2 — nunggu sinyal nyata dibutuhkan, jangan dikerjakan preventif dulu
+1. **Guard Duplikasi Workflow Transition** — spec sudah siap, quick win teknis, mengurangi risiko utang lama
+2. **Knowledge Article + Tag** — fondasi dulu, karena Auto-Suggest bergantung ke Knowledge Article
+3. **CSAT** — independen, bisa paralel dengan #2
+4. **Dashboard Trend Chart** — independen, quick win terpisah
+5. **Merge Tiket Duplikat** — bisa nunggu sampai ada kejadian nyata yang butuh ini
+6. Tier 2 — nunggu sinyal nyata dibutuhkan, jangan dikerjakan preventif dulu
 
 ---
 
