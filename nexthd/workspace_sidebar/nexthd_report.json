@@ -8,7 +8,7 @@
   {
    "child": 0,
    "collapsible": 1,
-   "icon": "layout-dashboard",
+   "icon": "home",
    "indent": 0,
    "keep_closed": 0,
    "label": "Dashboard",
@@ -102,8 +102,8 @@
    "type": "Link"
   }
  ],
- "modified": "2026-08-30 10:15:12.762301",
- "modified_by": "Administrator",
+ "modified": "2026-08-30 22:13:25.844078",
+ "modified_by": "support@ciptamebel.co.id",
  "module": "Next Helpdesk",
  "name": "NextHD Report",
  "owner": "support@ciptamebel.co.id",
