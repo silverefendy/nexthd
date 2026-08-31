@@ -3,6 +3,7 @@ import frappe
 NEXTHD_WORKFLOWS = {"NextHD Ticket", "NextHD Problem", "NextHD Change Request"}
 
 
+def validate_no_duplicate_transitions(doc, method):
 	# Exception "skip saat in_migrate/in_install/in_import" DIHAPUS (30 Agustus 2026).
 	# Root cause duplikasi Round 4 sudah diperbaiki secara struktural: fixture
 	# "Workflow Transition" terpisah sudah dihapus dari hooks.py, sehingga tidak
