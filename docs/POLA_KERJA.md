@@ -15,7 +15,7 @@
 > 3. Setelah dipastikan semua konten sudah tersalin, hapus `POLA_KERJA_DAN_BUG.md`
 > 4. Update `docs/SUMMARY.md` bagian "Struktur Dokumentasi" untuk menunjuk ke file-file baru
 >
-> **Last updated:** 2026-08-30
+> **Last updated:** 2026-08-30 (tambah 2 aturan baru di §3 — pelajaran dari "Duplikasi Workflow Transition Round 4", lihat `docs/WORKFLOW.md §5`)
 
 ---
 
@@ -186,6 +186,9 @@ Property Setter, DocField, Web Form, Number Card). Untuk kedua doctype ini, expo
 fixture-nya HANYA terjadi lewat `doc.save()` resmi (trigger `on_update()`/`before_save()`
 masing-masing controller) — bukan lewat `export-fixtures`.
 
+> ⚠️ **Dua fixture yang menyentuh child table yang sama TIDAK BOLEH aktif bersamaan** — lihat
+> aturan baru di §3 (tabel Aturan Wajib Lainnya) untuk detail dan contoh kasus nyata.
+
 ### E. Web Worker vs Terminal — `PATH` Environment Terbatas
 
 Kode Python yang dieksekusi dari klik tombol UI (proses web Frappe/gunicorn) **TIDAK** punya
@@ -336,6 +339,8 @@ dibanding paste multi-baris ke `bench console`.
 | **Baris `Workspace.links` dengan `link_type` kosong/tidak valid memblokir `doc.save()` Workspace total** | `link_type` hanya boleh salah satu dari `DocType`/`Page`/`Report`. Kalau baris semacam ini ditemukan dan tidak ada tujuan valid, opsi teraman adalah **menghapus baris tersebut** |
 | **`doc.save()` pada Workspace bisa memicu regenerasi sidebar yang menyapu item manual, kalau `Workspace Sidebar.standard=0`** | WAJIB cek & set `standard=1` dulu sebelum memanggil `doc.save()` pada Workspace yang sidebar-nya sudah berisi item manual, dan verifikasi ulang isi sidebar setelah setiap `doc.save()` |
 | **Module Sidebar (sidebar pendek di halaman Report/DocType) BUKAN file/dokumen, tidak bisa diedit** | Auto-generate real-time dari field `module`. Bukan Route History. Known limitation Frappe v16 (GitHub Issue #36317) — dibiarkan apa adanya, jangan coba diperbaiki lagi tanpa permintaan eksplisit |
+| **Dua fixture yang menyentuh child table yang sama TIDAK BOLEH aktif bersamaan** | Kalau salah satu sumber (mis. fixture parent dengan child rows ter-embed) **tidak punya field `name` eksplisit** di child rows-nya, Frappe akan hapus-sisip ulang baris itu (nama baru) tiap `bench migrate`. Sementara itu, fixture LAIN yang menyentuh child table yang sama tapi berbasis `name` eksplisit akan **menambah** baris di atasnya, bukan menimpanya — hasilnya duplikasi berlipat tiap migrate. Sebelum mendaftarkan fixture baru untuk sebuah child table, cek dulu apakah child table itu sudah ter-embed di fixture parent lain. Kasus nyata: fixture `Workflow` (transitions ter-embed) + fixture `Workflow Transition` terpisah — lihat `docs/WORKFLOW.md §5` "Duplikasi Round 4" |
+| **Guard/validasi yang menolak `bench migrate` BELUM TENTU false-positive** | Sebelum menambah pengecualian "skip validasi saat `frappe.flags.in_migrate`/`in_install`/`in_import`" pada sebuah hook, pastikan dulu secara langsung (cek data di DB) apakah kondisi yang ditolak guard itu memang seharusnya tidak terjadi. Menambah exception tanpa verifikasi ini bisa menutupi bug nyata alih-alih menyelesaikannya — guard akhirnya "diam" sementara masalah tetap terjadi tanpa terdeteksi. Kasus nyata: `docs/WORKFLOW.md §5` "Duplikasi Round 4" |
 
 ---
 
