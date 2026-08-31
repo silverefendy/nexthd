@@ -6,7 +6,7 @@
 >
 > Status: ✅ Selesai & Live | 🔶 Sedang Dikerjakan/Menunggu Konfirmasi | ⬜ Belum Dikerjakan (Rencana)
 >
-> **Last updated:** 2026-08-30 (tambah spec Devin: Guard Duplikasi Workflow Transition — lihat Tier 1)
+> **Last updated:** 2026-08-30 (tambah spec desain: NextHD Ticket Worklog — prioritas tinggi, Efendy minta secepat mungkin diimplementasikan)
 
 ---
 
@@ -26,7 +26,7 @@
 | Permission `reply` di Waiting Log | ✅ | Requester bisa isi reply sendiri | Terverifikasi `bench console`, 22 Agustus |
 | Sidebar Holiday di Workspace | ✅ | Terverifikasi via query | 22 Agustus |
 | Regression test 3 workflow | ✅ | Ticket, Problem, Change Request semua lulus | 20 Agustus |
-| Dedup transisi workflow duplikat | ✅ | 42 → 21 baris bersih (dedup pertama, 20 Agustus). **Duplikasi muncul lagi dan dibersihkan ulang 24 & 25 Agustus — lihat `docs/BUG_HISTORY.md` & `docs/WORKFLOW.md §5`. Guard pencegahan otomatis sekarang jadi task Devin, lihat Tier 1** | 20 Agustus |
+| Dedup transisi workflow duplikat | ✅ | 42 → 21 baris bersih (dedup pertama, 20 Agustus). **Duplikasi muncul lagi dan dibersihkan ulang 24 & 25 Agustus — lihat `docs/BUG_HISTORY.md` & `docs/WORKFLOW.md §5`. Guard pencegahan otomatis: PR [#10](https://github.com/silverefendy/nexthd/pull/10) dibuat 30 Agustus, sudah di-pull Efendy — menunggu testing manual & `bench migrate` uji tahan sebelum dianggap tuntas** | 20 Agustus |
 | Number Card dashboard | ✅ | Fix `number_card_name` | 21 Agustus |
 | Naming series seragam YY.MM | ✅ | Semua 6 DocType | 19 Agustus |
 | `FAQ_DEVELOPER.md` | ✅ | Kurasi masalah berulang untuk Devin | 22 Agustus |
@@ -64,7 +64,8 @@
 
 | Fitur | Status | Keterangan | Bergantung Pada |
 |---|---|---|---|
-| **Guard Duplikasi Workflow Transition** | ⬜ | Validasi otomatis di `Workflow.validate()` supaya duplikasi transisi tidak bisa tersimpan lagi — sudah 3× terjadi manual (20, 24, 25 Agustus). Spec lengkap di bawah | — |
+| **NextHD Ticket Worklog** | ⬜ | Child table untuk catat progress penanganan tiket (mis. "cek/tes lepas HDD, VGA") secara terstruktur — **prioritas tinggi, Efendy minta secepat mungkin**. Spec lengkap di bawah | — |
+| **Guard Duplikasi Workflow Transition** | 🔶 | PR [#10](https://github.com/silverefendy/nexthd/pull/10) sudah dibuat & di-pull Efendy (30 Agustus) — menunggu testing manual + `bench migrate` uji tahan sebelum ditutup. Spec lengkap di bawah | — |
 | Knowledge Article (`NextHD Knowledge Article`) | ⬜ | DocType baru, field `visibility` (Publik/Internal) — solusi mandiri untuk requester, terpisah dari Known Error (yang teknis, untuk Agent). Lihat detail desain di bawah | — |
 | Tag di Tiket | ⬜ | Pakai sistem tag bawaan Frappe (`Tag` + `_user_tags`), bukan field custom | — |
 | CSAT — survei kepuasan pasca-tiket | ⬜ | Field `csat_rating`, `csat_comment` di Ticket, trigger Telegram saat status "Selesai" | — |
@@ -73,7 +74,79 @@
 | Dashboard trend chart | ⬜ | Tren volume tiket per minggu, breakdown kategori | — |
 | Wipe Data Testing Tool — versi lengkap (UI checkbox per DocType) | ⬜ | Versi ringkas sudah live sebagai tombol "Reset Data Demo" (28 Agustus, lihat tabel Fitur Inti) — desain lengkap dengan granularitas per-DocType di bawah masih opsional kalau dibutuhkan | Reset Data Demo |
 
+### Detail Desain: NextHD Ticket Worklog (ditambahkan 30 Agustus 2026 — Prioritas Tinggi)
+
+**Latar belakang:** Efendy butuh cara mencatat progress penanganan tiket secara terstruktur.
+Contoh kasus nyata: tiket "komputer mati" — teknisi perlu mencatat langkah troubleshooting
+("cek & lepas HDD", "tes VGA", dst) berikut kapan dan siapa yang mengerjakan, supaya riwayat
+penanganan tercatat rapi dan bisa direkap jadi laporan nanti (bukan cuma teks bebas di
+Comment/Timeline bawaan Frappe yang sudah dipakai sementara).
+
+**Keputusan desain kunci — BUKAN pola EAV seperti `NextHD Asset Attribute`.** EAV cocok untuk
+Asset karena field-nya *berbeda-beda tergantung kategori* (laptop butuh CPU/RAM, kendaraan
+butuh Plat Nomor/KM — tidak ada skema tetap yang berlaku semua kategori). Worklog progress
+tiket **sebaliknya** — setiap entri progress berbentuk sama persis apa pun jenis masalahnya
+(siapa, kapan, tindakan apa, hasil apa). Karena field-nya konsisten, **child table biasa
+dengan field tetap** adalah pilihan yang tepat — sama seperti pola `NextHD Ticket Waiting Log`
+yang sudah ada di project ini. EAV di sini akan jadi over-engineering: lebih sulit dibuatkan
+Report karena data tersebar per baris attribute alih-alih per kolom tetap.
+
+**Rancangan DocType baru — `NextHD Ticket Worklog`** (child table, `istable=1`, parent =
+`NextHD Ticket`, `parentfield = "worklog"`):
+
+| Fieldname | Fieldtype | Keterangan |
+|---|---|---|
+| `waktu` | Datetime | Default `now()` — kapan progress dicatat |
+| `teknisi` | Link (User) | Default user yang sedang login (`frappe.session.user`) |
+| `aktivitas` | Small Text (required) | Deskripsi tindakan, contoh: "Lepas & pasang ulang HDD, tidak ada perubahan" |
+| `hasil` | Select: Berhasil / Belum Berhasil / Perlu Eskalasi / Menunggu Sparepart | Status hasil tindakan ini — dipakai untuk filter/laporan |
+| `durasi_menit` | Int, opsional | Estimasi waktu yang dihabiskan untuk langkah ini — fondasi untuk laporan produktivitas/MTTR per teknisi ke depannya |
+
+**Field baru di `NextHD Ticket` (parent):**
+```
+worklog                → Table: NextHD Ticket Worklog
+```
+Posisi field di `field_order`: setelah field `waiting_log` yang sudah ada, sebelum
+`attachments` — mengikuti pola penempatan child table lain di DocType ini (lihat
+`docs/ARSITEKTUR.md §3.1` soal jebakan idx setelah field Table).
+
+**Integrasi dengan fitur Foto yang sudah ada (opsional, tidak wajib di versi pertama):**
+alih-alih menambah field lampiran baru di `Worklog`, pertimbangkan reuse `NextHD Photo` yang
+sudah reusable lintas DocType (pola sama seperti Ticket/Problem/Asset/Known Error saat ini).
+Kalau butuh foto "sebelum/sesudah" per baris worklog, ini bisa jadi fase 2 — **versi pertama
+cukup 5 field di atas tanpa lampiran**, supaya cepat live sesuai prioritas Efendy.
+
+**Tidak perlu:**
+- Naming series terpisah — child table tidak butuh naming independen (pakai `parent` + `idx`)
+- Workflow/status approval — worklog murni log, bukan dokumen yang butuh persetujuan
+- Permission terpisah dari `NextHD Ticket` — akses ikut permission parent-nya
+
+**Kandidat pengembangan lanjutan (bukan scope versi pertama):**
+- Report "Worklog per Teknisi" — rekap `durasi_menit` per user per periode, basis untuk
+  laporan produktivitas
+- Filter tiket berdasarkan `hasil` terakhir di worklog (mis. cari semua tiket dengan status
+  "Menunggu Sparepart")
+- Notifikasi Telegram opsional saat entri worklog baru ditambahkan dengan `hasil = "Perlu
+  Eskalasi"` — auto-notify Agent Manager
+
+**Definition of Done (versi pertama):**
+- [ ] DocType `NextHD Ticket Worklog` dibuat (child table, 5 field di atas)
+- [ ] Field `worklog` (Table) ditambahkan ke `NextHD Ticket`, posisi setelah `waiting_log`
+- [ ] Form Ticket menampilkan grid worklog yang bisa ditambah baris langsung dari form
+      (bawaan Frappe untuk child table, tidak perlu custom JS tambahan di versi pertama)
+- [ ] Field `teknisi` & `waktu` auto-terisi default saat baris baru ditambahkan
+- [ ] Test manual: tambah beberapa baris worklog di 1 tiket, save, reload — data tetap ada
+      dan urut sesuai waktu input
+- [ ] Update `docs/ARSITEKTUR.md §3` — tambahkan detail field `NextHD Ticket Worklog` &
+      field `worklog` baru di `NextHD Ticket`
+
 ### Detail Desain: Guard Duplikasi Workflow Transition (Spec untuk Devin — ditambahkan 30 Agustus 2026)
+
+**Status 30 Agustus:** PR [#10](https://github.com/silverefendy/nexthd/pull/10) sudah dibuat
+Devin dan sudah di-review Claude (kode sesuai spec, lolos review) — sudah di-`git pull` Efendy
+ke server. **Belum ditutup** — menunggu testing manual (`bench run-tests`, script `bench
+console`, `bench migrate` uji tahan) sesuai checklist Definition of Done di bawah sebelum
+dianggap tuntas.
 
 **Latar belakang:** Duplikasi `Workflow Transition` (kombinasi `state`+`action`+`next_state`
 sama muncul berkali-kali dalam satu Workflow) sudah terjadi 3× — 20, 24, dan 25 Agustus 2026.
@@ -92,13 +165,12 @@ untuk semua jalur (UI, `bench console`, migrate, PR Devin lain).
 `NextHD Problem`, `NextHD Change Request`. **Tidak berlaku** untuk Workflow bawaan/DocType
 lain di luar NextHD (supaya tidak mempengaruhi bagian Frappe yang tidak terkait).
 
-**Implementasi yang disarankan — via `doc_events` hook (BUKAN modifikasi core Frappe):**
+**Implementasi (sudah di-merge via PR #10):**
 
-Tambahkan validasi Python baru, didaftarkan di `hooks.py`:
-
+`nexthd/hooks.py` — hook ditambahkan tanpa menghapus hook existing lain:
 ```python
 doc_events = {
-    # ... hook existing lainnya, jangan dihapus ...
+    # ... hook existing lainnya ...
     "Workflow": {
         "validate": "nexthd.next_helpdesk.utils.workflow_guard.validate_no_duplicate_transitions"
     }
@@ -138,31 +210,22 @@ def validate_no_duplicate_transitions(doc, method):
         )
 ```
 
-**Kenapa `validate` (bukan `before_save`/`on_update`):** `validate` dijalankan sebelum data
-ditulis ke DB, jadi kalau ada duplikat, `frappe.throw()` membatalkan seluruh transaksi save —
-tidak ada data setengah-tersimpan.
+File test: `nexthd/next_helpdesk/tests/test_workflow_guard.py` — 3 test case (`FrappeTestCase`):
+Workflow valid tetap tersimpan normal, transisi duplikat sengaja ditolak dengan
+`ValidationError`, Workflow di luar 3 nama NextHD tidak terpengaruh guard.
 
-**⚠️ Risiko yang WAJIB ditest sebelum merge (bukan sekadar tempel kode):**
-1. **Proses fixture import saat `bench migrate`** — pastikan guard ini tidak memblokir
-   reimport fixture `workflow_transition.json` yang sah (fixture sekarang sudah bersih,
-   tapi perlu dipastikan proses reimport tidak secara sementara membuat state duplikat
-   di tengah proses sebelum akhirnya bersih).
-2. **`bench console` manual save** — pastikan pesan error `frappe.throw()` jelas dan
-   actionable buat Claude/Efendy saat debug via `bench console`, bukan traceback mentah.
-3. **Regression test 3 workflow** (sudah ada dari sesi 20 Agustus) — jalankan ulang setelah
-   guard terpasang, pastikan semua transisi valid existing tetap tersimpan normal.
-4. **Test simulasi duplikat sengaja** — di `bench console`, coba `doc.append("transitions", {...})`
-   dengan kombinasi yang sudah ada, panggil `doc.save()`, pastikan `frappe.throw()` terpicu
-   dengan pesan yang menyebutkan transisi mana yang duplikat.
-
-**Definition of Done:**
-- [ ] File `workflow_guard.py` dibuat, hook terdaftar di `hooks.py`
-- [ ] Test manual: simpan Workflow existing (Ticket/Problem/CR) tanpa perubahan — harus tetap sukses
-- [ ] Test manual: coba append transisi duplikat lalu save — harus gagal dengan pesan jelas
-- [ ] `bench migrate` uji tahan tidak menunjukkan error terkait guard ini
-- [ ] Regression test 3 workflow (dari sesi 20 Agustus) tetap lulus semua
-- [ ] Setelah merge & migrate di server, jalankan `check_workflow_transition_clean.py`
-      (`docs/AUDIT_SISTEM.md`) sekali lagi untuk konfirmasi tidak ada regresi
+**Definition of Done (status per 30 Agustus — belum semua tercentang):**
+- [x] File `workflow_guard.py` dibuat, hook terdaftar di `hooks.py` — PR #10
+- [x] Unit test ditulis (3 test case) — PR #10
+- [x] Code review Claude — lolos, sesuai spec
+- [x] `git pull` ke server — sudah dilakukan Efendy
+- [ ] Jalankan `bench run-tests` — belum dilaporkan hasilnya
+- [ ] Test manual `bench console` (simpan Workflow existing tanpa perubahan → harus sukses;
+      coba append transisi duplikat → harus gagal dengan pesan jelas)
+- [ ] `bench migrate` uji tahan — belum dijalankan, ini yang paling berisiko (interaksi
+      dengan proses reimport fixture)
+- [ ] Setelah migrate sukses: jalankan ulang `check_workflow_transition_clean.py`
+      (`docs/AUDIT_SISTEM.md`) untuk konfirmasi tidak ada regresi
 
 ### Detail Desain: Knowledge Article
 
@@ -267,23 +330,25 @@ tidak sinkron, 20 Agustus).
 | Testing end-to-end workflow di UI browser | ⬜ | Backend sudah lulus 100% (20 Agustus), belum ditest klik manual | Efendy |
 | Role assignment `support@ciptamebel.co.id` → IT Manager | ⬜ | Keputusan: sementara 1 akun shared dulu | Efendy |
 | File `HANDOFF_SLA_NextHD_2026-08-19.md` belum ter-commit | ⬜ | Cek di server, `git add` kalau masih ada | Efendy |
-| **Guard permanen duplikasi workflow transition** | 🔶 | **Naik status jadi task konkret 30 Agustus** — spec lengkap ditulis di Tier 1 di atas, siap untuk PR Devin | Devin |
+| **Guard permanen duplikasi workflow transition** | 🔶 | PR [#10](https://github.com/silverefendy/nexthd/pull/10) sudah di-pull, menunggu testing manual — lihat Tier 1 untuk checklist lengkap | Efendy |
+| **NextHD Ticket Worklog** | ⬜ | Spec siap di Tier 1, prioritas tinggi — siap dijadikan task Devin | Devin |
 | Link Telegram untuk user test `test.requester` | ⬜ | Belum pernah kirim `/start`+`/link`, bukan bug | Efendy |
 | Pemetaan tanggal Cuti Bersama 2026 belum dicek silang ke SKB asli | ⬜ | Data ditambahkan berdasar asumsi pola umum kalender cuti bersama Indonesia, bukan dibaca langsung dari teks SKB 3 Menteri | Efendy |
 | Re-test Dashboard Connections "Dipakai Di" dengan foto baru | ⬜ | Foto contoh lama ikut terhapus tombol Reset Data Demo sebelum sempat ditest ulang — perlu buat foto baru → pakai di 1 Ticket → cek badge muncul di form Photo | Efendy |
 | Rename Module "Next Helpdesk" → "NextHD" | 🔴 | Lihat tabel Bug Perlu Diperbaiki di atas | Claude + Efendy |
-| `bench migrate` uji tahan (item KK/AA) | 🔴 | Belum pernah dijalankan sejak fix sidebar 29-30 Agustus — lihat `docs/SUMMARY.md §2` untuk detail | Efendy |
+| `bench migrate` uji tahan (item KK/AA) | 🔴 | Belum pernah dijalankan sejak fix sidebar 29-30 Agustus — bisa digabung sekalian dengan uji migrate untuk PR #10 (guard workflow) — lihat `docs/SUMMARY.md §2` untuk detail | Efendy |
 
 ---
 
 ## Urutan Eksekusi yang Disarankan (Tier 1)
 
-1. **Guard Duplikasi Workflow Transition** — spec sudah siap, quick win teknis, mengurangi risiko utang lama
-2. **Knowledge Article + Tag** — fondasi dulu, karena Auto-Suggest bergantung ke Knowledge Article
-3. **CSAT** — independen, bisa paralel dengan #2
-4. **Dashboard Trend Chart** — independen, quick win terpisah
-5. **Merge Tiket Duplikat** — bisa nunggu sampai ada kejadian nyata yang butuh ini
-6. Tier 2 — nunggu sinyal nyata dibutuhkan, jangan dikerjakan preventif dulu
+1. **Guard Duplikasi Workflow Transition** — sudah masuk tahap testing (PR #10 di-pull), tinggal dituntaskan verifikasinya
+2. **NextHD Ticket Worklog** — spec siap, prioritas tinggi dari Efendy, quick win teknis (child table sederhana, tidak ada dependensi)
+3. **Knowledge Article + Tag** — fondasi dulu, karena Auto-Suggest bergantung ke Knowledge Article
+4. **CSAT** — independen, bisa paralel dengan #3
+5. **Dashboard Trend Chart** — independen, quick win terpisah
+6. **Merge Tiket Duplikat** — bisa nunggu sampai ada kejadian nyata yang butuh ini
+7. Tier 2 — nunggu sinyal nyata dibutuhkan, jangan dikerjakan preventif dulu
 
 ---
 
