@@ -153,6 +153,9 @@ doc_events = {
 	},
 	"File": {
 		"after_insert": "nexthd.next_helpdesk.utils.image_compress.compress_photo_on_upload"
+	},
+	"Workflow": {
+		"validate": "nexthd.next_helpdesk.utils.workflow_guard.validate_no_duplicate_transitions"
 	}
 }
 
