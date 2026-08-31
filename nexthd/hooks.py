@@ -171,6 +171,14 @@ scheduler_events = {
 
 # Fixtures
 # --------
+# CATATAN: "Workflow Transition" SENGAJA DIHAPUS dari fixtures (30 Agustus 2026).
+# Root cause duplikasi berulang (round 4): fixture ini isinya SAMA dengan transitions
+# yang sudah ter-embed di dalam fixture "Workflow" itu sendiri. Dua channel redundan ini
+# sama-sama jalan tiap bench migrate dan SALING MENAMBAH (bukan menimpa), menyebabkan
+# jumlah transisi berlipat tiap migrate. Sekarang "Workflow" fixture (workflow.json)
+# adalah SATU-SATUNYA sumber kebenaran untuk Workflow Transition. Jangan tambahkan lagi
+# fixture "Workflow Transition" terpisah tanpa menghapus transitions dari workflow.json dulu.
+#
 # CATATAN: "Workspace Sidebar" SENGAJA DIHAPUS dari fixtures.
 # Workspace dikelola via workspace_json (folder nexthd/next_helpdesk/workspace/),
 # bukan lewat fixtures. Dua mekanisme ini tidak boleh aktif bersamaan karena
@@ -178,11 +186,6 @@ scheduler_events = {
 
 fixtures = [
         {"dt": "Workflow", "filters": [["name", "in", [
-                "NextHD Ticket",
-                "NextHD Problem",
-                "NextHD Change Request"
-        ]]]},
-        {"dt": "Workflow Transition", "filters": [["parent", "in", [
                 "NextHD Ticket",
                 "NextHD Problem",
                 "NextHD Change Request"
