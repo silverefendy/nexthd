@@ -42,6 +42,8 @@
   "attachments",
   "section_waiting",
   "waiting_log",
+  "section_worklog",
+  "worklog",
   "section_photos",
   "photos"
  ],
@@ -252,6 +254,17 @@
    "fieldtype": "Table",
    "label": "Riwayat Menunggu User",
    "options": "NextHD Ticket Waiting Log"
+  },
+  {
+   "fieldname": "section_worklog",
+   "fieldtype": "Section Break",
+   "label": "Riwayat Progress"
+  },
+  {
+   "fieldname": "worklog",
+   "fieldtype": "Table",
+   "label": "Riwayat Progress",
+   "options": "NextHD Ticket Worklog"
   },
   {
    "fieldname": "section_photos",

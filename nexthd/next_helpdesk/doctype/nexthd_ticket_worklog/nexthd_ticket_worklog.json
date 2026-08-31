@@ -1,0 +1,21 @@
+{
+ "doctype": "DocType",
+ "name": "NextHD Ticket Worklog",
+ "module": "Next Helpdesk",
+ "istable": 1,
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "custom": 0,
+ "fields": [
+  {"fieldname": "waktu", "fieldtype": "Datetime", "label": "Waktu", "default": "Now", "in_list_view": 1},
+  {"fieldname": "teknisi", "fieldtype": "Link", "options": "User", "label": "Teknisi", "default": "user", "in_list_view": 1},
+  {"fieldname": "aktivitas", "fieldtype": "Small Text", "label": "Aktivitas", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "hasil", "fieldtype": "Select", "options": "Berhasil\nBelum Berhasil\nPerlu Eskalasi\nMenunggu Sparepart", "label": "Hasil", "in_list_view": 1},
+  {"fieldname": "durasi_menit", "fieldtype": "Int", "label": "Durasi Menit"}
+ ],
+ "permissions": [
+  {"role": "System Manager", "permlevel": 0, "read": 1, "write": 1},
+  {"role": "Agent", "permlevel": 0, "read": 1, "write": 1},
+  {"role": "Requester", "permlevel": 0, "read": 1, "write": 0}
+ ]
+}
