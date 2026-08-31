@@ -3,12 +3,14 @@ import frappe
 NEXTHD_WORKFLOWS = {"NextHD Ticket", "NextHD Problem", "NextHD Change Request"}
 
 
-def validate_no_duplicate_transitions(doc, method):
-	# Guard di-skip saat proses migrate/install/import fixture Frappe sedang berjalan,
-	# karena reimport bisa sesaat menggabungkan child rows dari 2 sumber fixture
-	# (Workflow dan Workflow Transition) sebelum validate() dipanggil.
-	if frappe.flags.in_migrate or frappe.flags.in_install or getattr(frappe.flags, "in_import", False):
-		return
+	# Exception "skip saat in_migrate/in_install/in_import" DIHAPUS (30 Agustus 2026).
+	# Root cause duplikasi Round 4 sudah diperbaiki secara struktural: fixture
+	# "Workflow Transition" terpisah sudah dihapus dari hooks.py, sehingga tidak
+	# ada lagi 2 channel fixture yang saling menambah child rows saat migrate.
+	# Guard ini sekarang TETAP AKTIF bahkan saat migrate, supaya kalau ada
+	# regresi (mis. seseorang menambah lagi fixture Workflow Transition terpisah
+	# tanpa sadar), migrate akan langsung GAGAL dengan pesan jelas, bukan
+	# didiamkan sampai ketahuan lewat verifikasi manual.
 	if doc.name not in NEXTHD_WORKFLOWS:
 		return
 	seen = set()
