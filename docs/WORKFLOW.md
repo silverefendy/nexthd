@@ -3,7 +3,7 @@
 > State machine untuk Ticket, Problem, Change Request + sistem notifikasi Telegram.
 > File ini paling sering dirujuk saat debugging workflow.
 >
-> **Last updated:** 2026-08-30 (fix §3 — contoh fixtures `hooks.py` usang, `Workspace Sidebar` sengaja TIDAK terdaftar di fixtures, dikonfirmasi via cek langsung ke server)
+> **Last updated:** 2026-08-30 (§3 diperbarui lagi — fixture `Workflow Transition` terpisah dihapus dari `hooks.py`, root cause "Duplikasi Round 4" ada di §5; update sebelumnya: fix contoh fixtures `hooks.py` usang, `Workspace Sidebar` sengaja TIDAK terdaftar di fixtures, dikonfirmasi via cek langsung ke server)
 
 ---
 
@@ -178,14 +178,13 @@ File JSON di `nexthd/next_helpdesk/workflow/`:
 - `nexthd_problem_workflow.json`
 - `nexthd_change_request_workflow.json`
 
-Didaftarkan di `hooks.py` (isi ringkas, dikonfirmasi via cek langsung ke server 30 Agustus 2026):
+Didaftarkan di `hooks.py` (isi ringkas — **diperbarui 30 Agustus 2026**: entri fixture
+`Workflow Transition` terpisah SUDAH DIHAPUS dari sini, lihat catatan di bawah dan detail
+lengkap di §5 "Duplikasi Workflow Transition Round 4"):
 
 ```python
 fixtures = [
     {"dt": "Workflow", "filters": [["name", "in", [
-        "NextHD Ticket", "NextHD Problem", "NextHD Change Request"
-    ]]]},
-    {"dt": "Workflow Transition", "filters": [["parent", "in", [
         "NextHD Ticket", "NextHD Problem", "NextHD Change Request"
     ]]]},
     {"dt": "Desktop Icon", "filters": [["app", "=", "nexthd"]]},
@@ -196,6 +195,14 @@ fixtures = [
     # ... (kemungkinan ada entri lain, cek file asli untuk daftar lengkap)
 ]
 ```
+
+> ⚠️ **`Workflow Transition` SENGAJA TIDAK didaftarkan lagi sebagai fixture terpisah** (dihapus
+> 30 Agustus 2026, commit `22e0d7b`). Transitions sudah ter-embed di dalam fixture `Workflow`
+> di atas — kalau `Workflow Transition` didaftarkan lagi sebagai entri fixture terpisah, dua
+> channel ini akan **saling menambah** child rows setiap `bench migrate` (bukan saling menimpa),
+> menyebabkan duplikasi berlipat. Ini root cause "Duplikasi Workflow Transition Round 4" —
+> detail lengkap kronologi & verifikasi ada di §5. **Jangan tambahkan lagi fixture
+> `Workflow Transition` terpisah** tanpa menghapus dulu `transitions` dari fixture `Workflow`.
 
 > ⚠️ **`Workflow State` TIDAK perlu di fixtures** — tidak punya kolom `workflow`, sifatnya global.
 
@@ -360,6 +367,63 @@ muncul, field terisi = tombol muncul.
 ### ✅ RESOLVED (2026-08-19 & 2026-08-20) — Dedup Workflow Transition (Dua Kali)
 
 Ditemukan dua kali: pertama 2026-08-19 (prefix `ai9*`, filter per-nama), kedua 2026-08-20 (pola konsisten `idx = 0` di semua 3 workflow). Keduanya difix via SQL DELETE dan fixture di-export ulang. Regression test `apply_workflow()` lulus setelah fix kedua. Detail lanjutan (round 2 & 3, root cause fixture menumpuk generasi lama) ada di `docs/BUG_HISTORY.md` dan `docs/BUG_WORKSPACE_SIDEBAR.md`.
+
+### ✅ RESOLVED (2026-08-30) — Duplikasi Workflow Transition Round 4 (Root Cause Struktural: Dua Channel Fixture Saling Menambah)
+
+**Konteks:** Duplikasi muncul lagi untuk keempat kalinya setelah Round 1-3 di atas — kali ini
+tiap transisi terduplikasi persis 4× (Ticket 28, Problem 24, Change Request 32), bertahan
+bahkan setelah dedup manual berulang.
+
+**Kronologi:**
+
+1. PR #10 (Devin) menambahkan guard `validate_no_duplicate_transitions` (hook
+   `Workflow.validate`, file `nexthd/next_helpdesk/utils/workflow_guard.py`) — menolak
+   `doc.save()` kalau ditemukan transisi duplikat di `doc.transitions`.
+2. `bench migrate` pertama kali **ditolak guard ini**. Awalnya salah didiagnosa sebagai
+   false-positive artefak reimport, sempat ditambahkan exception "skip validasi saat
+   `frappe.flags.in_migrate`". **Ini keputusan keliru** — guard sebenarnya benar menangkap
+   masalah nyata; exception ini justru membuka celah duplikasi terus terjadi tanpa terdeteksi.
+3. Investigasi mendalam (baca langsung isi fixture dari GitHub) menemukan **root cause
+   sesungguhnya**: dua fixture yang sama-sama menyentuh child table `Workflow Transition`
+   tersimpan aktif bersamaan:
+   - `workflow.json` — transitions **ter-embed** di dalam dokumen Workflow, child rows-nya
+     **tidak punya field `name` eksplisit** → tiap migrate, Frappe hapus baris lama & sisipkan
+     ulang baris segar (nama acak baru tiap kali).
+   - `workflow_transition.json` (fixture **terpisah**) — baris dengan `name` eksplisit
+     diinsert langsung sebagai baris individual → **menambah** di atas hasil channel pertama,
+     bukan menimpanya.
+   - Total: 7 (channel 1) + 7 (channel 2) = 14 untuk Ticket. Problem 6+6=12, Change Request
+     8+8=16 — pola ini konsisten dengan gejala berulang yang terlihat di sesi-sesi sebelumnya.
+4. **Fix permanen:** hapus channel `Workflow Transition` dari `fixtures` di `hooks.py`, hapus
+   file `nexthd/fixtures/workflow_transition.json` dari repo — sisakan **hanya** fixture
+   `Workflow` (dengan transitions ter-embed) sebagai satu-satunya sumber kebenaran.
+   Commit `22e0d7b`.
+5. Dedup database (SQL DELETE berbasis kombinasi unik `state`+`action`+`next_state`) dijalankan
+   sekali lagi setelah fix struktural di atas: Ticket 14→7, Problem 12→6, Change Request 16→8.
+6. Exception "skip saat `in_migrate`" di `workflow_guard.py` **dihapus lagi** (commit `53c63b3`,
+   sempat ada `IndentationError` di percobaan pertama karena baris `def` tidak sengaja ikut
+   terhapus saat proses patch — diperbaiki di commit `fac453b`) — guard sekarang **tetap aktif
+   bahkan saat migrate**, sebagai jaring pengaman kalau regresi serupa terjadi lagi.
+
+**Verifikasi stabilitas** (kriteria: bertahan minimal 2× `bench migrate` berturut-turut,
+termasuk sekali dengan guard versi ketat tanpa exception):
+
+| Migrate ke- | Ticket | Problem | Change Request | `idx=0` (indikasi dup) | Guard |
+|---|---|---|---|---|---|
+| 1 (setelah fix channel + dedup) | 7 | 6 | 8 | 0/0/0 | masih ada exception `in_migrate` |
+| 2 | 7 | 6 | 8 | 0/0/0 | masih ada exception `in_migrate` |
+| 3 (setelah exception dihapus) | 7 | 6 | 8 | 0/0/0 | ✅ ketat penuh, migrate sukses tanpa penolakan |
+
+**Hasil akhir:** 7/6/8 stabil, `is_active=1` ketiganya, guard tetap ketat penuh (tanpa celah
+skip saat migrate) dan tidak menolak apa pun — bukti root cause benar-benar tuntas secara
+struktural, bukan ditutupi pengecualian.
+
+**Pelajaran arsitektur (berlaku umum, bukan cuma Workflow):** dua fixture yang sama-sama
+menyentuh child table yang sama akan **selalu** berpotensi saling menambah (bukan saling
+menimpa) kalau salah satunya tidak punya `name` eksplisit di child rows-nya. Guard/validasi
+yang menolak sesuatu saat migrate **belum tentu false-positive** — cek dulu apakah data yang
+ditolak itu memang seharusnya tidak ada, sebelum menambah pengecualian "skip saat migrate".
+Aturan umum ini juga dicatat di `docs/POLA_KERJA.md`.
 
 ---
 
