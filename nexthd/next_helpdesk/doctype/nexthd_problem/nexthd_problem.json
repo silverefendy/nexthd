@@ -24,7 +24,9 @@
   "section_tickets",
   "related_tickets",
   "section_photos",
-  "photos"
+  "photos",
+  "section_activity_log",
+  "activity_log"
  ],
  "fields": [
   {
@@ -121,6 +123,17 @@
    "fieldtype": "Table",
    "label": "Foto/Gambar",
    "options": "NextHD Photo Link"
+  },
+  {
+   "fieldname": "section_activity_log",
+   "fieldtype": "Section Break",
+   "label": "Riwayat Aktivitas"
+  },
+  {
+   "fieldname": "activity_log",
+   "fieldtype": "Table",
+   "label": "Riwayat Aktivitas",
+   "options": "NextHD Activity Log"
   }
  ],
  "idx_unique": [],

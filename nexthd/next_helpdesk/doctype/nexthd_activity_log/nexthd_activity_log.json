@@ -1,0 +1,80 @@
+{
+ "actions": [],
+ "creation": "2026-09-07 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "timestamp",
+  "updated_by",
+  "entry_type",
+  "status_from",
+  "status_to",
+  "note",
+  "related_doctype",
+  "related_document"
+ ],
+ "fields": [
+  {
+   "fieldname": "timestamp",
+   "fieldtype": "Datetime",
+   "label": "Timestamp",
+   "read_only": 1
+  },
+  {
+   "fieldname": "updated_by",
+   "fieldtype": "Link",
+   "label": "Updated By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "entry_type",
+   "fieldtype": "Select",
+   "label": "Entry Type",
+   "options": "Otomatis\nManual",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status_from",
+   "fieldtype": "Data",
+   "label": "Status From",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status_to",
+   "fieldtype": "Data",
+   "label": "Status To",
+   "read_only": 1
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Catatan"
+  },
+  {
+   "fieldname": "related_doctype",
+   "fieldtype": "Select",
+   "label": "Related DocType",
+   "options": "\nNextHD Ticket\nNextHD Problem\nNextHD Change Request\nNextHD Known Error\nNextHD Asset"
+  },
+  {
+   "fieldname": "related_document",
+   "fieldtype": "Dynamic Link",
+   "label": "Related Document",
+   "options": "related_doctype"
+  }
+ ],
+ "idx_unique": [],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-07 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Next Helpdesk",
+ "name": "NextHD Activity Log",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
