@@ -27,6 +27,7 @@ class NextHDProblem(Document):
 				status_to=self.status,
 				entry_type="Otomatis"
 			)
+			self.reload()
 
 	def sync_meta_dates(self):
 		if not self.tanggal_dibuat:

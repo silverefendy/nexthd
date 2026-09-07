@@ -18,7 +18,9 @@
   "implementation_plan",
   "rollback_plan",
   "section_activity_log",
-  "activity_log"
+  "activity_log",
+  "tanggal_dibuat",
+  "tanggal_diedit"
  ],
  "fields": [
   {
@@ -90,6 +92,20 @@
    "fieldtype": "Table",
    "label": "Riwayat Aktivitas",
    "options": "NextHD Activity Log"
+  },
+  {
+   "fieldname": "tanggal_dibuat",
+   "fieldtype": "Datetime",
+   "label": "Tanggal Dibuat",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "tanggal_diedit",
+   "fieldtype": "Datetime",
+   "label": "Tanggal Diedit",
+   "read_only": 1,
+   "hidden": 1
   }
  ],
  "idx_unique": [],
