@@ -16,7 +16,9 @@
   "related_problem",
   "related_asset",
   "implementation_plan",
-  "rollback_plan"
+  "rollback_plan",
+  "section_activity_log",
+  "activity_log"
  ],
  "fields": [
   {
@@ -77,6 +79,17 @@
    "fieldname": "rollback_plan",
    "fieldtype": "Text Editor",
    "label": "Rollback Plan"
+  },
+  {
+   "fieldname": "section_activity_log",
+   "fieldtype": "Section Break",
+   "label": "Riwayat Aktivitas"
+  },
+  {
+   "fieldname": "activity_log",
+   "fieldtype": "Table",
+   "label": "Riwayat Aktivitas",
+   "options": "NextHD Activity Log"
   }
  ],
  "idx_unique": [],

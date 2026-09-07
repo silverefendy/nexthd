@@ -50,3 +50,34 @@ class TestNextHDKnownError(FrappeTestCase):
 		})
 		ke.insert()
 		self.assertEqual(ke.related_problem, problem.name)
+
+	def test_activity_log_manual_entry(self):
+		"""Test manual activity log entry"""
+		ke = frappe.get_doc({
+			"doctype": "NextHD Known Error",
+			"title": "Test Manual Activity Log"
+		})
+		ke.append("activity_log", {
+			"note": "Catatan manual dari agent"
+		})
+		ke.insert()
+		
+		ke.reload()
+		self.assertEqual(len(ke.activity_log), 1)
+		self.assertEqual(ke.activity_log[0].entry_type, "Manual")
+		self.assertEqual(ke.activity_log[0].note, "Catatan manual dari agent")
+		self.assertIsNotNone(ke.activity_log[0].timestamp)
+		self.assertIsNotNone(ke.activity_log[0].updated_by)
+
+	def test_activity_log_manual_requires_note(self):
+		"""Test that manual entry requires note"""
+		ke = frappe.get_doc({
+			"doctype": "NextHD Known Error",
+			"title": "Test Manual No Note"
+		})
+		ke.append("activity_log", {
+			"entry_type": "Manual"
+		})
+		
+		with self.assertRaises(frappe.ValidationError):
+			ke.insert()

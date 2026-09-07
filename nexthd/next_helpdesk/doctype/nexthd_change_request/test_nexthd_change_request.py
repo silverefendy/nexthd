@@ -94,3 +94,86 @@ class TestNextHDChangeRequest(FrappeTestCase):
 			})
 			cr.insert()
 			self.assertEqual(cr.risk_level, risk_level)
+
+	def test_activity_log_auto_status_change(self):
+		"""Test auto-logging of status changes"""
+		cr = frappe.get_doc({
+			"doctype": "NextHD Change Request",
+			"title": "Test Activity Log Status",
+			"status": "Draft",
+			"change_type": "Normal",
+			"risk_level": "Sedang"
+		})
+		cr.insert()
+		
+		# Change status to trigger auto-log
+		cr.status = "Diajukan"
+		cr.save()
+		
+		# Reload to get activity_log from DB
+		cr.reload()
+		self.assertEqual(len(cr.activity_log), 1)
+		self.assertEqual(cr.activity_log[0].entry_type, "Otomatis")
+		self.assertEqual(cr.activity_log[0].status_from, "Draft")
+		self.assertEqual(cr.activity_log[0].status_to, "Diajukan")
+		self.assertIn("Status berubah dari Draft ke Diajukan", cr.activity_log[0].note)
+
+	def test_activity_log_manual_entry(self):
+		"""Test manual activity log entry"""
+		cr = frappe.get_doc({
+			"doctype": "NextHD Change Request",
+			"title": "Test Manual Activity Log",
+			"status": "Draft",
+			"change_type": "Normal",
+			"risk_level": "Sedang"
+		})
+		cr.append("activity_log", {
+			"note": "Catatan manual dari agent"
+		})
+		cr.insert()
+		
+		cr.reload()
+		self.assertEqual(len(cr.activity_log), 1)
+		self.assertEqual(cr.activity_log[0].entry_type, "Manual")
+		self.assertEqual(cr.activity_log[0].note, "Catatan manual dari agent")
+		self.assertIsNotNone(cr.activity_log[0].timestamp)
+		self.assertIsNotNone(cr.activity_log[0].updated_by)
+
+	def test_activity_log_manual_requires_note(self):
+		"""Test that manual entry requires note"""
+		cr = frappe.get_doc({
+			"doctype": "NextHD Change Request",
+			"title": "Test Manual No Note",
+			"status": "Draft",
+			"change_type": "Normal",
+			"risk_level": "Sedang"
+		})
+		cr.append("activity_log", {
+			"entry_type": "Manual"
+		})
+		
+		with self.assertRaises(frappe.ValidationError):
+			cr.insert()
+
+	def test_activity_log_no_infinite_recursion(self):
+		"""Test that status change doesn't cause infinite recursion"""
+		cr = frappe.get_doc({
+			"doctype": "NextHD Change Request",
+			"title": "Test No Recursion",
+			"status": "Draft",
+			"change_type": "Normal",
+			"risk_level": "Sedang"
+		})
+		cr.insert()
+		
+		# Change status multiple times
+		cr.status = "Diajukan"
+		cr.save()
+		cr.reload()
+		
+		cr.status = "Direview"
+		cr.save()
+		cr.reload()
+		
+		# Should have exactly 2 log entries (one for each status change)
+		self.assertEqual(len(cr.activity_log), 2)

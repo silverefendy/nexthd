@@ -1,6 +1,7 @@
 import frappe
 from frappe.utils import now_datetime
 from frappe.model.document import Document
+from nexthd.next_helpdesk.utils.activity_log import _add_activity_log_entry
 
 
 class NextHDChangeRequest(Document):
@@ -8,6 +9,14 @@ class NextHDChangeRequest(Document):
 		"""Validate change request before save"""
 		self.validate_status_transition()
 		self.validate_emergency_change()
+		for row in self.activity_log:
+			if not row.timestamp:  # baris baru dari input manual di grid UI
+				row.timestamp = frappe.utils.now()
+				row.updated_by = frappe.session.user
+				if not row.entry_type:
+					row.entry_type = "Manual"
+				if row.entry_type == "Manual" and not row.note:
+					frappe.throw(_("Catatan wajib diisi untuk entry Manual di Riwayat Aktivitas"))
 
 	def validate_status_transition(self):
 		"""Validate that status transition is allowed according to workflow"""
@@ -77,6 +86,15 @@ class NextHDChangeRequest(Document):
 		"""Handle updates to change request"""
 		# Telegram notification hooks will be added in Tahap 6
 		self.sync_meta_dates()
+		if self.has_value_changed("status"):
+			old_status = self.get_doc_before_save().status if self.get_doc_before_save() else None
+			_add_activity_log_entry(
+				doctype=self.doctype,
+				docname=self.name,
+				status_from=old_status,
+				status_to=self.status,
+				entry_type="Otomatis"
+			)
 
 	def sync_meta_dates(self):
 		if not self.tanggal_dibuat:
