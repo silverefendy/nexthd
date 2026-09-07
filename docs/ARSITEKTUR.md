@@ -112,13 +112,14 @@ nexthd/
 > migrasi `NextHD Asset` ke pola EAV. Dikerjakan oleh Efendy/Devin (commit `281072a`+`81889c0`),
 > terverifikasi aman 29 Agustus. Lihat §3.1 Detail Field NextHD Asset di bawah untuk detail lengkap.
 
-### Child DocType (3) — istable=1, tidak perlu di sidebar
+### Child DocType (4) — istable=1, tidak perlu di sidebar
 
 | DocType | Parent |
 |---|---|
 | NextHD Team Member | NextHD Team |
 | NextHD Problem Ticket | NextHD Problem |
 | NextHD Asset Attribute | NextHD Asset (EAV, ditambahkan 28 Agustus 2026) |
+| NextHD Ticket Worklog | NextHD Ticket (catatan progress teknisi, PR #11, live 31 Agustus 2026) |
 
 ---
 
@@ -133,18 +134,70 @@ status                → Select: Baru / Sedang Dikerjakan / Menunggu User / Sel
 priority              → Select: Kritis / Tinggi / Sedang / Rendah
 category              → Link: NextHD Category
 service_catalog       → Link: NextHD Service Catalog (depends_on: ticket_type = Permintaan Layanan)
+impact                → Select
+urgency               → Select
 requested_by          → Link: User (required)
 assigned_to           → Link: User
 team                  → Link: NextHD Team
 affected_asset        → Link: NextHD Asset
 sla_response_by       → Datetime (read_only)
 sla_resolution_by     → Datetime (read_only)
-sla_warning_sent      → Check (read_only)
+responded_on          → Datetime (read_only)
 resolved_on           → Datetime (read_only)
 closed_on             → Datetime (read_only)
+sla_warning_sent      → Check (read_only)
 related_problem       → Link: NextHD Problem
 attachments           → Attach
+waiting_log           → Table: NextHD Ticket Waiting Log
+worklog               → Table: NextHD Ticket Worklog (ditambahkan PR #11, 31 Agustus 2026 — lihat detail skema di bawah)
+photos                → Table: NextHD Photo Link
+priority_manually_set → Check (hidden)
+tanggal_dibuat        → Datetime (hidden, read_only — ditambahkan 5-6 September 2026, lihat catatan Field Meta di bawah)
+tanggal_diedit        → Datetime (hidden, read_only — idem)
 ```
+
+#### Detail Field: NextHD Ticket Worklog (child table, ditambahkan PR #11, 31 Agustus 2026)
+
+```
+waktu          → Datetime
+teknisi        → Link: User
+aktivitas      → Small Text
+hasil          → Select: Berhasil / Belum Berhasil / Perlu Eskalasi / Menunggu Sparepart
+durasi_menit   → Int
+```
+
+> Field `durasi_menit` masih banyak diisi `0` di data existing (belum konsisten dipakai
+> teknisi) — jadi belum bisa diandalkan untuk laporan produktivitas/MTTR per teknisi. Dipakai
+> sebagai kolom di report "Riwayat Progress Tiket" (lihat §3.2 di bawah) yang menggabungkan
+> Worklog lintas semua tiket, sortable by `waktu`.
+
+### Catatan Field Meta: `tanggal_dibuat` / `tanggal_diedit` (ditambahkan 5-6 September 2026)
+
+**Kenapa dibutuhkan:** Frappe **tidak expose** field meta bawaan `creation`/`modified` ke
+dialog List View "+ Add/Remove Fields" (bukan DocField terdaftar) — jadi List View biasa
+tidak bisa menampilkan tanggal absolut "Dibuat"/"Diedit", cuma kolom `modified` bawaan yang
+formatnya di-hardcode relative time ("1d"/"2h").
+
+**Solusi:** 2 Custom Field baru (`tanggal_dibuat`, `tanggal_diedit`, tipe Datetime,
+`hidden=1`, `read_only=1`) ditambahkan ke **5 DocType**: NextHD Ticket, NextHD Problem,
+NextHD Known Error, NextHD Change Request, NextHD Asset. Disinkron otomatis dari
+`creation`/`modified` via method baru `sync_meta_dates()`:
+
+```python
+def sync_meta_dates(self):
+    if not self.tanggal_dibuat:
+        self.db_set("tanggal_dibuat", self.creation, update_modified=False)
+    self.db_set("tanggal_diedit", now_datetime(), update_modified=False)
+```
+
+Dipanggil dari `on_update()` masing-masing controller. 4 dari 5 DocType (Problem, Known
+Error, Change Request, Asset) sebelumnya punya `on_update()` kosong (`pass`) — jadi
+disisipkan tanpa mengganggu logic lain. Backfill data lama 100% berhasil untuk semua record
+existing di kelima DocType.
+
+**Temuan sampingan saat implementasi ini:** field `resolved_on`/`closed_on` di NextHD Ticket
+ternyata **sudah otomatis terisi dengan benar sejak lama** (logic sudah ada di
+`update_timestamps()`) — hanya belum dicentang di dialog List View, bukan bug kode.
 
 ### Detail Field: NextHD Problem
 
@@ -160,12 +213,15 @@ workaround            → Text Editor
 known_error           → Link: NextHD Known Error (depends_on: status = Known Error)
 change_request        → Link: NextHD Change Request
 related_tickets       → Table: NextHD Problem Ticket
+photos                → Table: NextHD Photo Link
+tanggal_dibuat        → Datetime (hidden, read_only — ditambahkan 5-6 September 2026)
+tanggal_diedit        → Datetime (hidden, read_only — idem)
 ```
 
 > ⚠️ **Posisi field penting:** `related_asset` sengaja diletakkan **sejajar dengan Priority/Category**
 > (idx 7, sebelum section "Detail & Relasi"), BUKAN setelah field Table `related_tickets`. Field biasa
 > yang ditempatkan langsung setelah field bertipe Table kadang tidak ter-render di UI meski datanya
-> valid — ditemukan sebagai bug pada 2026-08-15. Lihat `POLA_KERJA_DAN_BUG.md`.
+> valid — ditemukan sebagai bug pada 2026-08-15. Lihat `docs/BUG_HISTORY.md`.
 
 > **Cara resmi mencapai status `Known Error`:** dua jalur yang sama-sama valid —
 > **(a)** tombol custom **"Buat Known Error dari Problem"** (Client Script, muncul saat field
@@ -178,7 +234,7 @@ related_tickets       → Table: NextHD Problem Ticket
 > `known_error` sudah terisi (lewat cara a atau b), supaya tidak bisa pindah status tanpa Known
 > Error yang benar-benar terhubung. Detail lengkap riwayat perbaikan ini di `WORKFLOW.md`.
 
-### Detail Field: NextHD Asset (pola EAV — direvisi total 29 Agustus 2026)
+### Detail Field: NextHD Asset (pola EAV — direvisi total 29 Agustus, migrasi tuntas 6 September 2026)
 
 > ⚠️ **Riwayat perubahan struktur (baca dulu sebelum mengasumsikan field apa pun ada/tidak ada):**
 > 1. **Awal (7 Agustus – 28 Agustus siang):** field terstruktur statis per `asset_type`
@@ -188,21 +244,33 @@ related_tickets       → Table: NextHD Problem Ticket
 >    EAV) **di samping** field lama — sempat tumpang tindih.
 > 3. **29 Agustus (commit `d964531`, item JJ):** field terstruktur lama **dihapus total** dari
 >    form karena sudah duplikat dengan EAV. Field catatan bebas dipertahankan.
+> 4. **6 September 2026 (item NN):** field `asset_type` (Select lama) **resmi di-deprecate**
+>    (`hidden=1`, `read_only=1`, non-destruktif — kolom & data lama tetap ada di database).
+>    8 `depends_on` field dinamis (section PC/Laptop/Server, Network Device, Printer, Lainnya,
+>    plus field `peripheral_notes`/`printer_notes`/`net_notes`/`other_description`) dialihkan
+>    penuh dari `doc.asset_type` ke `doc.asset_category`. Backfill `asset_category` dari
+>    `asset_type` untuk data lama: 0 mismatch, sudah konsisten semua sebelum migrasi.
 >
-> **Struktur final (29 Agustus 2026 dan seterusnya):**
+> **Struktur final (6 September 2026 dan seterusnya):**
 
 ```
 naming_series         → AST-.YY.MM.-.####.
 asset_name            → Data (required)
 asset_type            → Select: Laptop / PC / Server / Network Device / Printer / Lainnya
+                          (⚠️ DEPRECATED 6 September 2026 — hidden=1, read_only=1, tidak
+                          dipakai lagi untuk depends_on apa pun, data lama dipertahankan
+                          non-destruktif untuk referensi historis)
 location              → Data
 assigned_to           → Link: User
 status                → Select: Aktif / Rusak / Diperbaiki / Dihapus
-asset_category        → Link: NextHD Asset Category (required — ditambahkan 28 Agustus 2026)
+asset_category        → Link: NextHD Asset Category (required — SEKARANG SATU-SATUNYA
+                          sumber kebenaran untuk kategori aset & depends_on field dinamis,
+                          sejak migrasi 6 September 2026)
 purchase_date         → Date
 warranty_until        → Date
 
-# Field catatan bebas — muncul sesuai asset_type (depends_on), DIPERTAHANKAN saat cleanup 29 Agustus:
+# Field catatan bebas — muncul sesuai asset_category (depends_on DIALIHKAN dari asset_type ke
+# asset_category pada 6 September 2026), DIPERTAHANKAN saat cleanup 29 Agustus:
 [PC / Laptop / Server]  → peripheral_notes (Small Text)
 [Network Device]        → net_notes (Small Text)
 [Printer]               → printer_notes (Small Text)
@@ -210,11 +278,13 @@ warranty_until        → Date
 
 photos                 → Table: NextHD Photo Link (foto reusable, PR #9)
 asset_attributes       → Table: NextHD Asset Attribute (EAV, semua spesifikasi terstruktur sekarang di sini)
+tanggal_dibuat         → Datetime (hidden, read_only — ditambahkan 5-6 September 2026)
+tanggal_diedit         → Datetime (hidden, read_only — idem)
 ```
 
 > ❌ **DIHAPUS 29 Agustus 2026 (item JJ)** — field-field ini TIDAK ADA lagi di form, meski kolom
 > fisik masih ada di database (pola lama project ini: hapus dari JSON tidak menghapus kolom
-> fisik, lihat `POLA_KERJA_DAN_BUG.md`): `brand`, `model`, `serial_number`, `cpu`, `ram`,
+> fisik, lihat `docs/POLA_KERJA.md`): `brand`, `model`, `serial_number`, `cpu`, `ram`,
 > `storage`, `os` (section PC/Laptop/Server); `net_brand`, `net_model`, `net_serial_number`,
 > `ip_address`, `mac_address`, `device_role` (section Network Device); `printer_brand`,
 > `printer_model`, `printer_serial_number`, `printer_type` (section Printer). Data lama semua
@@ -251,11 +321,16 @@ catatan          → Text
 > **Report `Detail Aset Lengkap`** ditulis ulang 29 Agustus 2026 — sekarang `LEFT JOIN` ke
 > `NextHD Asset Attribute` dan menampilkan kolom "Spesifikasi (EAV)" (agregat
 > `attribute_name: attribute_value` per Asset via `GROUP_CONCAT`), plus kolom Brand/Serial
-> Number/Sumber/Catatan langsung dari EAV. File: `nexthd/next_helpdesk/report/detail_aset_lengkap/detail_aset_lengkap.py`.
+> Number/Sumber/Catatan langsung dari EAV. **Update 6 September 2026:** kolom "Tipe"
+> (`asset_type`) diganti jadi "Kategori" (`asset_category`), filter juga dialihkan ke
+> `asset_category`, mengikuti deprecation `asset_type`. File:
+> `nexthd/next_helpdesk/report/detail_aset_lengkap/detail_aset_lengkap.py`.
 
 > ⚠️ **Pending:** `test_nexthd_asset.py` masih punya beberapa test method yang meng-assert
 > field lama (`asset.brand`, `.model`, `.serial_number`, dst) — akan gagal kalau dijalankan.
-> Belum direvisi (item W2 di `SUMMARY.md`), cocok untuk task Devin terpisah.
+> Belum direvisi (item W2 di `SUMMARY.md`), cocok untuk task Devin terpisah. Field `asset_type`
+> yang di-deprecate 6 September **tidak** menambah masalah baru ke test suite ini karena
+> hide non-destruktif — `asset_type` masih bisa di-assert nilainya oleh test lama tanpa error.
 
 ### Detail Field: NextHD Change Request
 
@@ -269,6 +344,8 @@ related_problem       → Link: NextHD Problem
 related_asset         → Link: NextHD Asset
 implementation_plan   → Text Editor
 rollback_plan         → Text Editor
+tanggal_dibuat        → Datetime (hidden, read_only — ditambahkan 5-6 September 2026)
+tanggal_diedit        → Datetime (hidden, read_only — idem)
 ```
 
 ### Detail Field: NextHD Known Error
@@ -279,6 +356,9 @@ title                 → Data (required)
 symptom               → Text Editor   (BUKAN root_cause — nama field beda dari Problem)
 workaround            → Text Editor
 related_problem       → Link: NextHD Problem   (BUKAN "problem")
+photos                → Table: NextHD Photo Link
+tanggal_dibuat        → Datetime (hidden, read_only — ditambahkan 5-6 September 2026)
+tanggal_diedit        → Datetime (hidden, read_only — idem)
 ```
 
 > ⚠️ **Tidak ada field `status`** di Known Error — jangan asumsikan ada.
@@ -309,6 +389,35 @@ response_time_minutes → Int
 resolution_time_minutes → Int
 business_hours        → Link: NextHD Business Hours
 ```
+
+---
+
+## 3.2 Custom Report — Daftar Lengkap (diperbarui 6 September 2026)
+
+| Report | Tipe | Sumber Data | Ditambahkan |
+|---|---|---|---|
+| Tiket per Bulan | Query/Script Report | NextHD Ticket | — |
+| Tiket per Agent | Query/Script Report | NextHD Ticket | — |
+| Tiket per Kategori | Query/Script Report | NextHD Ticket | — |
+| Tiket per Prioritas | Query/Script Report | NextHD Ticket | — |
+| SLA Compliance Bulanan | Query/Script Report | NextHD Ticket | — |
+| Aset Bermasalah | Query/Script Report | NextHD Asset | — |
+| Detail Tiket Lengkap | Script Report | NextHD Ticket | — |
+| Detail Aset Lengkap | Script Report | NextHD Asset + NextHD Asset Attribute (EAV) | 29 Agustus |
+| Detail Problem Lengkap | Script Report | NextHD Problem | — |
+| Detail Known Error Lengkap | Script Report | NextHD Known Error | — |
+| Detail Change Request Lengkap | Script Report | NextHD Change Request | — |
+| **Riwayat Progress Tiket** | Query Report (`is_standard=Yes`) | `JOIN` NextHD Ticket Worklog + NextHD Ticket | **6 September 2026** |
+
+**Detail "Riwayat Progress Tiket" (baru):** menggabungkan semua baris `NextHD Ticket
+Worklog` lintas semua tiket dalam satu tabel — kolom No Tiket, Subjek, Status, Waktu,
+Teknisi, Aktivitas, Hasil, Durasi Menit. Default `ORDER BY waktu DESC`, kolom "Waktu"
+sortable di UI. File: `nexthd/next_helpdesk/report/riwayat_progress_tiket/`. Muncul juga
+sebagai shortcut dashboard di Workspace "NextHD Report".
+
+**Update kolom "Detail Tiket Lengkap" (6 September):** kolom baru "Tag" ditambahkan via
+`LEFT JOIN tabTag Link` + `GROUP_CONCAT` — menampilkan tag native Frappe (bukan field
+kustom) yang di-attach ke tiket. Filter `tag` baru tersedia di UI report.
 
 ---
 
@@ -422,6 +531,12 @@ label, icon, indicator_color
 ```
 > ❌ Tidak ada kolom: `number_cards` (disimpan di child table `tabWorkspace Number Card`)
 
+### tabDocType
+> ❌ Tidak ada kolom: `field_order` — berbeda dari dokumentasi umum Frappe versi lain.
+> Urutan field murni dikontrol lewat kolom `idx` di `tabDocField`, diambil via
+> `frappe.get_meta(doctype).fields` diurutkan manual by `idx`. Ditemukan 6 September 2026
+> saat query `SELECT field_order FROM tabDocType` gagal dengan `Unknown column`.
+
 ### tabDocField
 > ❌ Tidak ada kolom: `insert_after` (berbeda dari dokumentasi umum Frappe). Urutan tampilan
 > field murni dikontrol lewat kolom `idx` — angka lebih kecil tampil lebih dulu. Ditemukan
@@ -434,7 +549,7 @@ name, current
 > ⚠️ Counter penomoran dokumen (naming series). **Bisa tidak sinkron dari data fisik**
 > kalau ada insert manual/import yang tidak lewat jalur normal Frappe. Ditemukan 2026-08-20
 > — `PRB-2608-` nyangkut `current=2` padahal data fisik sudah sampai `0005`. Cara cek & sinkron
-> ada di `POLA_KERJA_DAN_BUG.md §3`.
+> ada di `docs/BUG_HISTORY.md §3`.
 
 ### tabNextHD Asset Attribute (EAV, ditambahkan 28 Agustus 2026)
 ```
@@ -444,6 +559,28 @@ parent, parentfield, parenttype,
 brand, serial_number, sumber, catatan
 ```
 > Diverifikasi langsung via `DESCRIBE` pada 29 Agustus 2026. Lihat §3 "Detail Field: NextHD Asset Attribute" untuk penjelasan tiap kolom.
+
+### tabNextHD Ticket Worklog (ditambahkan PR #11, 31 Agustus 2026)
+```
+name, creation, modified, modified_by, owner, docstatus, idx,
+waktu, teknisi, aktivitas, hasil, durasi_menit,
+parent, parentfield, parenttype
+```
+> Diverifikasi langsung via `frappe.get_meta()` saat testing fungsional 31 Agustus 2026.
+> Lihat §3 "Detail Field: NextHD Ticket Worklog" untuk penjelasan tiap kolom, dan §3.2 untuk
+> report turunannya ("Riwayat Progress Tiket").
+
+### tabTag Link (bawaan Frappe, dipakai untuk fitur Tag native — dikonfirmasi relevan 6 September 2026)
+```
+name, creation, modified, modified_by, owner, docstatus,
+tag, document_type, document_name
+```
+> Ini tabel bawaan Frappe (bukan custom NextHD) yang menyimpan tag native (`Tag Link` +
+> `_user_tags`). Dipakai Efendy secara manual untuk tag tiket (contoh: "pc", "psu") sebelum
+> ada fitur "Tag di Tiket" custom di roadmap — lihat `docs/DAFTAR_FITUR.md`. Di-`JOIN` di
+> report "Detail Tiket Lengkap" (§3.2) untuk kolom "Tag": `LEFT JOIN tabTag Link tl ON
+> tl.document_type='NextHD Ticket' AND tl.document_name=t.name`, lalu `GROUP_CONCAT(DISTINCT
+> tl.tag)` supaya 1 baris per tiket meski ada banyak tag.
 
 ---
 
@@ -484,11 +621,11 @@ brand, serial_number, sumber, catatan
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-29 09:50 WIB — Detail Field NextHD
-Asset direvisi total pasca cleanup EAV (item JJ): field terstruktur lama dihapus, ditambahkan
-detail skema `NextHD Asset Attribute` dan `NextHD Asset Category`. §8/§9 lama (Generalisasi
-Non-IT, Wipe Data Tool) tetap di `DAFTAR_FITUR.md`, sekarang sudah terealisasi sebagian
-(EAV live) — lihat `SUMMARY.md` item II/JJ untuk status terkini.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-09-06 — ditambahkan skema
+`NextHD Ticket Worklog` (PR #11), field meta `tanggal_dibuat`/`tanggal_diedit` di 5 DocType,
+§3.2 daftar lengkap Custom Report (termasuk report baru "Riwayat Progress Tiket" & kolom Tag
+di "Detail Tiket Lengkap"), skema `tabTag Link`, dan migrasi penuh `asset_type` (deprecated)
+→ `asset_category` di NextHD Asset (item NN, lihat `docs/SUMMARY.md`).*
 
 ---
 
@@ -496,10 +633,10 @@ Non-IT, Wipe Data Tool) tetap di `DAFTAR_FITUR.md`, sekarang sudah terealisasi s
 
 ### Field `related_asset` di NextHD Problem — Riwayat Schema Drift
 
-Field ini **sempat hilang dari metadata** (28 Agustus 2026) meski kolom fisik & data di database tetap aman — root cause: sebelumnya hanya dilindungi fixture `DocField` terpisah yang sudah tidak terdaftar di `hooks.py`. Sekarang sudah dipindah permanen ke `nexthd_problem.json` (field_order + fields[], posisi setelah `category`), konsisten dengan field lain di DocType ini. Detail lengkap investigasi & fix di `POLA_KERJA_DAN_BUG.md §5`.
+Field ini **sempat hilang dari metadata** (28 Agustus 2026) meski kolom fisik & data di database tetap aman — root cause: sebelumnya hanya dilindungi fixture `DocField` terpisah yang sudah tidak terdaftar di `hooks.py`. Sekarang sudah dipindah permanen ke `nexthd_problem.json` (field_order + fields[], posisi setelah `category`), konsisten dengan field lain di DocType ini. Detail lengkap investigasi & fix di `docs/BUG_HISTORY.md`.
 
 **Pelajaran untuk field custom baru:** field yang ditambahkan manual via SQL raw HARUS langsung ditulis juga ke file `.json` DocType-nya sendiri — jangan hanya mengandalkan fixture `DocField` global terpisah sebagai satu-satunya pelindung dari `bench migrate`.
 
 ### Pola Navigasi Timbal-Balik Antar Dokumen (Forward-Link)
 
-Karena `get_dashboard_data()`/`internal_links` Frappe **tidak mendukung** forward Link field biasa (dikonfirmasi 28 Agustus, lihat `POLA_KERJA_DAN_BUG.md §5`), navigasi antar dokumen yang berelasi one-to-one dipakai lewat tombol Client Script kustom (`frm.add_custom_button` + `frappe.set_route`), dan untuk relasi one-to-many (Problem → banyak Ticket) dipakai List View dengan filter. Daftar lengkap Client Script navigasi ada di `POLA_KERJA_DAN_BUG.md §5`.
+Karena `get_dashboard_data()`/`internal_links` Frappe **tidak mendukung** forward Link field biasa (dikonfirmasi 28 Agustus, lihat `docs/BUG_HISTORY.md`), navigasi antar dokumen yang berelasi one-to-one dipakai lewat tombol Client Script kustom (`frm.add_custom_button` + `frappe.set_route`), dan untuk relasi one-to-many (Problem → banyak Ticket) dipakai List View dengan filter. Daftar lengkap Client Script navigasi ada di `docs/BUG_HISTORY.md`.
