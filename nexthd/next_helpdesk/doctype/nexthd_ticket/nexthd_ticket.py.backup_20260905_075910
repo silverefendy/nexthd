@@ -49,18 +49,12 @@ class NextHDTicket(Document):
 	def on_update(self):
 		self.update_timestamps()
 		self.handle_workflow_sla_transitions()
-		self.sync_meta_dates()
 
 	def update_timestamps(self):
 		if self.status == "Selesai" and not self.resolved_on:
 			self.db_set("resolved_on", now_datetime())
 		if self.status == "Ditutup" and not self.closed_on:
 			self.db_set("closed_on", now_datetime())
-
-	def sync_meta_dates(self):
-		if not self.tanggal_dibuat:
-			self.db_set("tanggal_dibuat", self.creation, update_modified=False)
-		self.db_set("tanggal_diedit", now_datetime(), update_modified=False)
 
 	def _get_sla_policy_for_priority(self, priority):
 		"""Helper method to get SLA policy for a given priority"""

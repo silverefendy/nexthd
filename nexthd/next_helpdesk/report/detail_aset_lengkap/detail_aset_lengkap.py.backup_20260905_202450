@@ -6,6 +6,7 @@ def execute(filters=None):
         {"label": "Asset ID", "fieldname": "name", "fieldtype": "Link", "options": "NextHD Asset", "width": 130},
         {"label": "Nama Aset", "fieldname": "asset_name", "fieldtype": "Data", "width": 160},
         {"label": "Kategori", "fieldname": "asset_category", "fieldtype": "Link", "options": "NextHD Asset Category", "width": 130},
+        {"label": "Kategori", "fieldname": "asset_category", "fieldtype": "Link", "options": "NextHD Asset Category", "width": 120},
         {"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 90},
         {"label": "Lokasi", "fieldname": "location", "fieldtype": "Data", "width": 120},
         {"label": "Ditugaskan Ke", "fieldname": "assigned_to", "fieldtype": "Link", "options": "User", "width": 140},

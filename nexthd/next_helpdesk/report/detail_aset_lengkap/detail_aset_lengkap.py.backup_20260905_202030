@@ -5,7 +5,8 @@ def execute(filters=None):
     columns = [
         {"label": "Asset ID", "fieldname": "name", "fieldtype": "Link", "options": "NextHD Asset", "width": 130},
         {"label": "Nama Aset", "fieldname": "asset_name", "fieldtype": "Data", "width": 160},
-        {"label": "Kategori", "fieldname": "asset_category", "fieldtype": "Link", "options": "NextHD Asset Category", "width": 130},
+        {"label": "Tipe", "fieldname": "asset_type", "fieldtype": "Data", "width": 100},
+        {"label": "Kategori", "fieldname": "asset_category", "fieldtype": "Link", "options": "NextHD Asset Category", "width": 120},
         {"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 90},
         {"label": "Lokasi", "fieldname": "location", "fieldtype": "Data", "width": 120},
         {"label": "Ditugaskan Ke", "fieldname": "assigned_to", "fieldtype": "Link", "options": "User", "width": 140},
@@ -19,9 +20,9 @@ def execute(filters=None):
     ]
     conditions = []
     values = {}
-    if filters.get("asset_category"):
-        conditions.append("a.asset_category = %(asset_category)s")
-        values["asset_category"] = filters["asset_category"]
+    if filters.get("asset_type"):
+        conditions.append("a.asset_type = %(asset_type)s")
+        values["asset_type"] = filters["asset_type"]
     if filters.get("status"):
         conditions.append("a.status = %(status)s")
         values["status"] = filters["status"]
