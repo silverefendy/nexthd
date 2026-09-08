@@ -6,7 +6,7 @@
 >
 > Status: ✅ Selesai & Live | 🔶 Sedang Dikerjakan/Menunggu Konfirmasi | ⬜ Belum Dikerjakan (Rencana)
 >
-> **Last updated:** 2026-09-06 (NextHD Ticket Worklog & Guard Duplikasi Workflow dipindah ke Fitur Inti, keduanya sudah selesai & terverifikasi 31 Agustus; item baru sesi 5-6 September: field tanggal_dibuat/diedit di 5 DocType, report "Riwayat Progress Tiket", migrasi penuh asset_type→asset_category, kolom Tag di report, klarifikasi Tag di Tiket sudah dipakai native)
+> **Last updated:** 2026-09-08 (fitur baru **NextHD Activity Log** — riwayat progress untuk Problem/Change Request/Known Error, selesai & terverifikasi live; bug bawaan sekaligus diperbaiki: schema drift `tanggal_dibuat`/`tanggal_diedit` hilang dari metadata di 3 DocType terpicu migrate, dan `self.reload()` yang hilang di `on_update()` Activity Log)
 
 ---
 
@@ -51,6 +51,7 @@
 | Field meta `Tanggal Dibuat`/`Tanggal Diedit` di 5 DocType | ✅ | Custom Field baru (Datetime, hidden+read_only) tersinkron dari `creation`/`modified` via `sync_meta_dates()` — Ticket, Problem, Known Error, Change Request, Asset. Backfill data lama 100% berhasil | 5-6 September |
 | Report "Riwayat Progress Tiket" — gabungan Worklog lintas tiket | ✅ | Query Report standard, `JOIN` `NextHD Ticket Worklog`+`NextHD Ticket`, sortable by tanggal, 22 baris terverifikasi. Shortcut dashboard di Workspace "NextHD Report" | 5-6 September |
 | Kolom Tag di report "Detail Tiket Lengkap" | ✅ | `LEFT JOIN tabTag Link` + `GROUP_CONCAT` — tag native Frappe (bukan field kustom), semua filter lama dipertahankan | 5-6 September |
+| Riwayat Aktivitas/Progress (`NextHD Activity Log`) — Problem, Change Request, Known Error | ✅ | Child table shared (pola `NextHD Photo Link`): log otomatis saat status berubah + catatan manual Agent, opsional link dua arah ke dokumen lain (`related_doctype`+`related_document` Dynamic Link, klik langsung pindah dokumen) saat konversi Problem↔CR↔Known Error↔Asset. PR #12, commit `82344a0`, merged 7 September. Bug awal `self.reload()` hilang di `on_update()` (pola sama seperti Waiting Log PR #8) + schema drift `tanggal_dibuat`/`tanggal_diedit` (3 dari 5 DocType) terpicu migrate — keduanya diperbaiki manual tanpa Devin, commit `7af8deb`, 8 September | PR #12 + commit `7af8deb`, 8 September |
 
 ---
 
