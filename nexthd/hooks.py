@@ -309,3 +309,9 @@ workspace_json = "nexthd/next_helpdesk/workspace"
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
+
+doctype_list_js = {
+    "NextHD Ticket": "public/js/nexthd_ticket_list.js",
+    "NextHD Photo": "public/js/nexthd_photo_list.js",
+    "NextHD Asset": "public/js/nexthd_asset_list.js"
+}

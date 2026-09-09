@@ -28,7 +28,7 @@ def execute(filters=None):
     where_clause = ("WHERE " + " AND ".join(conditions)) if conditions else ""
     query = """
         SELECT
-            a.name, a.asset_name, a.asset_type, a.asset_category, a.status,
+            a.name, a.asset_name, a.asset_category, a.status,
             a.location, a.assigned_to, a.purchase_date, a.warranty_until,
             GROUP_CONCAT(DISTINCT CONCAT(att.attribute_name, ': ', att.attribute_value)
                 ORDER BY att.idx SEPARATOR '; ') AS spesifikasi,

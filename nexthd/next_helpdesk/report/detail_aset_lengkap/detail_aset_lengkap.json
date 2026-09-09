@@ -6,8 +6,19 @@
  "docstatus": 0,
  "doctype": "Report",
  "filters": [
-  {"fieldname": "asset_type", "fieldtype": "Select", "label": "Asset Type", "mandatory": 0, "options": "\nLaptop\nPC\nServer\nNetwork Device\nPrinter\nLainnya"},
-  {"fieldname": "status", "fieldtype": "Data", "label": "Status", "mandatory": 0}
+  {
+   "fieldname": "asset_category",
+   "fieldtype": "Link",
+   "label": "Kategori",
+   "options": "NextHD Asset Category",
+   "mandatory": 0
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Status",
+   "mandatory": 0
+  }
  ],
  "idx": 0,
  "is_standard": "Yes",
@@ -19,5 +30,15 @@
  "ref_doctype": "NextHD Asset",
  "report_name": "Detail Aset Lengkap",
  "report_type": "Script Report",
- "roles": [{"role": "IT Manager"}, {"role": "Agent Manager"}, {"role": "Agent"}]
+ "roles": [
+  {
+   "role": "IT Manager"
+  },
+  {
+   "role": "Agent Manager"
+  },
+  {
+   "role": "Agent"
+  }
+ ]
 }

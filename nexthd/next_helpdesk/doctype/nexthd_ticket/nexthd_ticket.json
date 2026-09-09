@@ -45,7 +45,10 @@
   "section_worklog",
   "worklog",
   "section_photos",
-  "photos"
+  "photos",
+  "priority_manually_set",
+  "tanggal_dibuat",
+  "tanggal_diedit"
  ],
  "fields": [
   {
@@ -156,6 +159,7 @@
    "reqd": 1
   },
   {
+   "allow_in_quick_entry": 1,
    "fieldname": "assigned_to",
    "fieldtype": "Link",
    "label": "Assigned To",
@@ -276,10 +280,24 @@
    "fieldtype": "Table",
    "label": "Foto/Gambar",
    "options": "NextHD Photo Link"
+  },
+  {
+   "fieldname": "tanggal_dibuat",
+   "fieldtype": "Datetime",
+   "hidden": 1,
+   "label": "Tanggal Dibuat",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tanggal_diedit",
+   "fieldtype": "Datetime",
+   "hidden": 1,
+   "label": "Tanggal Diedit",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2026-08-19 19:10:00.000000",
+ "modified": "2026-09-08 18:24:25.723099",
  "modified_by": "Administrator",
  "module": "Next Helpdesk",
  "name": "NextHD Ticket",
@@ -346,15 +364,15 @@
    "role": "IT Auditor"
   },
   {
+   "permlevel": 1,
    "read": 1,
    "role": "Agent Manager",
-   "permlevel": 1,
    "write": 1
   },
   {
+   "permlevel": 1,
    "read": 1,
    "role": "IT Manager",
-   "permlevel": 1,
    "write": 1
   }
  ],
