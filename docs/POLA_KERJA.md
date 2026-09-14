@@ -7,15 +7,10 @@
 > - `docs/BUG_HISTORY.md` — riwayat bug lain (SLA, Telegram, naming series, dll)
 > - `docs/WORKFLOW.md` — sudah punya riwayat bug workflow sendiri, tidak berubah
 >
-> **Status pemecahan:** Baru file INI yang sudah dibuat. `docs/POLA_KERJA_DAN_BUG.md` (versi lama,
-> gabungan aturan + semua riwayat bug) **masih ada di repo untuk sementara** sebagai sumber
-> kebenaran riwayat bug — belum dihapus/dipecah lebih lanjut. Sesi berikutnya perlu:
-> 1. Ekstrak riwayat bug Workspace/Sidebar dari `POLA_KERJA_DAN_BUG.md` → `BUG_WORKSPACE_SIDEBAR.md`
-> 2. Ekstrak riwayat bug lainnya → `BUG_HISTORY.md`
-> 3. Setelah dipastikan semua konten sudah tersalin, hapus `POLA_KERJA_DAN_BUG.md`
-> 4. Update `docs/SUMMARY.md` bagian "Struktur Dokumentasi" untuk menunjuk ke file-file baru
->
-> **Last updated:** 2026-08-30 (tambah 2 aturan baru di §3 — pelajaran dari "Duplikasi Workflow Transition Round 4", lihat `docs/WORKFLOW.md §5`)
+> **Last updated:** 2026-09-12 (tambah 6 aturan baru di §3 — pelajaran dari bug sesi 10-12
+> September: root cause notifikasi Telegram `on_insert` vs `after_insert`, base64 heredoc,
+> naming_rule audit, developer_mode DocType creation, Table MultiSelect. Detail lengkap di
+> `docs/BUG_HISTORY.md`)
 
 ---
 
@@ -269,13 +264,26 @@ sed -i 's/^    /\t/' /home/it/nama_script.py
 bench --site desk.ciptamebel.co.id console < /home/it/nama_script.py
 ```
 
+**✅ LEBIH AMAN LAGI (kalau script sensitif terhadap indentasi/tab, atau paste sebelumnya sudah
+pernah gagal di sesi ini) — encode ke base64, decode di server:**
+```bash
+# Di sisi penulis script: tulis .py dengan tab asli, lalu encode 1 baris
+base64 -w0 nama_script.py
+
+# Di server: decode langsung ke file, TANPA melalui parsing multi-baris terminal
+echo "<string_base64_disini>" | base64 -d > /home/it/nama_script.py
+bench --site desk.ciptamebel.co.id console < /home/it/nama_script.py
+```
+Base64 sama sekali tidak melewati proses parsing multi-baris terminal, jadi kebal terhadap
+tab-completion shell yang biasa merusak heredoc (lihat §3 tabel bawah).
+
 **❌ SALAH — Jangan paste langsung ke console interaktif:**
 IPython akan error `IndentationError` atau loop tidak jalan sama sekali.
 
 **❌ SALAH — Jangan pakai tab langsung di heredoc script:**
 Karakter tab kerap **hilang saat proses copy-paste** dari chat ke terminal, menyebabkan
 `IndentationError: expected an indented block`. Tulis dengan 4-spasi dulu, baru convert ke
-tab via `sed` di server.
+tab via `sed` di server — atau pakai base64 (lihat di atas) untuk skip masalah ini sama sekali.
 
 **❌ SALAH — Jangan pakai nama fungsi `run`:**
 IPython punya automagic `%run` yang bisa "menangkap" pemanggilan `run()` sebagai magic command.
@@ -290,12 +298,13 @@ dibanding paste multi-baris ke `bench console`.
 | Aturan | Penjelasan |
 |---|---|
 | `continue`/`break` dalam loop di console | Error. Gunakan `if/else` sebagai gantinya |
-| **Baris kosong di dalam blok manapun** (for/if/def) di script console | **Error/perilaku tidak terduga.** IPython nganggap baris kosong = akhir blok. Hindari baris kosong di DALAM blok — boleh ada ANTAR blok top-level saja |
+| **Baris kosong di dalam blok manapun** (for/if/def) di script console | **Error/perilaku tidak terduga.** IPython nganggap baris kosong = akhir blok. Hindari baris kosong di DALAM blok — boleh ada ANTAR blok top-level saja. **Berlaku juga untuk script yang sudah dikirim via base64** — tab-nya pasti utuh, tapi baris kosong MURNI (tanpa tab sama sekali) di tengah body fungsi tetap dianggap akhir blok. Solusinya bukan "pastikan ada tab di baris kosong", tapi hindari baris kosong murni sama sekali di dalam body fungsi |
 | **Loop/logic kompleks di console** | **Selalu bungkus dalam 1 fungsi** (`def main_check(): ...` lalu panggil terpisah) — IPython baca seluruh body sebagai 1 unit |
-| **Karakter tab hilang saat paste ke terminal** | Tulis heredoc dengan indentasi 4-spasi, lalu jalankan `sed -i 's/^    /\t/' nama_file.py` di server sebelum eksekusi |
+| **Karakter tab hilang saat paste ke terminal** | Tulis heredoc dengan indentasi 4-spasi, lalu jalankan `sed -i 's/^    /\t/' nama_file.py` di server sebelum eksekusi — atau pakai base64 (`base64 -w0` → kirim 1 baris → `base64 -d > file.py`) untuk menghindari masalah ini sepenuhnya, terutama untuk script yang lebih dari sekadar baca data (mis. yang mengubah DocType/data produksi) |
 | **Nama fungsi `run`** | Bentrok dengan IPython magic `%run` — pakai nama lain seperti `main_check()` |
 | **Import via `from module import nama_fungsi`** | Kadang tidak ter-bind dengan benar di scope IPython saat dipiped dari file. **Fix aman:** taruh import DI DALAM fungsi, bukan di level top file |
-| `doc.save()` | Selalu gagal di production **kecuali `developer_mode=1` sedang aktif** atau untuk `doc.insert()` pada custom DocType baru. Untuk update data biasa, tetap pakai SQL UPDATE + `frappe.db.commit()`. `doc.save()` pada `Workspace` juga menjalankan validasi penuh child table `links` — pastikan semua baris `Workspace.links` valid sebelum memanggil ini |
+| `doc.save()` | Selalu gagal di production **kecuali `developer_mode=1` sedang aktif** atau untuk `doc.insert()` pada custom DocType baru. Untuk update data biasa, tetap pakai SQL UPDATE + `frappe.db.commit()`. `doc.save()` pada `Workspace` juga menjalankan validasi penuh child table `links` — pastikan semua baris `Workspace.links` valid sebelum memanggil ini. `doc.save()` pada DocType APAPUN memvalidasi SELURUH field record termasuk field yang tidak sedang diubah — lihat baris `naming_rule` di bawah |
+| **`naming_rule` usang di DocType lama** | DocType yang belum pernah kena `doc.save()` penuh (cuma pernah disentuh SQL/`ALTER TABLE` manual) berisiko menyimpan nilai `naming_rule` yang sudah tidak valid di Frappe v16 (nilai lama seperti `"By Series"`, `"By Field Name"` — perhatikan kapitalisasi/spasi persis harus cocok enum resmi, mis. yang benar adalah `"By fieldname"` bukan `"By Field Name"`). **Sebelum `doc.save()` pertama kali pada DocType manapun, cek dulu:** `frappe.db.sql("SELECT autoname, naming_rule FROM tabDocType WHERE name='<DocType>'")` — kalau `naming_rule` tidak sesuai `autoname` (mis. `autoname='field:xxx'` harus `naming_rule='By fieldname'`, `autoname='naming_series:'` harus `naming_rule='By "Naming Series" field'`), perbaiki dulu via `UPDATE tabDocType SET naming_rule='<benar>' WHERE name='<DocType>'` sebelum lanjut. Sudah ditemukan di 6+ DocType berbeda (Ticket, SLA Policy, Problem, Change Request, Known Error, Service Catalog, Team) — kemungkinan besar ada di DocType lain yang belum pernah di-`doc.save()` juga |
 | **Field Link yang wajib diisi (`reqd=1`)** | Cek dulu via `frappe.get_meta(doctype)` — filter `f.reqd or f.fieldtype == "Link"` |
 | **Field Link ke master doctype** | Master record harus **sudah ada duluan** sebelum insert dokumen yang mereferensikannya |
 | Perubahan DB langsung | Export fixture → git commit → git push |
@@ -303,11 +312,15 @@ dibanding paste multi-baris ke `bench console`.
 | Cek schema tabel | `DESCRIBE tabNama` dulu sebelum INSERT |
 | **Fixtures export sebelum data ada** | `bench export-fixtures` membaca DARI database — kalau dijalankan saat tabel masih kosong, fixture JSON yang dihasilkan JUGA kosong (`[]`) dan akan menimpa file manual yang lengkap. Command ini juga sama sekali tidak menyentuh `Workspace`/`Workspace Sidebar` |
 | MariaDB subquery | Versi lama tidak support `LIMIT` di subquery `IN` |
+| **`tabSeries` tidak punya kolom `creation`** | Jangan pakai `frappe.db.get_value("Series", ...)` (otomatis coba `ORDER BY creation` dan gagal `OperationalError`) — pakai raw SQL langsung: `frappe.db.sql("SELECT current FROM tabSeries WHERE name=%s", (prefix,))` |
 | JSON content workspace | Generate via `json.dumps()` Python, BUKAN string literal manual |
 | Workspace number card block | Type HARUS `"number_card"` (bukan `"card"`), key HARUS `"number_card_name"` (bukan `"card_name"`) |
 | **Workspace shortcut block bertipe Report** | Kolom `report_ref_doctype` di `tabWorkspace Shortcut` WAJIB diisi, kalau tidak kartu di-skip diam-diam dari dashboard |
 | **Update `Workspace.content` via SQL langsung** | Tidak auto-invalidate cache Redis — WAJIB `bench clear-cache` + `bench clear-website-cache` setelahnya, baru hard refresh browser |
 | **Workspace baru dibuat via insert manual/script (bukan UI)** | File fixture JSON-nya TIDAK otomatis ter-generate. Selalu buat Workspace baru lewat UI, atau kalau terlanjur via script, paksa `doc.save()` manual dengan `developer_mode=1` aktif |
+| **DocType baru (bukan Workspace) dibuat via script `frappe.get_doc({"doctype":"DocType",...}).insert()`** | Kalau `developer_mode=1` aktif, Frappe OTOMATIS menulis file JSON+`.py` (+ `__init__.py`, `test_*.py`) ke disk di folder module yang sesuai — sama seperti dibuat lewat UI Doctype Builder. Ini cara resmi/aman membuat DocType baru (termasuk child DocType untuk `Table`/`Table MultiSelect`) lewat `bench console`, TIDAK perlu tulis file JSON manual dari nol |
+| **`Table MultiSelect` fieldtype butuh child DocType dengan 1 field Link** | Field `Table MultiSelect` di parent (`options` = nama child DocType) butuh child DocType terpisah (`istable=1`) berisi 1 field `Link` ke target. Buat child DocType spesifik per keperluan — jangan reuse 1 child DocType untuk beberapa field beda konteks meski secara teknis strukturnya sama, supaya semantik data tetap jelas |
+| **`link_filters` pada DocField untuk membatasi dropdown Link** | Property `link_filters` (disimpan sebagai string JSON, format `[["DocType","fieldname","operator","value"]]`) bisa memfilter pilihan dropdown Link berdasarkan field lain di DocType target. Berguna untuk reuse 1 DocType master untuk beberapa kategori/tipe berbeda (mis. field `team_type` di `NextHD Team` untuk memisahkan "Tim Internal IT" vs "Bagian/Departemen" dari 1 tabel yang sama) |
 | **Menambah SATU item baru ke sidebar kiri** | HARUS lewat UI (ikon **panah ke bawah di kiri atas** halaman Workspace → **Edit Sidebar** — BUKAN titik tiga "⋯" kanan atas), BUKAN hanya mengedit `Workspace.links` |
 | **Menambah BANYAK item sekaligus ke sidebar kiri** | Pakai script: `doc = frappe.get_doc("Workspace Sidebar", "<nama>")` + `doc.append("items", {...})` per item + `doc.save(ignore_permissions=True)` — setara jalur resmi UI, lebih aman daripada raw SQL, dan risiko regresi jauh lebih rendah dibanding `doc.save()` pada `Workspace` |
 | **`Workspace Sidebar.app`/`.standard` kosong atau salah** | `export_sidebar()` hanya menulis file kalau `app` terisi nama app DAN `standard=1` DAN `developer_mode=1`. **Kedua field harus dicek terpisah** — `app` bisa kosong (`None`) meski `standard` sudah benar, terutama untuk Workspace Sidebar yang dibuat belakangan. `standard=0` juga membuat item sidebar manual rawan **hilang** (bukan cuma "tidak ter-export") kalau ada proses lain (mis. `doc.save()` pada Workspace induk) yang memicu regenerasi |
@@ -324,9 +337,10 @@ dibanding paste multi-baris ke `bench console`.
 | **`bench migrate` — urutan wajib saat menambah kolom BARU lalu langsung mengisi datanya** | Migrate dulu (agar kolom fisik tercipta di DB) BARU UPDATE data. Kalau dibalik → `ERROR 1054 Unknown column` |
 | **`__pycache__` basi setelah edit file `.py`** | Kadang perubahan logic Python tidak langsung kepakai meski file sudah diedit dan `bench restart` dijalankan. Hapus `find <app_path> -type d -name "__pycache__" -exec rm -rf {} +` lalu restart lagi |
 | **Selalu verifikasi isi file DI DISK dengan `grep`/`cat` sebelum asumsi kode sudah ter-replace** | Jangan percaya catatan dokumentasi 100% — selalu cross-check langsung ke file (dan pastikan path-nya benar) sebelum lanjut debug |
-| **Counter `tabSeries` bisa TIDAK SINKRON dari data fisik** | Kalau ketemu `DuplicateEntryError` saat insert padahal nomor "terlihat aman", cek `SELECT MAX(...) FROM tabDocType` vs `SELECT current FROM tabSeries WHERE name = 'PREFIX-'` — kalau beda, sinkronkan |
+| **Counter `tabSeries` bisa TIDAK SINKRON dari data fisik** | Kalau ketemu `DuplicateEntryError` saat insert padahal nomor "terlihat aman", cek `SELECT MAX(...) FROM tabDocType` vs `SELECT current FROM tabSeries WHERE name = 'PREFIX-'` — kalau beda, sinkronkan. Sebelum reset manual (`UPDATE tabSeries SET current=X`), SELALU validasi dulu `X >= MAX()` nomor fisik yang masih ada, supaya tidak `DuplicateEntryError` di insert berikutnya |
 | **`frappe.db.get_single_value(doctype, field)` HANYA jalan untuk Single DocType** | Cek dulu `frappe.db.get_value("DocType", "<nama>", "issingle")` — kalau `0`, pakai `frappe.db.get_value(doctype, {}, field)` sebagai gantinya |
 | **`frappe.logger` vs `frappe.logger()`** | `frappe.logger` adalah fungsi, BUKAN objek logger — harus dipanggil dulu `frappe.logger()` baru bisa `.info(...)`/`.error(...)` |
+| **`hooks.py` `doc_events` — nama key HARUS event lifecycle valid Frappe** | `"on_insert"` **BUKAN** nama event yang benar-benar dipanggil `run_post_save_methods()` saat insert — meski terdaftar tanpa error dan muncul benar di `frappe.get_hooks("doc_events")`. Event yang benar untuk "setelah insert selesai" adalah **`"after_insert"`**. Ini silent bug paling berbahaya yang pernah ditemukan di project ini — tidak ada exception, tidak ada log, kelihatan seperti berfungsi normal di semua pengecekan metadata, tapi fungsi tidak pernah benar-benar terpanggil. Selalu cross-check nama event dengan dokumentasi resmi Frappe (`after_insert`, `before_insert`, `validate`, `on_update`, `on_submit`, `on_cancel`, `on_trash`, dst) — jangan menebak/menganalogikan nama sendiri |
 | **DocType dengan `"permissions": []` kosong total di JSON** | DocType HANYA bisa diakses Administrator — semua role lain kena `PermissionError`/404. Selalu tambahkan minimal 1 baris permission untuk setiap DocType baru |
 | **Pola aman untuk logic side-effect di `on_update()`** | Gunakan `self.db_set(...)` / `frappe.db.set_value(...)` langsung, BUKAN `self.save()`, supaya tidak memicu infinite recursion |
 | **Report shortcut URL selalu `/desk/query-report/<Nama Report>`** | Ini route standar Frappe, tidak bisa diubah jadi `/desk/nexthd/...` tanpa menulis ulang report sebagai custom Page |
@@ -335,7 +349,7 @@ dibanding paste multi-baris ke `bench console`.
 | **Field reference balik many-to-many disimpan sebagai field tunggal** | JANGAN simpan referensi balik sebagai field `reference_doctype`+`reference_name` tunggal kalau 1 record bisa dipakai ulang di >1 dokumen. Pakai `get_dashboard_data()` (badge Connections, real-time dari child table) sebagai gantinya |
 | **Sebelum menghapus field DocType yang dicurigai duplikat/usang, WAJIB 2 langkah verifikasi dulu** | (1) verifikasi backfill — cek SEMUA record existing sudah punya data sama di struktur baru; (2) cek referensi — grep di Property Setter, Client Script, Report, Print Format |
 | **Child table (Table fieldtype) TIDAK BISA dipakai di `search_fields` Property Setter** | `search_fields` cuma bisa baca kolom di tabel utama DocType, bukan child table |
-| **`git add .` bisa membundel perubahan tak terkait ke commit yang sama** | Selalu `git status`/`git diff` dulu sebelum `git add .` + commit kalau server punya kemungkinan perubahan menumpuk dari sesi/pekerjaan lain |
+| **`git add .` bisa membundel perubahan tak terkait ke commit yang sama** | Selalu `git status`/`git diff` dulu sebelum `git add .` + commit kalau server punya kemungkinan perubahan menumpuk dari sesi/pekerjaan lain. **Termasuk file backup (`*.bak_*`) hasil script patch Claude** — bersihkan dulu sebelum `git add .`, supaya tidak ikut ter-commit sebagai sampah repo |
 | **Baris `Workspace.links` dengan `link_type` kosong/tidak valid memblokir `doc.save()` Workspace total** | `link_type` hanya boleh salah satu dari `DocType`/`Page`/`Report`. Kalau baris semacam ini ditemukan dan tidak ada tujuan valid, opsi teraman adalah **menghapus baris tersebut** |
 | **`doc.save()` pada Workspace bisa memicu regenerasi sidebar yang menyapu item manual, kalau `Workspace Sidebar.standard=0`** | WAJIB cek & set `standard=1` dulu sebelum memanggil `doc.save()` pada Workspace yang sidebar-nya sudah berisi item manual, dan verifikasi ulang isi sidebar setelah setiap `doc.save()` |
 | **Module Sidebar (sidebar pendek di halaman Report/DocType) BUKAN file/dokumen, tidak bisa diedit** | Auto-generate real-time dari field `module`. Bukan Route History. Known limitation Frappe v16 (GitHub Issue #36317) — dibiarkan apa adanya, jangan coba diperbaiki lagi tanpa permintaan eksplisit |
@@ -344,6 +358,5 @@ dibanding paste multi-baris ke `bench console`.
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-08-30. Riwayat bug per sesi ada di
-`docs/BUG_WORKSPACE_SIDEBAR.md` dan `docs/BUG_HISTORY.md` (belum dibuat, pending sesi berikutnya
-— sementara masih di `docs/POLA_KERJA_DAN_BUG.md` versi lama).*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-09-12. Riwayat bug per sesi ada di
+`docs/BUG_WORKSPACE_SIDEBAR.md` dan `docs/BUG_HISTORY.md`.*
