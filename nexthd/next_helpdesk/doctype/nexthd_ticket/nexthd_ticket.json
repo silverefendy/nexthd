@@ -297,8 +297,8 @@
   }
  ],
  "links": [],
- "modified": "2026-09-08 18:24:25.723099",
- "modified_by": "Administrator",
+ "modified": "2026-09-10 10:51:44.886361",
+ "modified_by": "support@ciptamebel.co.id",
  "module": "Next Helpdesk",
  "name": "NextHD Ticket",
  "naming_rule": "By \"Naming Series\" field",
@@ -380,7 +380,7 @@
  "route": "nexthd-ticket",
  "row_format": "Dynamic",
  "sort_field": "modified",
- "sort_order": "DESC",
+ "sort_order": "ASC",
  "states": [
   {
    "color": "Red",

@@ -56,6 +56,7 @@ def notify_ticket_created(doc, method):
 	Hook dipanggil oleh Frappe saat NextHD Ticket baru di-insert.
 	Signature (doc, method) adalah standar Frappe doc_events hook.
 	"""
+	frappe.log_error(title="DEBUG_HOOK_MARKER", message="notify_ticket_created TERPANGGIL untuk " + str(doc.name) + " assigned_to=" + str(doc.assigned_to))
 	if not is_telegram_enabled():
 		return
 
@@ -118,38 +119,6 @@ def notify_ticket_assigned(ticket_name: str, agent_user: str):
 	)
 
 
-def notify_team_assigned(ticket_name: str, team_name: str):
-	"""
-	Trigger saat Team di tiket ditambahkan/diganti setelah tiket sudah ada.
-	Dikirim secara async via frappe.enqueue.
-	"""
-	if not is_telegram_enabled():
-		return
-
-	frappe.enqueue(
-		"nexthd.next_helpdesk.utils.telegram._send_team_assigned_notification",
-		queue="short",
-		ticket_name=ticket_name,
-		team_name=team_name
-	)
-
-
-def _send_team_assigned_notification(ticket_name: str, team_name: str):
-	"""Internal function to notify all team members when Team is set/changed on an existing ticket"""
-	try:
-		ticket = frappe.get_doc("NextHD Ticket", ticket_name)
-		team = frappe.get_doc("NextHD Team", team_name)
-		for member in team.members:
-			chat_id = get_user_chat_id(member.user)
-			if chat_id:
-				message = frappe._("\U0001F465 <b>Tim Ditugaskan ke Tiket</b>\nNo: {0}\nSubjek: {1}\nPrioritas: {2}\nTim: {3}").format(
-					ticket_name, ticket.subject, ticket.priority, team_name
-				)
-				send_telegram_message(chat_id, message)
-	except Exception as e:
-		frappe.log_error(f"Error in team assigned notification: {str(e)}")
-
-
 def notify_ticket_updated(doc, method):
 	"""
 	Wrapper function for ticket update events.
@@ -171,12 +140,6 @@ def notify_ticket_updated(doc, method):
 			old_doc = doc.get_doc_before_save()
 			if old_doc and old_doc.status != "Selesai":
 				notify_ticket_resolved(doc.name)
-
-		# Check if team changed (baru diisi atau diganti ke team lain)
-		if doc.team and not doc.is_new():
-			old_doc = doc.get_doc_before_save()
-			if old_doc and old_doc.team != doc.team:
-				notify_team_assigned(doc.name, doc.team)
 	except Exception as e:
 		frappe.log_error(f"Error in ticket updated notification: {str(e)}")
 
