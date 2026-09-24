@@ -2,11 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-09-12 (item QQ — root cause notifikasi Telegram tidak konsisten
-> ditemukan dan diperbaiki: `hooks.py` pakai `"on_insert"` yang bukan event valid Frappe,
-> seharusnya `"after_insert"`; fitur baru multi-assignee/requester/team terdampak disepakati
-> dan mulai dikerjakan — Tahap 1-2 dari 4 tahap sudah selesai, Tahap 3-4 pending sesi
-> berikutnya. Detail lengkap di update paling bawah file ini dan di `docs/BUG_HISTORY.md`)
+> **Last updated:** 2026-09-24 (item RR — Standard Filter ditambahkan ke List View 6 DocType lewat 21 Property Setter, tampil di UI; ditemukan `search_fields` Asset usang yang menggagalkan simpan Property Setter, sudah dikoreksi — `export-fixtures` + commit masih pending. Sebelumnya 2026-09-12: item QQ — root cause notifikasi Telegram tidak konsisten ditemukan dan diperbaiki: `hooks.py` pakai `"on_insert"` yang bukan event valid Frappe, seharusnya `"after_insert"`; fitur multi-assignee/requester/team terdampak Tahap 1-2 dari 4 selesai. Detail di update bawah file ini dan di `docs/BUG_HISTORY.md`)
 
 ---
 
@@ -17,11 +13,11 @@
 | `docs/FAQ_DEVELOPER.md` | **Wajib dibaca Devin pertama kali** — kurasi masalah berulang (Workspace/Desktop Icon pasca-migrate) + pembagian kerja Claude/Devin/Efendy + hal yang tidak boleh diubah tanpa izin |
 | `docs/SUMMARY.md` | **File ini** — index + project overview + status item belum dikerjakan (operasional harian) |
 | `docs/DAFTAR_FITUR.md` | Checklist lengkap semua fitur (selesai/dikerjakan/rencana) dalam satu tabel, termasuk desain Generalisasi Non-IT & Wipe Data Tool (sebelumnya di `ARSITEKTUR.md §8/§9`) |
-| `docs/ARSITEKTUR.md` | Infrastruktur, struktur app, DocType/field lengkap, permissions, schema tabel, label ID |
+| `docs/ARSITEKTUR.md` | Infrastruktur, struktur app, DocType/field lengkap, permissions, schema tabel, label ID. **⚠️ §3 Detail Field NextHD Asset belum disinkronkan ke struktur EAV (`asset_category` + `asset_attributes`)** — masih menggambarkan `asset_type` + field IT-spesifik yang sudah dihapus |
 | `docs/WORKFLOW.md` | Notifikasi Telegram + semua state machine + riwayat bug workflow |
 | `docs/POLA_KERJA.md` | Aturan wajib saat coding/debug di server (pola console, fixtures, Frappe quirks Workspace/Desktop Icon/Dashboard Shortcut) — **tanpa** riwayat bug (lihat 2 file bug di bawah). Pecahan dari `POLA_KERJA_DAN_BUG.md` lama (dihapus 30 Agustus) |
 | `docs/BUG_WORKSPACE_SIDEBAR.md` | Riwayat bug khusus Workspace/Desktop Icon/Sidebar/Dashboard Shortcut (paling sering terjadi & paling tebal) — 13 sesi bug, 24 Agustus s/d 2 September, termasuk **root cause final regresi sidebar (item MM, 2 September)** |
-| `docs/BUG_HISTORY.md` | Riwayat bug lain di luar Workspace/Sidebar — SLA/Business Hours, Telegram, naming series, Asset EAV, navigasi relasi antar dokumen, dll. **Terbaru: root cause `on_insert` vs `after_insert` (item QQ, 10-12 September)** |
+| `docs/BUG_HISTORY.md` | Riwayat bug lain di luar Workspace/Sidebar — SLA/Business Hours, Telegram, naming series, Asset EAV, navigasi relasi antar dokumen, dll. **Terbaru: Standard Filter list view + `search_fields` Asset usang (item RR, 24 September)**; sebelumnya root cause `on_insert` vs `after_insert` (item QQ, 10-12 September) |
 | `docs/PANDUAN_INSTALASI.md` | Instalasi, setup Telegram/SLA, alur deploy, referensi |
 | `docs/AUDIT_SISTEM.md` | Script audit lengkap (schema drift, Workspace, Workflow master data, SLA, fixtures) + script verifikasi ringan pasca-perbaikan + script gabungan cek semua isu Workspace/Sidebar/Dashboard. Dipakai on-demand untuk cek kesehatan server atau sebelum install ke server baru |
 | `docs/HANDOFF.md` | **Log riwayat sesi ringkas** (dirombak total 30 Agustus — bukan lagi kronologi naratif penuh, sekarang tabel log per-tanggal yang menunjuk ke file tematik untuk detail) |
@@ -60,6 +56,7 @@
 - Field meta `Tanggal Dibuat`/`Tanggal Diedit` (tersinkron otomatis dari `creation`/`modified` via `sync_meta_dates()`) ditambahkan ke 5 DocType (Ticket, Problem, Known Error, Change Request, Asset) supaya bisa ditampilkan di List View biasa — **✅ live, item NN, 5-6 September**
 - Riwayat Aktivitas/Progress (`NextHD Activity Log`) untuk Problem, Change Request, Known Error — log otomatis saat status berubah + catatan manual Agent + link dua arah opsional ke dokumen lain saat konversi — **✅ live, item OO, 7-8 September** (lihat detail di §2)
 - **Warna List View (indicator pill)** ditambahkan ke Priority & Ticket Type (Ticket), Kategori (Photo, hash-color dinamis), Status & Asset Category (Asset, hash-color dinamis) — **✅ live, item PP, 9 September**
+- **Standard Filter di atas List View** (kotak filter cepat seperti ID/Subject) untuk 6 DocType — Ticket, Problem, Known Error, Asset, Change Request, Photo — lewat 21 Property Setter `in_standard_filter` — **✅ tampil di UI, dikonfirmasi Efendy 24 September (item RR); export ke fixture + commit masih pending**
 - Foto/gambar reusable & bisa di-link antar Ticket/Problem/Asset/Known Error (PR #9) — **✅ live + terverifikasi 24 Agustus**, termasuk sidebar & dashboard Number Card. **Shortcut dashboard "NextHD Photo" (kartu terpisah di section Konfigurasi) ditambah 26 Agustus**, sempat tidak muncul karena cache — sudah difix, menunggu konfirmasi visual. **28 Agustus:** naming series diubah ke `IMG-YYMM-####`, field Judul Foto/Lokasi/Kategori ditambah, dan badge "Dipakai Di" (Dashboard Connections, real-time dari child table, tidak disimpan sebagai field) terpasang di form Photo — **✅ terpasang, perlu re-test dengan foto baru**
 - Tombol admin "Reset Data Demo" (hapus semua data transaksi untuk testing, System Manager only, 2x konfirmasi + backup otomatis) — **✅ live + terverifikasi end-to-end 28 Agustus**
 - Generalisasi NextHD Asset ke pola EAV (`NextHD Asset Category` + `NextHD Asset Attribute`) — **✅ live 28 Agustus malam, terverifikasi aman 29 Agustus** (item II). **29 Agustus (lanjutan):** field terstruktur lama yang sudah duplikat dengan EAV **dihapus dari form**, `search_fields` & report `Detail Aset Lengkap` disesuaikan (item JJ). **30 Agustus:** "NextHD Asset Category" ditambahkan ke sidebar Workspace "NextHD" (item KK). **6 September (item NN):** field `asset_type` **disembunyikan** (non-destruktif). **9 September (item PP):** `asset_type` **dihapus total** (metadata + kolom fisik DB)
@@ -71,6 +68,15 @@
 
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `docs/BUG_WORKSPACE_SIDEBAR.md` atau `docs/BUG_HISTORY.md` (sebelumnya `POLA_KERJA_DAN_BUG.md`, sudah dihapus 30 Agustus).
 > Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/DAFTAR_FITUR.md`.
+
+### 🔶 Item RR — (24 September): Standard Filter List View 6 DocType — UI ✅, Fixture/Commit Masih Pending
+
+| # | Item | Keterangan | PIC |
+|---|---|---|---|
+| RR-1 | Baris filter cepat (Standard Filter) di atas List View untuk semua DocType utama | 21 Property Setter `in_standard_filter=1` — Ticket (status, priority, ticket_type, category, assigned_to, requested_by), Problem (status, priority, category, related_asset), Known Error (related_problem), Asset (asset_category, status, location, assigned_to), Change Request (status, change_type, risk_level), Photo (photo_title, category, location). **Terverifikasi tampil di UI oleh Efendy.** Jumlah filter Ticket (6) cukup padat — bisa dikurangi lewat Customize Form kalau terlalu penuh | Claude (script) + Efendy (eksekusi+verifikasi) |
+| RR-2 | **Bug:** `make_property_setter` gagal `Search field serial_number is not valid` di NextHD Asset; 11 Property Setter pertama ter-rollback karena belum commit | Property Setter `NextHD Asset-main-search_fields` di DB masih `asset_name,assigned_to,serial_number` padahal `serial_number` sudah dihapus (item JJ, 29 Agustus, yang saat itu mencatat sudah dikoreksi). `make_property_setter` memvalidasi seluruh DocType sehingga kesalahan lama ikut meledak. **Fix:** `search_fields` diubah ke `asset_name,assigned_to,location`; script dijalankan ulang dengan `try/except` per field + commit per DocType. **Penyebab nilai lama kembali setelah 29 Agustus belum diselidiki** — detail di `docs/BUG_HISTORY.md` sesi 24 September | Claude + Efendy |
+| RR-3 | `export-fixtures --app nexthd` + commit `property_setter.json` | **BELUM.** Setelah export, cek `git diff --stat`: hanya `property_setter.json` yang boleh berubah, file tidak boleh kosong `[]`, dan entri `NextHD Asset-main-search_fields` harus bernilai `asset_name,assigned_to,location` (kalau fixture lama masih memuat `serial_number`, `bench migrate` berikutnya mengembalikan bug ini) | Efendy |
+| RR-4 | `docs/ARSITEKTUR.md §3` (Detail Field NextHD Asset) belum disinkronkan ke struktur EAV | Masih menggambarkan `asset_type` + field IT-spesifik yang sudah dihapus (item JJ/PP); menyebabkan rencana awal script salah nama field (`asset_type`, `serial_number`). Perlu update terpisah | Claude |
 
 ### 🔶 Item QQ — SEDANG DIKERJAKAN (10-12 September): Fix Notifikasi Telegram + Fitur Multi-Assignee/Requester/Team Terdampak
 
@@ -148,6 +154,8 @@ SLA/permission/report), ditambah field baru (Table MultiSelect) untuk banyak nil
 | 6 | Test manual UI: cross-document link dua arah Activity Log (item OO) | Klik tombol "Buat CR dari Problem" dkk, cek baris Activity Log muncul di kedua dokumen |
 | 7 | Verifikasi visual browser — warna List View 5 DocType (item PP) | Cek Ticket/Problem/Change Request/Asset/Photo di browser |
 | 8 | Audit berkala `naming_rule` DocType lain yang belum pernah `doc.save()` penuh | Sudah ditemukan di 7 DocType (item PP: Asset/Problem/CR/Known Error/Service Catalog, item QQ: Team) — kemungkinan ada yang belum ketahuan (mis. DocType child, NextHD Category, NextHD Business Hours, dll — belum pernah diaudit) |
+| 9 | **`export-fixtures` + commit `property_setter.json` (item RR-3)** | Standard Filter 6 DocType baru ada di database; tanpa export + commit, tidak tercatat di repo. Verifikasi `search_fields` Asset di fixture bernilai `asset_name,assigned_to,location` sebelum commit |
+| 10 | Sinkronkan `docs/ARSITEKTUR.md §3` (Detail Field Asset) ke struktur EAV (item RR-4) | Dokumen masih menggambarkan struktur lama sebelum EAV |
 
 ### ✅ Semua Item Utama SUDAH Live & Terverifikasi
 
@@ -176,6 +184,7 @@ SLA/permission/report), ditambah field baru (Table MultiSelect) untuk banyak nil
 | OO | `NextHD Activity Log` + fix `self.reload()` + fix schema drift tanggal meta | PR #12 (`82344a0`) + fix manual `7af8deb`, 8 September | Claude + Efendy |
 | PP | Warna List View 5 DocType + fix `naming_rule` usang 5 DocType + hapus total `asset_type` | Diverifikasi via `bench console` tiap tahap; report `detail_aset_lengkap` jalan normal pasca perubahan; 9 September | Claude + Efendy |
 | QQ-A | Root cause notifikasi Telegram `on_insert`→`after_insert` | Diverifikasi via marker debug + UI browser (Quick Entry, Full Form, edit Team belakangan), 10-12 September | Claude + Efendy |
+| RR-1 | Standard Filter List View 6 DocType (21 Property Setter) | Query `tabProperty Setter` = 21 baris + dikonfirmasi tampil di UI oleh Efendy, 24 September (fixture belum di-export — RR-3) | Claude + Efendy |
 
 ### 🟢 Prioritas Rendah — Belum Mendesak / Masih Wacana
 
@@ -220,6 +229,7 @@ Ringkasan lengkap seluruh item historis (Agustus s/d awal September) tidak diula
 
 | Item | Selesai |
 |---|---|
+| **Standard Filter List View 6 DocType — 21 Property Setter (item RR-1)** | ✅ **24 September.** Ticket, Problem, Known Error, Asset, Change Request, Photo. Tampil di UI (dikonfirmasi Efendy). `search_fields` Asset usang (`serial_number`) dikoreksi jadi `asset_name,assigned_to,location`. Export fixture + commit masih pending (RR-3) |
 | **Warna List View (Priority/Ticket Type Ticket, Kategori Photo, Status/Asset Category Asset) (item PP)** | ✅ **9 September.** `formatters` di `nexthd_ticket_list.js`, file baru `nexthd_asset_list.js` & `nexthd_photo_list.js`, terdaftar di `hooks.py`. Build+restart sukses, verifikasi visual browser masih pending |
 | **Hapus duplikat `Custom Field` "status" di Ticket/CR/Problem (item PP)** | ✅ **9 September.** 3 Custom Field (`<DocType>-status`, sisa eksperimen lama) dihapus via `frappe.delete_doc()` |
 | **Fix `naming_rule="By Series"` usang di 5 DocType (item PP)** | ✅ **9 September.** NextHD Asset, Problem, Change Request, Known Error, Service Catalog — semua diperbaiki ke `By "Naming Series" field` |
@@ -229,4 +239,4 @@ Ringkasan lengkap seluruh item historis (Agustus s/d awal September) tidak diula
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-09-12.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-09-24.*
