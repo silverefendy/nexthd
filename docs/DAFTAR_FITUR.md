@@ -6,7 +6,7 @@
 >
 > Status: ✅ Selesai & Live | 🔶 Sedang Dikerjakan/Menunggu Konfirmasi | ⬜ Belum Dikerjakan (Rencana)
 >
-> **Last updated:** 2026-09-24 (item RR — Standard Filter di List View 6 DocType, 21 Property Setter `in_standard_filter`, terverifikasi tampil di UI; sebelumnya 2026-09-09 item PP — warna List View 5 DocType, fix `naming_rule` usang di 5 DocType, dan field `asset_type` DIHAPUS TOTAL dari metadata+kolom fisik database)
+> **Last updated:** 2026-09-24 (item RR — Standard Filter List View 6 DocType, fixture ter-export dan di-push; item SS — Laporan Mingguan Telegram dicatat, sebelumnya 2026-09-09 item PP — warna List View 5 DocType, fix `naming_rule` usang di 5 DocType, dan field `asset_type` DIHAPUS TOTAL dari metadata+kolom fisik database)
 
 ---
 
@@ -55,7 +55,8 @@
 | Warna List View (indicator pill) — Priority/Ticket Type (Ticket), Kategori (Photo), Status/Asset Category (Asset) | ✅ | `formatters` di `nexthd_ticket_list.js`, file baru `nexthd_asset_list.js`/`nexthd_photo_list.js`, terdaftar di `hooks.py`. Kategori/Asset Category pakai hash-color dinamis (Link ke master yang bisa bertambah) | 9 September (item PP) |
 | Fix `naming_rule="By Series"` usang — 5 DocType | ✅ | NextHD Asset, Problem, Change Request, Known Error, Service Catalog — diperbaiki ke `By "Naming Series" field`. Bug lama tidak pernah error sampai ada `doc.save()` penuh dijalankan | 9 September (item PP) |
 | Hapus duplikat `Custom Field` "status" (Ticket/CR/Problem) | ✅ | Sisa eksperimen lama (`<DocType>-status`, Link ke Workflow State, hidden) — root cause ghost checkbox List View Settings & warna Status CR tidak muncul | 9 September (item PP) |
-| **Standard Filter di atas List View — 6 DocType** | ✅ | 21 Property Setter `in_standard_filter=1`: Ticket (status, priority, ticket_type, category, assigned_to, requested_by), Problem (status, priority, category, related_asset), Known Error (related_problem), Asset (asset_category, status, location, assigned_to), Change Request (status, change_type, risk_level), Photo (photo_title, category, location). Dikonfirmasi Efendy tampil di UI. Sepanjang jalan ditemukan `search_fields` Asset usang (`serial_number`) — lihat `docs/BUG_HISTORY.md` sesi 24 September. **Belum di-export ke fixture/commit** (lihat Housekeeping) | 24 September (item RR) |
+| **Standard Filter di atas List View — 6 DocType** | ✅ | 21 Property Setter `in_standard_filter=1`: Ticket (status, priority, ticket_type, category, assigned_to, requested_by), Problem (status, priority, category, related_asset), Known Error (related_problem), Asset (asset_category, status, location, assigned_to), Change Request (status, change_type, risk_level), Photo (photo_title, category, location). Dikonfirmasi Efendy tampil di UI; **ter-export ke `fixtures/property_setter.json` (140 → 194 entri) dan di-push**. Sepanjang jalan ditemukan `search_fields` Asset usang (`serial_number`) yang kembali tiap migrate karena fixture lama belum dikoreksi — sekarang sudah `asset_name,assigned_to,location` di database dan fixture (lihat `docs/BUG_HISTORY.md` sesi 24 September) | Commit `7a797de`/`88cf12e`, 24 September (item RR) |
+| **Laporan Mingguan Tiket via Telegram** | ✅ (dites manual) | Cron `0 8 * * 1` → `send_weekly_ticket_report()` di `telegram.py`; penerima dipilih di NextHD Settings (`weekly_report_users` / `weekly_report_teams`, Table MultiSelect ke 2 DocType child `NextHD Report Recipient User`/`Team`). Dikerjakan di sesi lain (~14-15 September), baru terdokumentasi 24 September. Dipanggil manual 24 September 13:08 — notifikasi masuk Telegram. **Belum diverifikasi:** jam kirim cron sebenarnya (jam server berselisih dari waktu Frappe), penerima Tim (0 data), isi laporan terhadap kebutuhan. Permissions `NextHD Settings` yang sebelumnya kosong ikut diperbaiki | Commit `29eb5ad`, 24 September (item SS) |
 
 ---
 
@@ -236,7 +237,7 @@ tidak sinkron, 20 Agustus).
 | Dashboard "Aset Bermasalah" (Number Card) | ⬜ | Usulan lama, belum dikerjakan |
 | SLA otomatis untuk Problem/Change Request | ⬜ | Saat ini SLA hanya untuk Ticket |
 | Notifikasi Telegram untuk Problem/CR | ⬜ | Sengaja ditunda |
-| Laporan bulanan otomatis (jumlah tiket, MTTR) | ⬜ | Usulan, belum dikerjakan |
+| Laporan bulanan otomatis (jumlah tiket, MTTR) | ⬜ | Usulan, belum dikerjakan. Laporan **mingguan** via Telegram sudah ada (lihat tabel Fitur Inti, item SS) |
 
 ---
 
@@ -254,10 +255,13 @@ tidak sinkron, 20 Agustus).
 | Re-test Dashboard Connections "Dipakai Di" dengan foto baru | ⬜ | Foto contoh lama ikut terhapus tombol Reset Data Demo sebelum sempat ditest ulang — perlu buat foto baru → pakai di 1 Ticket → cek badge muncul di form Photo | Efendy |
 | Rename Module "Next Helpdesk" → "NextHD" | 🔴 | Lihat tabel Bug Perlu Diperbaiki di atas | Claude + Efendy |
 | `bench migrate` uji tahan (item KK/AA/MM) | ✅ | Root cause final regresi sidebar ditemukan & diperbaiki 2 September (item MM di `docs/SUMMARY.md`) — stabil lintas 2× migrate berturut-turut | Claude + Efendy |
-| `git add`+commit+push semua file `.py`/`.json`/`.js` sesi 5-9 September (item NN, OO, PP) | 🔴 | Controller DocType, report, fixture, file JS warna List View — banyak yang belum di-commit ke git, menumpuk dari beberapa sesi. Lihat `docs/SUMMARY.md` untuk daftar lengkap | Efendy |
-| Bersihkan `fixtures/property_setter.json` — label lama untuk `asset_type` yang sudah dihapus | ⬜ | Kosmetik, tidak error tapi kotor — sisa dari item PP (9 September) | Efendy |
-| Cek apakah field `tanggal_dibuat`/`tanggal_diedit` & Workspace Shortcut baru perlu `export-fixtures` | 🔶 | Menyusul item NN, 5-6 September | Claude + Efendy |
-| `export-fixtures` + commit `property_setter.json` untuk 21 Standard Filter + koreksi `search_fields` Asset (item RR) | 🔶 | Setelah export, cek `git diff --stat`: hanya `property_setter.json` yang boleh berubah, dan pastikan entri `NextHD Asset-main-search_fields` bernilai `asset_name,assigned_to,location` (bukan `serial_number` lama) — kalau fixture lama masih memuat nilai usang, `bench migrate` berikutnya akan mengembalikannya | Efendy |
+| `git add`+commit+push file `.py`/`.json`/`.js` sesi 5-9 September (item NN, OO, PP) | 🔶 | Sebagian besar sudah ter-commit di sesi berikutnya (commit `7af8deb`, `d44fdb5`, `29eb5ad`, dll). Cek `git status` di server untuk sisa yang belum, jangan `git add .` | Efendy |
+| Bersihkan `fixtures/property_setter.json` — label lama untuk `asset_type` yang sudah dihapus | ✅ | Selesai 24 September (item RR) — 2 Property Setter dihapus, `grep -c asset_type` = 0, fixture di-export ulang dan di-push (commit `88cf12e`) | Efendy |
+| Cek apakah field `tanggal_dibuat`/`tanggal_diedit` & Workspace Shortcut baru perlu `export-fixtures` | 🔶 | Menyusul item NN, 5-6 September. Catatan 24 September: export fixture yang dijalankan hari ini ikut membawa 33 Property Setter `in_list_view` (termasuk `tanggal_dibuat`/`tanggal_diedit`), tapi Custom Field dan Workspace Shortcut belum dicek | Claude + Efendy |
+| `export-fixtures` + commit `property_setter.json` untuk 21 Standard Filter + koreksi `search_fields` Asset (item RR) | ✅ | Selesai 24 September — fixture 194 entri, 0 entri hilang, `search_fields` Asset benar di fixture. Commit `7a797de` (merge `45f3652`) dan `88cf12e` | Efendy |
+| Bersihkan file `*.bak_*` yang sudah ter-commit (`hooks.py.bak_*`, `telegram.py.bak_*`) | ⬜ | `.gitignore` sudah memuat `*.bak_*` sejak 24 September (mencegah yang baru), tapi file lama yang sudah ada di repo perlu `git rm` | Efendy |
+| Cek jam kirim Laporan Mingguan Senin 28 September + uji penerima Tim (item SS-4, SS-5) | ⬜ | Cron mengikuti jam server yang berselisih dari waktu Frappe; pastikan pesan masuk jam 08:00 waktu Medan | Efendy |
+| Sinkronkan `docs/ARSITEKTUR.md §3` (Detail Field NextHD Asset) ke struktur EAV | ⬜ | Masih menggambarkan `asset_type` + field IT-spesifik yang sudah dihapus | Claude |
 
 ---
 
