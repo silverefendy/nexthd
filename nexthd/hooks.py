@@ -165,7 +165,8 @@ doc_events = {
 scheduler_events = {
 	"cron": {
 		"*/15 * * * *": ["nexthd.next_helpdesk.tasks.check_sla_breach_warnings"],
-		"*/5 * * * *": ["nexthd.next_helpdesk.tasks.check_sla_response_breach"]
+		"*/5 * * * *": ["nexthd.next_helpdesk.tasks.check_sla_response_breach"],
+		"0 8 * * 1": ["nexthd.next_helpdesk.utils.telegram.send_weekly_ticket_report"]
 	}
 }
 

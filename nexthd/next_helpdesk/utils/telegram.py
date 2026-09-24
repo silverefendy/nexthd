@@ -19,9 +19,16 @@ TELEGRAM_LINK_CODE_EXPIRY_MINUTES = 10
 def get_bot_token():
 	"""
 	Ambil bot token dari NextHD Settings.
-	TODO (Devin): implementasi setelah Doctype NextHD Settings dibuat.
+	Field ini bertipe Password (terenkripsi) - WAJIB pakai get_decrypted_password(),
+	frappe.db.get_value() biasa akan return string masked "****" karena field Password.
+	Bug ditemukan 2026-09-14: root cause 404 Not Found di semua pengiriman Telegram.
 	"""
-	return frappe.db.get_value("NextHD Settings", {}, "telegram_bot_token")
+	settings_name = frappe.db.get_value("NextHD Settings", {}, "name")
+	if not settings_name:
+		return None
+	from frappe.utils.password import get_decrypted_password
+	return get_decrypted_password("NextHD Settings", settings_name, "telegram_bot_token")
+
 
 
 def send_telegram_message(chat_id: str, message: str):
@@ -468,3 +475,74 @@ def generate_telegram_link_code():
 	except Exception as e:
 		frappe.log_error(f"Error generating Telegram link code: {str(e)}")
 		return {"status": "error", "message": str(e)}
+
+
+def send_weekly_ticket_report():
+	"""
+	Scheduled Job - dipanggil setiap Senin 08:00 (lihat scheduler_events di hooks.py).
+	Kirim ringkasan tiket yang belum selesai (status bukan Selesai/Ditutup) ke Team/User
+	yang dikonfigurasi di NextHD Settings (field weekly_report_teams/weekly_report_users).
+	Diurutkan berdasarkan sla_resolution_by (paling mepet/lewat tenggat tampil dulu),
+	maksimal 8 tiket ditampilkan per pesan.
+	"""
+	if not is_telegram_enabled():
+		return
+
+	settings_name = frappe.db.get_value("NextHD Settings", {}, "name")
+	if not settings_name:
+		return
+
+	settings = frappe.get_doc("NextHD Settings", settings_name)
+	recipient_chat_ids = set()
+
+	for row in settings.get("weekly_report_teams", []):
+		team_doc = frappe.get_doc("NextHD Team", row.team)
+		for member in team_doc.members:
+			chat_id = get_user_chat_id(member.user)
+			if chat_id:
+				recipient_chat_ids.add(chat_id)
+
+	for row in settings.get("weekly_report_users", []):
+		chat_id = get_user_chat_id(row.user)
+		if chat_id:
+			recipient_chat_ids.add(chat_id)
+
+	if not recipient_chat_ids:
+		return
+
+	all_tickets = frappe.db.sql("""
+		SELECT name, subject, priority, status, assigned_to, sla_resolution_by
+		FROM `tabNextHD Ticket`
+		WHERE status NOT IN ('Selesai', 'Ditutup')
+		ORDER BY sla_resolution_by IS NULL, sla_resolution_by ASC
+	""", as_dict=True)
+
+	total_count = len(all_tickets)
+	if total_count == 0:
+		return
+
+	top_tickets = all_tickets[:8]
+	now = frappe.utils.now_datetime()
+
+	lines = []
+	lines.append(frappe._("\U0001F4CA <b>Laporan Mingguan Tiket</b> \u2014 {0}").format(frappe.utils.formatdate(now, "dd MMM yyyy")))
+	lines.append("")
+
+	for t in top_tickets:
+		overdue = bool(t.sla_resolution_by and frappe.utils.get_datetime(t.sla_resolution_by) < now)
+		icon = "\u26A0\uFE0F" if overdue else "\U0001F3AB"
+		assigned_display = t.assigned_to if t.assigned_to else frappe._("Belum ditugaskan")
+		sla_display = frappe.utils.format_datetime(t.sla_resolution_by, "dd MMM HH:mm") if t.sla_resolution_by else "-"
+		lines.append(icon + " " + t.name + " | " + str(t.priority) + " | " + str(t.status))
+		lines.append("   " + str(t.subject))
+		lines.append("   " + frappe._("Ditugaskan") + ": " + assigned_display + " | SLA: " + sla_display)
+		lines.append("")
+
+	if total_count > 8:
+		lines.append(frappe._("Total tiket belum selesai: {0} (menampilkan 8 teratas berdasarkan urgensi SLA)").format(total_count))
+	else:
+		lines.append(frappe._("Total tiket belum selesai: {0}").format(total_count))
+
+	message = "\n".join(lines)
+	for chat_id in recipient_chat_ids:
+		send_telegram_message(chat_id, message)

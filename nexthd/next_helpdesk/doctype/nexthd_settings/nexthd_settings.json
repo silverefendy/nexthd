@@ -1,13 +1,15 @@
 {
  "actions": [],
- "creation": "2026-08-07 00:00:00.000000",
+ "creation": "2026-08-07 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "telegram_bot_token",
   "telegram_bot_username",
   "default_language",
-  "enable_telegram_notification"
+  "enable_telegram_notification",
+  "weekly_report_teams",
+  "weekly_report_users"
  ],
  "fields": [
   {
@@ -32,19 +34,86 @@
    "fieldname": "enable_telegram_notification",
    "fieldtype": "Check",
    "label": "Enable Telegram Notification"
+  },
+  {
+   "fieldname": "weekly_report_teams",
+   "fieldtype": "Table MultiSelect",
+   "label": "Penerima Laporan Mingguan (Tim)",
+   "options": "NextHD Report Recipient Team"
+  },
+  {
+   "fieldname": "weekly_report_users",
+   "fieldtype": "Table MultiSelect",
+   "label": "Penerima Laporan Mingguan (User)",
+   "options": "NextHD Report Recipient User"
   }
  ],
- "idx_unique": [],
- "is_single": 1,
  "links": [],
- "modified": "2026-08-07 00:00:00.000000",
+ "modified": "2026-09-14 16:25:40.452804",
  "modified_by": "Administrator",
  "module": "Next Helpdesk",
  "name": "NextHD Settings",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
- "permissions": [],
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "IT Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Agent Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Agent",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "IT Auditor",
+   "share": 1
+  }
+ ],
+ "route": "nexthd-settings",
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
- "route": "nexthd-settings"
+ "states": []
 }
