@@ -5,7 +5,7 @@
 > Untuk aturan/pola kerja umum, lihat `docs/POLA_KERJA.md`. Bug Workflow (state machine) punya
 > riwayat sendiri di `docs/WORKFLOW.md §5`.
 >
-> **Last updated:** 2026-09-12
+> **Last updated:** 2026-09-24
 
 ---
 
@@ -482,4 +482,77 @@ kirim notif ke field tambahan) BELUM DIKERJAKAN** — lanjut sesi berikutnya. Li
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-09-12.*
+## ✅ Bug Session 2026-09-24 — Standard Filter di List View (Item RR) + `search_fields` Asset Usang Menggagalkan Simpan Property Setter
+
+**Permintaan Efendy:** semua List View (Ticket, Problem, Known Error, Asset, Photo, dst) punya
+baris filter di atas daftar seperti di list NextHD Ticket (kotak ID + Subject).
+
+**Cara kerja:** baris itu disebut *Standard Filter* — field ber-property `in_standard_filter = 1`
+muncul sebagai kolom filter di atas List View. Diterapkan ke banyak DocType sekaligus lewat
+Property Setter (`make_property_setter(doctype, fieldname, "in_standard_filter", 1, "Check")`),
+bukan edit JSON DocType satu-satu.
+
+**Hasil akhir (21 Property Setter, terverifikasi via query & tampil di UI):**
+
+| DocType | Field |
+|---|---|
+| NextHD Ticket | status, priority, ticket_type, category, assigned_to, requested_by |
+| NextHD Problem | status, priority, category, related_asset |
+| NextHD Known Error | related_problem (Known Error tidak punya field `status`) |
+| NextHD Asset | asset_category, status, location, assigned_to |
+| NextHD Change Request | status, change_type, risk_level |
+| NextHD Photo | photo_title, category, location |
+
+### Bug: `ValidationError: Search field serial_number is not valid`
+
+**Gejala:** script pertama berhenti di `NextHD Asset` dengan `Search field serial_number is not
+valid`. 11 Property Setter yang sudah dibuat sebelumnya ikut hilang — script berhenti sebelum
+`frappe.db.commit()`, jadi seluruh transaksi di-rollback (dibuktikan query Property Setter
+`in_standard_filter` = kosong).
+
+**Root cause (2 lapis):**
+1. `make_property_setter()` default `validate_fields_for_doctype=True` — setiap kali Property
+   Setter disimpan, Frappe memvalidasi **seluruh DocType**, bukan hanya property yang diubah.
+   Kesalahan lama yang "tidur" di DocType itu jadi meledak saat ada operasi yang memicu validasi
+   penuh (pola sama dengan bug `naming_rule` usang, item PP/QQ).
+2. Property Setter `NextHD Asset-main-search_fields` di database masih bernilai
+   `asset_name,assigned_to,serial_number`, padahal field `serial_number` sudah dihapus dari
+   DocType (item JJ, 29 Agustus — yang saat itu mencatat nilai ini sudah diubah jadi
+   `asset_name,assigned_to`). **Penyebab nilai kembali ke versi lama belum diselidiki** —
+   kandidat: `fixtures/property_setter.json` di repo masih memuat nilai lama dan di-reimport saat
+   `bench migrate`, atau restore backup. Lihat pending di bawah.
+
+**Fix:** `frappe.db.set_value("Property Setter", "NextHD Asset-main-search_fields", "value",
+"asset_name,assigned_to,location")` + `frappe.clear_cache(doctype="NextHD Asset")`, lalu script
+filter dijalankan ulang dengan pola berikut.
+
+**Pola script aman (dipakai ulang untuk operasi massal semacam ini):**
+- `frappe.get_meta(dt, cached=False)` + cek `df = meta.get_field(fn)` sebelum menerapkan —
+  field yang tidak ada di-`SKIP` dan dilaporkan, bukan bikin script mati.
+- `try/except` per field, `frappe.db.rollback()` di `except`, **`frappe.db.commit()` per
+  DocType** — satu error tidak menggagalkan semuanya.
+- Akhiri dengan `SELECT` verifikasi dari `tabProperty Setter` (jumlah + daftar), bukan hanya
+  mengandalkan output `[OK]`.
+
+### Temuan: nama field di dokumentasi lama tidak cocok dengan server
+
+Rencana awal memakai `NextHD Asset.asset_type` dan `serial_number` (dari `docs/ARSITEKTUR.md §3`)
+— keduanya sudah tidak ada (`asset_type` dihapus total 9 September, item PP; `serial_number`
+dihapus 29 September... tepatnya 29 Agustus, item JJ). Nama field pengganti: `asset_category`.
+**Pelajaran:** sebelum menjalankan script massal pada banyak DocType, jalankan dulu diagnosa
+read-only `frappe.get_meta(dt).fields` untuk daftar field aktual, jangan andalkan dokumentasi
+ARSITEKTUR.md (`§3` Asset masih menggambarkan struktur sebelum EAV).
+
+### Pending dari sesi ini
+
+- `export-fixtures --app nexthd` + cek `git diff --stat` (hanya `property_setter.json` yang
+  boleh berubah, jangan kosong `[]`) + commit oleh Efendy.
+- Pastikan entri `NextHD Asset-main-search_fields` di `fixtures/property_setter.json`
+  bernilai `asset_name,assigned_to,location`; kalau nilai lama masih ada di fixture, `bench
+  migrate` berikutnya akan mengembalikan bug ini.
+- Selidiki kenapa nilai `search_fields` Asset kembali ke versi lama setelah dikoreksi 29 Agustus.
+- `docs/ARSITEKTUR.md §3` (Detail Field NextHD Asset) belum disinkronkan ke struktur EAV.
+
+---
+
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-09-24.*
