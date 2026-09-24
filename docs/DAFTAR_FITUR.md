@@ -6,7 +6,7 @@
 >
 > Status: ✅ Selesai & Live | 🔶 Sedang Dikerjakan/Menunggu Konfirmasi | ⬜ Belum Dikerjakan (Rencana)
 >
-> **Last updated:** 2026-09-09 (item PP — warna List View 5 DocType, fix `naming_rule` usang di 5 DocType, dan field `asset_type` DIHAPUS TOTAL dari metadata+kolom fisik database — sebelumnya di sesi 6 September cuma disembunyikan/deprecated, sekarang sudah tuntas dihapus permanen)
+> **Last updated:** 2026-09-24 (item RR — Standard Filter di List View 6 DocType, 21 Property Setter `in_standard_filter`, terverifikasi tampil di UI; sebelumnya 2026-09-09 item PP — warna List View 5 DocType, fix `naming_rule` usang di 5 DocType, dan field `asset_type` DIHAPUS TOTAL dari metadata+kolom fisik database)
 
 ---
 
@@ -55,6 +55,7 @@
 | Warna List View (indicator pill) — Priority/Ticket Type (Ticket), Kategori (Photo), Status/Asset Category (Asset) | ✅ | `formatters` di `nexthd_ticket_list.js`, file baru `nexthd_asset_list.js`/`nexthd_photo_list.js`, terdaftar di `hooks.py`. Kategori/Asset Category pakai hash-color dinamis (Link ke master yang bisa bertambah) | 9 September (item PP) |
 | Fix `naming_rule="By Series"` usang — 5 DocType | ✅ | NextHD Asset, Problem, Change Request, Known Error, Service Catalog — diperbaiki ke `By "Naming Series" field`. Bug lama tidak pernah error sampai ada `doc.save()` penuh dijalankan | 9 September (item PP) |
 | Hapus duplikat `Custom Field` "status" (Ticket/CR/Problem) | ✅ | Sisa eksperimen lama (`<DocType>-status`, Link ke Workflow State, hidden) — root cause ghost checkbox List View Settings & warna Status CR tidak muncul | 9 September (item PP) |
+| **Standard Filter di atas List View — 6 DocType** | ✅ | 21 Property Setter `in_standard_filter=1`: Ticket (status, priority, ticket_type, category, assigned_to, requested_by), Problem (status, priority, category, related_asset), Known Error (related_problem), Asset (asset_category, status, location, assigned_to), Change Request (status, change_type, risk_level), Photo (photo_title, category, location). Dikonfirmasi Efendy tampil di UI. Sepanjang jalan ditemukan `search_fields` Asset usang (`serial_number`) — lihat `docs/BUG_HISTORY.md` sesi 24 September. **Belum di-export ke fixture/commit** (lihat Housekeeping) | 24 September (item RR) |
 
 ---
 
@@ -256,6 +257,7 @@ tidak sinkron, 20 Agustus).
 | `git add`+commit+push semua file `.py`/`.json`/`.js` sesi 5-9 September (item NN, OO, PP) | 🔴 | Controller DocType, report, fixture, file JS warna List View — banyak yang belum di-commit ke git, menumpuk dari beberapa sesi. Lihat `docs/SUMMARY.md` untuk daftar lengkap | Efendy |
 | Bersihkan `fixtures/property_setter.json` — label lama untuk `asset_type` yang sudah dihapus | ⬜ | Kosmetik, tidak error tapi kotor — sisa dari item PP (9 September) | Efendy |
 | Cek apakah field `tanggal_dibuat`/`tanggal_diedit` & Workspace Shortcut baru perlu `export-fixtures` | 🔶 | Menyusul item NN, 5-6 September | Claude + Efendy |
+| `export-fixtures` + commit `property_setter.json` untuk 21 Standard Filter + koreksi `search_fields` Asset (item RR) | 🔶 | Setelah export, cek `git diff --stat`: hanya `property_setter.json` yang boleh berubah, dan pastikan entri `NextHD Asset-main-search_fields` bernilai `asset_name,assigned_to,location` (bukan `serial_number` lama) — kalau fixture lama masih memuat nilai usang, `bench migrate` berikutnya akan mengembalikannya | Efendy |
 
 ---
 
