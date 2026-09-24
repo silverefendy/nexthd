@@ -5,7 +5,7 @@
 > Untuk aturan/pola kerja umum, lihat `docs/POLA_KERJA.md`. Bug Workflow (state machine) punya
 > riwayat sendiri di `docs/WORKFLOW.md §5`.
 >
-> **Last updated:** 2026-09-24
+> **Last updated:** 2026-09-24 (sesi lanjutan: fixture Standard Filter selesai + fitur Laporan Mingguan Telegram dicatat)
 
 ---
 
@@ -276,6 +276,9 @@ dipertahankan.
   `printer_notes`, `other_description`) TIDAK diubah.
 - Property Setter `search_fields`: `asset_name,assigned_to,serial_number` →
   `asset_name,assigned_to` (child table EAV tidak bisa dipakai di `search_fields` Link).
+  **⚠️ Update 24 September (item RR):** perubahan ini hanya dilakukan di database, tidak
+  di `fixtures/property_setter.json` — setiap `bench migrate` mengembalikan nilai lama. Baru
+  benar-benar permanen 24 September.
 - `detail_aset_lengkap.py` ditulis ulang: `LEFT JOIN` ke `tabNextHD Asset Attribute`, kolom
   baru "Spesifikasi (EAV)" (agregat via `GROUP_CONCAT`), plus kolom `brand`/`serial_number`/
   `sumber`/`catatan` yang ternyata sudah jadi kolom langsung di child table EAV.
@@ -492,7 +495,8 @@ muncul sebagai kolom filter di atas List View. Diterapkan ke banyak DocType seka
 Property Setter (`make_property_setter(doctype, fieldname, "in_standard_filter", 1, "Check")`),
 bukan edit JSON DocType satu-satu.
 
-**Hasil akhir (21 Property Setter, terverifikasi via query & tampil di UI):**
+**Hasil akhir (21 Property Setter, terverifikasi via query, tampil di UI, dan sudah masuk
+fixture di repo):**
 
 | DocType | Field |
 |---|---|
@@ -510,17 +514,18 @@ valid`. 11 Property Setter yang sudah dibuat sebelumnya ikut hilang — script b
 `frappe.db.commit()`, jadi seluruh transaksi di-rollback (dibuktikan query Property Setter
 `in_standard_filter` = kosong).
 
-**Root cause (2 lapis):**
+**Root cause (2 lapis, keduanya sudah terjawab):**
 1. `make_property_setter()` default `validate_fields_for_doctype=True` — setiap kali Property
    Setter disimpan, Frappe memvalidasi **seluruh DocType**, bukan hanya property yang diubah.
    Kesalahan lama yang "tidur" di DocType itu jadi meledak saat ada operasi yang memicu validasi
    penuh (pola sama dengan bug `naming_rule` usang, item PP/QQ).
 2. Property Setter `NextHD Asset-main-search_fields` di database masih bernilai
    `asset_name,assigned_to,serial_number`, padahal field `serial_number` sudah dihapus dari
-   DocType (item JJ, 29 Agustus — yang saat itu mencatat nilai ini sudah diubah jadi
-   `asset_name,assigned_to`). **Penyebab nilai kembali ke versi lama belum diselidiki** —
-   kandidat: `fixtures/property_setter.json` di repo masih memuat nilai lama dan di-reimport saat
-   `bench migrate`, atau restore backup. Lihat pending di bawah.
+   DocType (item JJ, 29 Agustus). **Penyebab nilai kembali ke versi lama (terjawab 24
+   September):** koreksi 29 Agustus hanya dilakukan di database, sedangkan
+   `fixtures/property_setter.json` di repo masih memuat nilai lama — jadi setiap `bench
+   migrate` meng-import ulang `serial_number`. Terbukti dari diff fixture: satu-satunya nilai
+   yang berubah adalah `search_fields` Asset (`serial_number` → `location`).
 
 **Fix:** `frappe.db.set_value("Property Setter", "NextHD Asset-main-search_fields", "value",
 "asset_name,assigned_to,location")` + `frappe.clear_cache(doctype="NextHD Asset")`, lalu script
@@ -538,20 +543,75 @@ filter dijalankan ulang dengan pola berikut.
 
 Rencana awal memakai `NextHD Asset.asset_type` dan `serial_number` (dari `docs/ARSITEKTUR.md §3`)
 — keduanya sudah tidak ada (`asset_type` dihapus total 9 September, item PP; `serial_number`
-dihapus 29 September... tepatnya 29 Agustus, item JJ). Nama field pengganti: `asset_category`.
+dihapus 29 Agustus, item JJ). Nama field pengganti: `asset_category`.
 **Pelajaran:** sebelum menjalankan script massal pada banyak DocType, jalankan dulu diagnosa
 read-only `frappe.get_meta(dt).fields` untuk daftar field aktual, jangan andalkan dokumentasi
 ARSITEKTUR.md (`§3` Asset masih menggambarkan struktur sebelum EAV).
 
-### Pending dari sesi ini
+### Export fixture & commit (selesai 24 September)
 
-- `export-fixtures --app nexthd` + cek `git diff --stat` (hanya `property_setter.json` yang
-  boleh berubah, jangan kosong `[]`) + commit oleh Efendy.
-- Pastikan entri `NextHD Asset-main-search_fields` di `fixtures/property_setter.json`
-  bernilai `asset_name,assigned_to,location`; kalau nilai lama masih ada di fixture, `bench
-  migrate` berikutnya akan mengembalikan bug ini.
-- Selidiki kenapa nilai `search_fields` Asset kembali ke versi lama setelah dikoreksi 29 Agustus.
-- `docs/ARSITEKTUR.md §3` (Detail Field NextHD Asset) belum disinkronkan ke struktur EAV.
+- `export-fixtures --app nexthd` → `property_setter.json` naik dari 140 ke 194 entri. Hasil
+  perbandingan lama vs baru: **0 entri hilang**, 1 nilai berubah (`search_fields` Asset), 54
+  entri baru = 21 `in_standard_filter` + 33 `in_list_view` (kolom List View dari sesi lama yang
+  sebelumnya hanya ada di database dan belum pernah masuk fixture).
+- Ikut ter-export: 2 Property Setter sisa field `asset_type` yang sudah dihapus
+  (`NextHD Asset-asset_type-in_list_view`, `...-label`). Dihapus dari database via
+  `frappe.delete_doc`, lalu export ulang — `grep -c asset_type` = 0.
+- Commit `7a797de` (export awal, merge `45f3652`) dan `88cf12e` (bersihkan `asset_type` +
+  `.gitignore *.bak_*`), dipush ke `main`.
+
+### Pelajaran Teknis Tambahan (24 September)
+
+- **Koreksi data via SQL/console saja tidak permanen kalau DocType/Property Setter itu ada di
+  fixture.** Perubahan harus diikuti `export-fixtures` + commit, kalau tidak `bench migrate`
+  mengembalikan nilai lama dari file fixture. Pola sama dengan duplikasi Workflow Transition
+  (item M/LL).
+- **Heredoc dengan tab langsung hilang saat paste** (terjadi lagi sesi ini di script
+  `hapus_ps_asset_type.py` — `IndentationError`). Aturan tetap: tulis dengan 4 spasi, ubah ke
+  tab di server dengan `sed -i 's/^    /\t/'`, cek `cat -A | head` (harus `^I`) sebelum menjalankan.
+- **`git pull --rebase` gagal kalau ada perubahan yang belum di-stage** di working tree. Kalau
+  ada pekerjaan lain yang belum di-commit, pakai `git pull --no-rebase origin main`.
+- **Jangan `git stash -u` untuk "membersihkan" fitur yang ternyata sedang berjalan.** File
+  `hooks.py` (cron), `telegram.py`, dan DocType child yang sudah ada di database ikut hilang
+  dari disk sampai `git stash pop`; kalau sempat ada `bench migrate`/`restart` saat itu,
+  cron dan DocType bisa hilang. Cek dulu dengan `git diff` dan tabel database sebelum
+  mengarsipkan.
+- **`git add .` menyapu file sampah** (`*.bak_*`, file nama aneh sisa paste terpotong). Pakai
+  `git add <path>` eksplisit. `.gitignore` sekarang memuat `*.bak_*`, tapi file `*.bak_*` yang
+  sudah pernah ter-commit tidak otomatis hilang dari repo.
+
+---
+
+## ✅ Fitur Laporan Mingguan Tiket via Telegram (item SS) — Baru Terdokumentasi 24 September
+
+**Catatan:** fitur ini dikerjakan di sesi lain (file berumur sekitar 14-15 September, tidak
+ada di dokumentasi mana pun) dan baru ditemukan sebagai perubahan yang belum di-commit saat
+`git status` pada 24 September. Belum ada spesifikasi tertulis; isi di bawah dibaca dari
+diff kode.
+
+**Komponen:**
+- `hooks.py`: cron `0 8 * * 1` → `nexthd.next_helpdesk.utils.telegram.send_weekly_ticket_report`
+  (tiap Senin 08:00 waktu server).
+- `telegram.py`: fungsi `send_weekly_ticket_report()` (baris ~480, +80 baris).
+- `NextHD Settings`: field `weekly_report_teams` (Table MultiSelect → `NextHD Report Recipient
+  Team`) dan `weekly_report_users` (Table MultiSelect → `NextHD Report Recipient User`);
+  `nexthd_settings.js` baru.
+- 2 DocType child baru: `NextHD Report Recipient Team`, `NextHD Report Recipient User`.
+- `nexthd_settings.json` sekarang punya permissions lengkap (IT Manager, System Manager,
+  Agent Manager, Agent, IT Auditor) — sebelumnya `permissions: []` (pola bug 404 item U).
+  `naming_rule` = "Set by user"; `NextHD Settings` tetap bukan Single DocType.
+
+**Data saat ini:** 1 penerima User, 0 penerima Tim.
+
+**Verifikasi (24 September 13:08):** `send_weekly_ticket_report()` dipanggil manual via
+`bench console` — selesai tanpa error dan **notifikasi masuk ke Telegram** (dikonfirmasi
+Efendy). Commit `29eb5ad`, dipush ke `main`.
+
+**Belum diverifikasi:**
+- Jam kirim cron sebenarnya. Jam server (`date`) berselisih dari waktu Frappe (02:37 vs 08:33
+  pada pengecekan yang sama), jadi cek pesan Senin (28 September) masuk jam berapa.
+- Penerima berbasis Tim (0 data) belum pernah diuji.
+- Isi laporan belum direview terhadap kebutuhan (kolom apa saja, periode).
 
 ---
 
