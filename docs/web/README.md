@@ -1,4 +1,4 @@
-# NextHD Web — Index Dokumentasi Portal
+# NextHD Web - Index Dokumentasi Portal
 
 > Folder ini khusus dokumentasi **portal web NextHD** (halaman `www/` di dalam Frappe),
 > terpisah dari dokumentasi aplikasi Desk di `docs/`. Sementara hanya tim IT yang memegang.
@@ -10,10 +10,18 @@
 | File | Isi |
 |---|---|
 | `README.md` | File ini: index, alamat akses, aturan umum |
-| `SPEC_PORTAL.md` | Spesifikasi teknis: struktur file, peran, endpoint, aturan keamanan. Acuan Devin |
+| `SPEC_PORTAL.md` | Spesifikasi teknis: struktur file, peran, keamanan, tahap. Acuan Devin |
+| `TASK_DEVIN_TAHAP_1_2.md` | Dokumen tugas rinci untuk Devin: PR 1 (fondasi) dan PR 2 (antrian, detail, buat tiket) |
 | `FITUR_WEB.md` | Checklist fitur portal per tahap (selesai / dikerjakan / rencana) |
 | `LOG_WEB.md` | Log sesi ringkas pengerjaan portal |
 | `BUG_WEB.md` | Riwayat bug portal dan pelajarannya |
+| `TEMUAN_DOKUMEN_LAIN.md` | Catatan isi dokumen di luar `docs/web/` yang salah/usang (untuk diperbaiki belakangan) |
+
+## Aturan Dokumentasi
+
+- Dokumen di luar `docs/web/` = sumber kebenaran, dibaca saja saat mengerjakan portal.
+- Perubahan dokumen terkait portal hanya di `docs/web/`.
+- Kalau menemukan isi dokumen lain yang salah/usang, catat di `TEMUAN_DOKUMEN_LAIN.md`; jangan diperbaiki langsung.
 
 ## Alamat Akses
 

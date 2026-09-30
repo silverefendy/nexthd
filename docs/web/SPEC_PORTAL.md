@@ -1,9 +1,10 @@
-# NextHD Web — Spesifikasi Portal
+# NextHD Web - Spesifikasi Portal
 
 > Acuan teknis untuk Devin. Baca `docs/FAQ_DEVELOPER.md` dulu sebelum mengerjakan.
 > Ikuti scope task secara ketat; jangan merapikan hal di luar scope.
+> Tugas rinci per tahap ada di `TASK_DEVIN_TAHAP_1_2.md` (dan berkas tugas tahap berikutnya).
 >
-> **Status:** DRAFT, diperbarui 2026-09-30 setelah keputusan Efendy (lihat §8). Siap diserahkan ke Devin untuk tahap 1-2.
+> **Status:** DRAFT, diperbarui 2026-09-30 (koreksi lokasi `portal.py`; keputusan Efendy di bagian 8).
 
 ## 1. Tujuan
 
@@ -14,11 +15,15 @@ NextHD. Tanpa Vue/React/frappe-ui. Desk tetap dipakai untuk administrasi data ma
 
 ```
 nexthd/nexthd/
-├── public/css/nexthd/   base.css, layout.css, components.css, pages/*.css
-├── public/js/nexthd/    api.js, ui.js, pages/*.js
-├── www/nexthd/          index (pintu masuk), halaman per peran
-└── api/portal.py        endpoint @frappe.whitelist() per fitur
+|-- public/css/nexthd/   base.css, layout.css, components.css
+|-- public/js/nexthd/    api.js, ui.js, pages/*.js
+|-- www/nexthd/          index (landing), kerja, tiket, tiket-baru, ...
+`-- next_helpdesk/api/   portal.py (endpoint @frappe.whitelist()), test_portal.py
 ```
+
+KOREKSI 2026-09-30: `portal.py` ada di `next_helpdesk/api/` (sebelah `telegram_webhook.py`),
+BUKAN di folder baru `nexthd/api/`, karena `nexthd/api.py` sudah ada (berisi `reset_demo_data`)
+dan folder `api/` akan bentrok dengannya. Path panggil: `nexthd.next_helpdesk.api.portal.<fungsi>`.
 
 Sudah ada (landing page): `public/css/nexthd_landing.css`, `public/js/nexthd_landing.js`,
 `www/nexthd/index.html`, `www/nexthd/index.py` (`PRIVATE_MODE = True`).
@@ -30,7 +35,7 @@ Catatan: satu file `www/` melayani satu route. Detail dokumen memakai query stri
 
 Satu halaman login; setelah masuk, arahkan berdasarkan peran. Akses dijaga di backend, bukan URL.
 
-**Cakupan saat ini: hanya tim IT.** Halaman Requester dibangun belakangan (lihat §8).
+**Cakupan saat ini: hanya tim IT.** Halaman Requester dibangun belakangan (lihat bagian 8).
 
 | Peran | Halaman awal | Isi | Tahap |
 |---|---|---|---|
@@ -41,7 +46,7 @@ Satu halaman login; setelah masuk, arahkan berdasarkan peran. Akses dijaga di ba
 
 ## 4. Aturan Keamanan (WAJIB)
 
-1. Setiap halaman dan endpoint memeriksa `frappe.session.user != "Guest"` dan peran.
+1. Setiap halaman dan endpoint memeriksa `frappe.session.user != 'Guest'` dan peran.
 2. **Dilarang** `ignore_permissions=True` di endpoint yang melayani user biasa.
 3. **Dilarang** SQL langsung untuk membaca/menulis data tiket. Pakai `frappe.get_list` / `frappe.get_doc`
    supaya izin (termasuk `if_owner` untuk Requester) tetap berlaku.
@@ -70,7 +75,7 @@ Aksesibilitas: hormati `prefers-reduced-motion`, kontras cukup, dapat dipakai di
 
 ## 6. Tahap Pengerjaan
 
-Urutan disesuaikan dengan keputusan "IT dulu": Agent didahulukan, Requester menyusul.
+Urutan disesuaikan dengan keputusan 'IT dulu': Agent didahulukan, Requester menyusul.
 
 | Tahap | Isi | Diserahkan ke |
 |---|---|---|
@@ -96,6 +101,6 @@ Satu tahap per PR. Tiap PR direview Claude sebelum merge, lalu Efendy pull + `be
 | # | Pertanyaan | Keputusan |
 |---|---|---|
 | 1 | Requester ikut sejak awal? | **Tidak.** Sementara hanya IT, karena masih tahap pengembangan walau Desk sudah production. Requester di tahap 7 |
-| 2 | Web Form lama `/tiket-saya` | **Diganti** oleh halaman Requester portal. Web Form tetap hidup sampai tahap 7 selesai dan teruji. Jangan dihapus lebih awal (fixture `Web Form` di `hooks.py` dan cek di `AUDIT_SISTEM.md` §12 disesuaikan saat penggantian) |
+| 2 | Web Form lama `/tiket-saya` | **Diganti** oleh halaman Requester portal. Web Form tetap hidup sampai tahap 7 selesai dan teruji. Jangan dihapus lebih awal (fixture `Web Form` di `hooks.py` dan cek di `AUDIT_SISTEM.md` bagian 12 disesuaikan saat penggantian) |
 | 3 | Halaman login bertema NextHD (`www/login` kustom) | Ditunda ke tahap 7 |
 | 4 | Landing page ter-commit ke repo | Sudah: `git status` bersih dan sinkron dengan `origin/main` (30 Sept) |
