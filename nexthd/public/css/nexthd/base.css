@@ -1,0 +1,46 @@
+:root {
+	--bg: #f3ead7;
+	--ink: #1d1b16;
+	--mute: #6b6353;
+	--line: #1d1b16;
+	--card: #faf4e4;
+	--a: #c8481a;
+	--b: #1f6f6b;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #15130f;
+		--ink: #efe6d0;
+		--mute: #a39a86;
+		--line: #efe6d0;
+		--card: #1e1b15;
+		--a: #ff7a45;
+		--b: #4fc0b8;
+	}
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html {
+	scroll-behavior: smooth;
+}
+
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--ink);
+	font: 17px/1.65 Georgia, "Times New Roman", serif;
+}
+
+.nx-mono {
+	font-family: ui-monospace, "Courier New", Courier, monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
+}

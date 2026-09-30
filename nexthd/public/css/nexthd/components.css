@@ -1,0 +1,222 @@
+.nx-btn {
+	display: inline-block;
+	padding: 11px 22px;
+	border: 2px solid var(--line);
+	background: var(--ink);
+	color: var(--bg);
+	font: 15px ui-monospace, "Courier New", monospace;
+	text-decoration: none;
+	box-shadow: 4px 4px 0 var(--a);
+	transition: transform 0.15s, box-shadow 0.15s;
+	cursor: pointer;
+}
+
+.nx-btn:hover {
+	transform: translate(2px, 2px);
+	box-shadow: 2px 2px 0 var(--a);
+}
+
+.nx-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+	transform: none;
+	box-shadow: 2px 2px 0 var(--mute);
+}
+
+.nx-btn--alt {
+	background: transparent;
+	color: var(--ink);
+}
+
+.nx-card {
+	border: 2px solid var(--line);
+	background: var(--card);
+	padding: 18px 20px;
+}
+
+.nx-badge {
+	display: inline-block;
+	padding: 3px 10px;
+	border: 1.5px solid var(--line);
+	font: 13px ui-monospace, "Courier New", monospace;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.nx-badge--red {
+	border-color: var(--a);
+	color: var(--a);
+}
+
+.nx-badge--orange {
+	border-color: var(--a);
+	color: var(--a);
+}
+
+.nx-badge--yellow {
+	border-color: var(--a);
+	color: var(--a);
+}
+
+.nx-badge--grey {
+	border-color: var(--mute);
+	color: var(--mute);
+}
+
+.nx-badge--blue {
+	border-color: var(--b);
+	color: var(--b);
+}
+
+.nx-badge--green {
+	border-color: var(--b);
+	color: var(--b);
+}
+
+.nx-table-wrap {
+	overflow-x: auto;
+}
+
+.nx-table {
+	width: 100%;
+	border-collapse: collapse;
+	font: 14px ui-monospace, "Courier New", monospace;
+}
+
+.nx-table th,
+.nx-table td {
+	padding: 12px 14px;
+	text-align: left;
+	border-bottom: 1px solid var(--line);
+}
+
+.nx-table th {
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--mute);
+	background: var(--card);
+}
+
+.nx-table tr:hover {
+	background: var(--card);
+}
+
+.nx-field {
+	margin-bottom: 16px;
+}
+
+.nx-field label {
+	display: block;
+	margin-bottom: 6px;
+	font: 14px ui-monospace, "Courier New", monospace;
+	color: var(--mute);
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+}
+
+.nx-field input,
+.nx-field select,
+.nx-field textarea {
+	width: 100%;
+	padding: 10px 12px;
+	border: 2px solid var(--line);
+	background: var(--bg);
+	color: var(--ink);
+	font: 15px ui-monospace, "Courier New", monospace;
+	font-family: inherit;
+}
+
+.nx-field input:focus,
+.nx-field select:focus,
+.nx-field textarea:focus {
+	outline: none;
+	border-color: var(--a);
+}
+
+.nx-field textarea {
+	min-height: 120px;
+	resize: vertical;
+}
+
+.nx-toast {
+	position: fixed;
+	top: 20px;
+	right: 20px;
+	padding: 14px 18px;
+	border: 2px solid var(--line);
+	background: var(--card);
+	box-shadow: 4px 4px 0 var(--a);
+	font: 14px ui-monospace, "Courier New", monospace;
+	z-index: 1000;
+	animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+	from {
+		transform: translateX(100%);
+		opacity: 0;
+	}
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
+}
+
+.nx-empty {
+	padding: 48px 20px;
+	text-align: center;
+	color: var(--mute);
+	font: 16px ui-monospace, "Courier New", monospace;
+}
+
+.nx-loading {
+	padding: 48px 20px;
+	text-align: center;
+	color: var(--mute);
+	font: 16px ui-monospace, "Courier New", monospace;
+}
+
+.nx-loading::after {
+	content: "...";
+	animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+	0%, 20% {
+		content: ".";
+	}
+	40% {
+		content: "..";
+	}
+	60%, 100% {
+		content: "...";
+	}
+}
+
+.nx-pager {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 16px 0;
+	font: 14px ui-monospace, "Courier New", monospace;
+}
+
+.nx-pager button {
+	padding: 8px 16px;
+	border: 2px solid var(--line);
+	background: var(--bg);
+	color: var(--ink);
+	font: 14px ui-monospace, "Courier New", monospace;
+	cursor: pointer;
+}
+
+.nx-pager button:hover {
+	border-color: var(--a);
+	color: var(--a);
+}
+
+.nx-pager button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
