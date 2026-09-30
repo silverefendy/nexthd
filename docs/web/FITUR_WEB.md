@@ -8,10 +8,11 @@
 
 | Fitur | Status | Keterangan |
 |---|---|---|
-| Landing page `/nexthd` | ✅ | HTML/CSS/JS terpisah (`www/nexthd/`, `public/css|js/nexthd_landing.*`). Tampil di server (dikonfirmasi Efendy 30 Sept). Statistik agregat (Tiket, Problem, Known Error, Aset) |
-| Mode privat | ✅ | `PRIVATE_MODE = True` di `index.py`: Guest dialihkan ke login |
-| Tema vintage + dark mode otomatis | ✅ | Token warna di `:root` `nexthd_landing.css` |
-| Commit landing page ke repo | ✅ | `git status` bersih dan sinkron dengan `origin/main` (30 Sept) |
+| Landing page `/nexthd` | ✅ | HTML/CSS/JS terpisah (`www/nexthd/`, `public/css|js/nexthd_landing.*`). Statistik agregat (Tiket, Problem, Known Error, Aset) |
+| Mode privat | ✅ | `PRIVATE_MODE = True` di `index.py`: Guest dialihkan ke login (terverifikasi `curl`, 30 Sept) |
+| Tema vintage + dark mode otomatis | ✅ | Token warna di `:root` |
+| Commit landing page ke repo | ✅ | Sinkron dengan `origin/main` (30 Sept) |
+| Fondasi portal (Tahap 1, PR #13) | ✅ | Terverifikasi 30 Sept: penjaga akses (Guest dialihkan, non-IT 403), `get_session_info` GET-only, tombol "Ruang Kerja" kondisional per peran. Menunggu commit patch `nx-nav` di `ui.js` dan perbaikan `api.js` (`PRASYARAT_PR2.md`) |
 
 ## Rencana per Tahap (lihat `SPEC_PORTAL.md` §6)
 
@@ -19,8 +20,8 @@ Cakupan awal: hanya tim IT. Requester di tahap 7.
 
 | Tahap | Fitur | Status |
 |---|---|---|
-| 1 | Template dasar, `api.js`, `portal.py` kerangka, redirect per peran (IT) | 🔶 |
-| 2 | Antrian agent, detail tiket (baca), buat tiket | ⬜ |
+| 1 | Template dasar, `api.js`, `portal.py` kerangka, redirect per peran (IT) | ✅ |
+| 2 | Antrian agent, detail tiket (baca), buat tiket | ⬜ (menunggu prasyarat `api.js`) |
 | 3 | Aksi workflow, worklog | ⬜ |
 | 4 | Dashboard manajer, penugasan | ⬜ |
 | 5 | Problem, Known Error, Change Request, Asset (EAV) | ⬜ |
