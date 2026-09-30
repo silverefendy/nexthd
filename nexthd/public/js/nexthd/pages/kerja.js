@@ -1,34 +1,238 @@
-(function () {
-	"use strict";
+﻿(function () {
+"use strict";
 
-	var main = document.getElementById("nx-main");
-	if (!main) return;
+var main = document.getElementById("nx-main");
+var content = document.getElementById("nx-content");
+if (!main || !content) return;
 
-	NX.ui.setLoading(main, true);
+var currentPage = 1;
+var currentView = "all";
+var currentFilters = {
+status: "",
+priority: "",
+ticket_type: "",
+category: ""
+};
+var currentSearch = "";
+var currentOrderBy = "modified desc";
+var options = null;
+var debounceTimer = null;
 
-	NX.api.get("nexthd.next_helpdesk.api.portal.get_session_info").then(function (session) {
-		main.textContent = "";
-		NX.ui.renderNav(session);
+function loadTickets() {
+NX.ui.setLoading(content, true);
 
-		var card = document.createElement("div");
-		card.className = "nx-card";
+var params = {
+view: currentView,
+order_by: currentOrderBy,
+page: currentPage,
+page_size: 20
+};
 
-		var h2 = document.createElement("h2");
-		h2.textContent = "Halo, " + session.full_name;
-		card.appendChild(h2);
+if (currentFilters.status) params.status = currentFilters.status;
+if (currentFilters.priority) params.priority = currentFilters.priority;
+if (currentFilters.ticket_type) params.ticket_type = currentFilters.ticket_type;
+if (currentFilters.category) params.category = currentFilters.category;
+if (currentSearch) params.search = currentSearch;
 
-		var roles = document.createElement("p");
-		roles.className = "nx-mono";
-		roles.textContent = "Peran: " + session.roles.join(", ");
-		card.appendChild(roles);
+NX.api.get("nexthd.next_helpdesk.api.portal.list_tickets", params).then(function (result) {
+content.textContent = "";
+renderQueue(result);
+}).catch(function (err) {
+content.textContent = "";
+NX.ui.empty(content, "Gagal memuat: " + err.message);
+var retryBtn = document.createElement("button");
+retryBtn.className = "nx-btn";
+retryBtn.textContent = "Coba lagi";
+retryBtn.addEventListener("click", loadTickets);
+content.appendChild(retryBtn);
+});
+}
 
-		var message = document.createElement("p");
-		message.textContent = "Antrian tiket menyusul di tahap berikutnya.";
-		card.appendChild(message);
+function renderQueue(result) {
+if (!result.rows || result.rows.length === 0) {
+NX.ui.empty(content, "Tidak ada tiket");
+return;
+}
 
-		main.appendChild(card);
-	}).catch(function (err) {
-		main.textContent = "";
-		NX.ui.empty(main, "Gagal memuat: " + err.message);
-	});
+var wrap = document.createElement("div");
+wrap.className = "nx-wrap";
+
+// Tab tampilan
+var tabs = document.createElement("div");
+tabs.className = "nx-card";
+var viewTabs = [
+{ value: "all", label: "Semua" },
+{ value: "mine", label: "Ditugaskan ke saya" },
+{ value: "unassigned", label: "Belum ditugaskan" },
+{ value: "overdue", label: "Lewat SLA" }
+];
+viewTabs.forEach(function (vt) {
+var btn = document.createElement("button");
+btn.className = "nx-btn";
+if (currentView === vt.value) {
+btn.className += " nx-btn--alt";
+}
+btn.textContent = vt.label;
+btn.addEventListener("click", function () {
+currentView = vt.value;
+currentPage = 1;
+loadTickets();
+});
+tabs.appendChild(btn);
+});
+wrap.appendChild(tabs);
+
+// Filter dan cari
+var filterRow = document.createElement("div");
+filterRow.className = "nx-card";
+
+var searchInput = document.createElement("input");
+searchInput.type = "text";
+searchInput.placeholder = "Cari tiket...";
+searchInput.value = currentSearch;
+searchInput.addEventListener("input", function () {
+currentSearch = searchInput.value;
+clearTimeout(debounceTimer);
+debounceTimer = setTimeout(function () {
+currentPage = 1;
+loadTickets();
+}, 300);
+});
+filterRow.appendChild(searchInput);
+
+// Filter dropdowns
+if (options) {
+["status", "priority", "ticket_type", "category"].forEach(function (field) {
+var select = document.createElement("select");
+select.className = "nx-field";
+var defaultOpt = document.createElement("option");
+defaultOpt.value = "";
+defaultOpt.textContent = field.charAt(0).toUpperCase() + field.slice(1);
+select.appendChild(defaultOpt);
+
+var opts = field === "category" ? options.categories : options[field];
+if (opts) {
+opts.forEach(function (opt) {
+var option = document.createElement("option");
+option.value = opt;
+option.textContent = opt;
+if (currentFilters[field] === opt) {
+option.selected = true;
+}
+select.appendChild(option);
+});
+}
+
+select.addEventListener("change", function () {
+currentFilters[field] = select.value;
+currentPage = 1;
+loadTickets();
+});
+filterRow.appendChild(select);
+});
+}
+
+// Order by
+var orderSelect = document.createElement("select");
+orderSelect.className = "nx-field";
+var orderOptions = [
+{ value: "modified desc", label: "Terakhir diubah" },
+{ value: "creation desc", label: "Terbaru dibuat" },
+{ value: "sla_resolution_by asc", label: "SLA terdekat" }
+];
+orderOptions.forEach(function (oo) {
+var option = document.createElement("option");
+option.value = oo.value;
+option.textContent = oo.label;
+if (currentOrderBy === oo.value) {
+option.selected = true;
+}
+orderSelect.appendChild(option);
+});
+orderSelect.addEventListener("change", function () {
+currentOrderBy = orderSelect.value;
+currentPage = 1;
+loadTickets();
+});
+filterRow.appendChild(orderSelect);
+
+wrap.appendChild(filterRow);
+
+// Tabel
+var columns = ["ID", "Subjek", "Status", "Prioritas", "Kategori", "Ditugaskan ke", "SLA Resolusi", "Diubah"];
+var rows = result.rows.map(function (ticket) {
+var idLink = document.createElement("a");
+idLink.href = "/nexthd/tiket?id=" + ticket.name;
+idLink.textContent = ticket.name;
+
+var statusBadge = NX.ui.badge(ticket.status, getStatusColor(ticket.status));
+var priorityBadge = NX.ui.badge(ticket.priority, getPriorityColor(ticket.priority));
+
+var slaText = ticket.sla_resolution_by ? NX.ui.fmtDateTime(ticket.sla_resolution_by) : "-";
+var isOverdue = ticket.sla_resolution_by && ticket.sla_resolution_by < result.server_now && ticket.status !== "Selesai" && ticket.status !== "Ditutup";
+if (isOverdue) {
+var slaSpan = document.createElement("span");
+slaSpan.textContent = slaText;
+slaSpan.style.color = "red";
+slaSpan.style.fontWeight = "bold";
+slaText = slaSpan;
+}
+
+return [
+idLink,
+ticket.subject,
+statusBadge,
+priorityBadge,
+ticket.category || "-",
+ticket.assigned_to || "-",
+slaText,
+NX.ui.fmtDateTime(ticket.modified)
+];
+});
+
+var table = NX.ui.renderTable(columns, rows);
+wrap.appendChild(table);
+
+// Pager
+var pager = NX.ui.renderPager(result.total, result.page, result.page_size, function (newPage) {
+currentPage = newPage;
+loadTickets();
+});
+wrap.appendChild(pager);
+
+content.appendChild(wrap);
+}
+
+function getStatusColor(status) {
+switch (status) {
+case "Baru": return "blue";
+case "Sedang Dikerjakan": return "orange";
+case "Menunggu User": return "yellow";
+case "Selesai": return "green";
+case "Ditutup": return "grey";
+default: return "";
+}
+}
+
+function getPriorityColor(priority) {
+switch (priority) {
+case "Kritis": return "red";
+case "Tinggi": return "orange";
+case "Sedang": return "yellow";
+case "Rendah": return "grey";
+default: return "";
+}
+}
+
+// Load options dan session
+NX.api.get("nexthd.next_helpdesk.api.portal.get_ticket_options").then(function (opts) {
+options = opts;
+return NX.api.get("nexthd.next_helpdesk.api.portal.get_session_info");
+}).then(function (session) {
+NX.ui.renderNav(session);
+loadTickets();
+}).catch(function (err) {
+content.textContent = "";
+NX.ui.empty(content, "Gagal memuat: " + err.message);
+});
 })();
