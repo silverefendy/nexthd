@@ -19,7 +19,7 @@ Cakupan awal: hanya tim IT. Requester di tahap 7.
 
 | Tahap | Fitur | Status |
 |---|---|---|
-| 1 | Template dasar, `api.js`, `portal.py` kerangka, redirect per peran (IT) | ⬜ |
+| 1 | Template dasar, `api.js`, `portal.py` kerangka, redirect per peran (IT) | 🔶 |
 | 2 | Antrian agent, detail tiket (baca), buat tiket | ⬜ |
 | 3 | Aksi workflow, worklog | ⬜ |
 | 4 | Dashboard manajer, penugasan | ⬜ |
