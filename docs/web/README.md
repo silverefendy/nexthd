@@ -1,0 +1,45 @@
+# NextHD Web — Index Dokumentasi Portal
+
+> Folder ini khusus dokumentasi **portal web NextHD** (halaman `www/` di dalam Frappe),
+> terpisah dari dokumentasi aplikasi Desk di `docs/`. Sementara hanya tim IT yang memegang.
+>
+> **Last updated:** 2026-09-30
+
+## Isi Folder
+
+| File | Isi |
+|---|---|
+| `README.md` | File ini: index, alamat akses, aturan umum |
+| `SPEC_PORTAL.md` | Spesifikasi teknis: struktur file, peran, endpoint, aturan keamanan. Acuan Devin |
+| `FITUR_WEB.md` | Checklist fitur portal per tahap (selesai / dikerjakan / rencana) |
+| `LOG_WEB.md` | Log sesi ringkas pengerjaan portal |
+| `BUG_WEB.md` | Riwayat bug portal dan pelajarannya |
+
+## Alamat Akses
+
+Halaman `www/` disajikan oleh site Frappe yang sama dengan Desk, jadi tidak ada port atau domain lain.
+
+| Lingkungan | Desk | Portal web |
+|---|---|---|
+| Lewat IP lokal | `http://10.1.0.16:8001/desk/nexthd` | `http://10.1.0.16:8001/nexthd` |
+| Lewat domain | `https://desk.ciptamebel.co.id/desk/nexthd` | `https://desk.ciptamebel.co.id/nexthd` |
+
+Kalau portal tidak terbuka lewat IP tetapi Desk terbuka, cek pemetaan site (Host header) dan
+jalankan `bench --site desk.ciptamebel.co.id clear-website-cache`.
+
+## Pembagian Kerja Portal
+
+| Siapa | Tugas |
+|---|---|
+| Claude | Merancang spesifikasi, mereview PR (terutama keamanan), debug di server, dokumentasi `.md` |
+| Devin | Membangun implementasi (`.py/.js/.css/.html`) lewat PR |
+| Efendy | Merge, pull, `bench build`, uji manual, keputusan bisnis |
+
+Aturan repo tetap berlaku: Claude hanya push `.md`; kode lewat Devin atau dijalankan manual di server.
+
+## Prinsip
+
+1. Desk tetap ada untuk administrasi (SLA Policy, Team, Settings, Holiday). Portal untuk kerja harian.
+2. Logika bisnis tetap di backend Frappe (workflow, SLA, Telegram). Portal hanya tampilan + endpoint tipis.
+3. Tanpa framework frontend (tidak pakai frappe-ui/Vue/React). HTML + CSS + JS biasa (jalur A).
+4. Aturan navigasi terkunci di `docs/FAQ_DEVELOPER.md` Q1 tidak boleh disentuh.
