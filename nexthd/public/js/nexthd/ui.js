@@ -132,6 +132,7 @@
 			menu.appendChild(logoutBtn);
 
 			wrap.appendChild(menu);
+			nav.className = "nx-nav";
 			nav.appendChild(wrap);
 		},
 
