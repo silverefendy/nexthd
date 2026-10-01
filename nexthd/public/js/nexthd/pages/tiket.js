@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
 	"use strict";
 
 	var main = document.getElementById("nx-main");

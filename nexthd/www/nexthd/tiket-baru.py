@@ -1,4 +1,4 @@
-﻿import frappe
+import frappe
 from nexthd.next_helpdesk.api.portal import page_guard
 
 
