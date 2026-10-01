@@ -1,4 +1,4 @@
-﻿"""
+"""
 NextHD - Portal API Endpoints
 
 Endpoint untuk portal web NextHD (halaman www/).

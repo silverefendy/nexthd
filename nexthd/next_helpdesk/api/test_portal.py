@@ -1,4 +1,4 @@
-﻿import frappe
+import frappe
 from frappe.tests.utils import FrappeTestCase
 from nexthd.next_helpdesk.api.portal import (
 	resolve_home, require_it_role, IT_ROLES,
