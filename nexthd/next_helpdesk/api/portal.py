@@ -198,13 +198,13 @@ def list_tickets(view="all", status=None, priority=None, ticket_type=None, categ
 	]
 
 	# Get total count
-	total_result = frappe.get_list(
+	total = len(frappe.get_list(
 		"NextHD Ticket",
-		fields=["count(name) as total"],
+		pluck="name",
 		filters=filters,
-		or_filters=or_filters
-	)
-	total = total_result[0].total if total_result else 0
+		or_filters=or_filters,
+		limit_page_length=0
+	))
 
 	# Get rows
 	limit_start = (page - 1) * page_size
