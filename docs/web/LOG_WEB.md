@@ -19,3 +19,42 @@
 
 1. Efendy: commit dan push patch `ui.js` (`nx-nav`), konfirmasi tampilan setelah hard refresh.
 2. Perbaiki 2 bug `api.js` (lihat `PRASYARAT_PR2.md`), lalu PR 2 untuk Devin.
+
+## 1 Okt 2026 (Devin - PR 2 Tahap 2)
+
+- Dibuat branch `feat/web-tahap-2`
+- Commit 1: Perbaiki 3 bug di `api.js`:
+  - Bug 1: `NX.api.get` hanya JSON.stringify untuk object/array, bukan primitive
+  - Bug 2: Parse `_server_messages` dengan double JSON encoding dan handle `exc_type` ValidationError
+  - Bug 3: Pisah handling 401 (redirect ke login) dari 403 (show toast "tidak berizin")
+- Verifikasi Frappe v16 source code untuk parameter parsing, `_server_messages` format, dan logout endpoint
+- Implementasi PR 2 endpoints di `portal.py`:
+  - `get_ticket_options`: Mengembalikan opsi dinamis (status, priority, ticket_type, impact, urgency, categories, required fields)
+  - `list_tickets`: List tiket dengan filter (view, status, priority, ticket_type, category, search), pagination, order_by
+  - `get_ticket`: Detail tiket dengan worklog dan waiting_log, sanitasi deskripsi
+  - `create_ticket`: Buat tiket baru dengan validasi, whitelist allowed keys, max length checks
+- Update `ui.js`:
+  - Set `FEATURES.newTicket = true`
+  - Tambah helper `renderTable(columns, rows)`
+  - Tambah helper `renderPager(total, page, page_size, onPageChange)`
+  - Update `toast` untuk support type parameter
+- Implementasi halaman antrian (`kerja.html`, `kerja.py`, `kerja.js`):
+  - Tab view: Semua, Ditugaskan ke saya, Belum ditugaskan, Lewat SLA
+  - Filter: search, status, priority, ticket_type, category
+  - Order by: Terakhir diubah, Terbaru dibuat, SLA terdekat
+  - Tabel dengan badge status/priority, link ke detail, highlight SLA overdue
+  - Pagination
+- Implementasi halaman detail tiket (`tiket.html`, `tiket.py`, `tiket.js`):
+  - Header dengan ID, status, priority, type badges
+  - Info block: pelapor, ditugaskan ke, tim, kategori, impact, urgency, aset, problem
+  - SLA block: SLA respon/resolusi, direspon/selesai/ditutup
+  - Deskripsi (sanitized)
+  - Worklog table
+  - Waiting log table
+- Implementasi halaman buat tiket (`tiket-baru.html`, `tiket-baru.py`, `tiket-baru.js`):
+  - Form dengan field: tipe tiket, subjek, deskripsi, kategori, impact, urgency, pelapor, aset, tim, ditugaskan ke
+  - Validasi client-side dan server-side
+  - Note bahwa prioritas dihitung otomatis
+  - Redirect ke detail setelah sukses
+- Update `test_portal.py`: Tambah test stubs untuk endpoints baru (akan diimplementasi penuh dengan setup user/role)
+- Update `FITUR_WEB.md`: Tahap 2 status menjadi 🟶 (dikerjakan)

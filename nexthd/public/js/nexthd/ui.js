@@ -5,7 +5,7 @@
 
 	NX.ui = {
 		FEATURES: {
-			newTicket: false
+			newTicket: true
 		},
 
 		esc: function (text) {
@@ -53,6 +53,9 @@
 
 			var toast = document.createElement("div");
 			toast.className = "nx-toast";
+			if (type) {
+				toast.className += " nx-toast--" + type;
+			}
 			toast.textContent = msg;
 			document.body.appendChild(toast);
 
@@ -154,6 +157,76 @@
 			div.className = "nx-empty";
 			div.textContent = text || "Tidak ada data";
 			node.appendChild(div);
+		},
+
+		renderTable: function (columns, rows) {
+			var tableWrap = document.createElement("div");
+			tableWrap.className = "nx-table-wrap";
+
+			var table = document.createElement("table");
+			table.className = "nx-table";
+
+			var thead = document.createElement("thead");
+			var headerRow = document.createElement("tr");
+			columns.forEach(function (col) {
+				var th = document.createElement("th");
+				th.textContent = col;
+				headerRow.appendChild(th);
+			});
+			thead.appendChild(headerRow);
+			table.appendChild(thead);
+
+			var tbody = document.createElement("tbody");
+			rows.forEach(function (row) {
+				var tr = document.createElement("tr");
+				row.forEach(function (cell) {
+					var td = document.createElement("td");
+					if (typeof cell === "string") {
+						td.textContent = cell;
+					} else if (cell instanceof HTMLElement) {
+						td.appendChild(cell);
+					}
+					tr.appendChild(td);
+				});
+				tbody.appendChild(tr);
+			});
+			table.appendChild(tbody);
+
+			tableWrap.appendChild(table);
+			return tableWrap;
+		},
+
+		renderPager: function (total, page, page_size, onPageChange) {
+			var pager = document.createElement("div");
+			pager.className = "nx-pager";
+
+			var start = (page - 1) * page_size + 1;
+			var end = Math.min(page * page_size, total);
+			var info = document.createElement("span");
+			info.textContent = start + "-" + end + " dari " + total;
+			pager.appendChild(info);
+
+			if (page > 1) {
+				var prevBtn = document.createElement("button");
+				prevBtn.className = "nx-btn";
+				prevBtn.textContent = "Sebelumnya";
+				prevBtn.addEventListener("click", function () {
+					onPageChange(page - 1);
+				});
+				pager.appendChild(prevBtn);
+			}
+
+			if (end < total) {
+				var nextBtn = document.createElement("button");
+				nextBtn.className = "nx-btn";
+				nextBtn.textContent = "Berikutnya";
+				nextBtn.addEventListener("click", function () {
+					onPageChange(page + 1);
+				});
+				pager.appendChild(nextBtn);
+			}
+
+			return pager;
 		}
 	};
 
