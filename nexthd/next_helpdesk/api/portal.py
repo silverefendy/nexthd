@@ -47,7 +47,7 @@ def page_guard(context):
 	3. Set no_cache dan csrf_token
 	"""
 	if frappe.session.user == "Guest":
-		redirect_to = quote(frappe.request.path + (frappe.request.query_string or ""))
+		redirect_to = quote(frappe.request.full_path)
 		frappe.local.flags.redirect_location = "/login?redirect-to=" + redirect_to
 		raise frappe.Redirect
 
@@ -399,13 +399,16 @@ def get_ticket_actions(name):
 	if not is_writer:
 		transitions = []
 
+	# Return only action and next_state
+	actions = [{"action": t.action, "next_state": t.next_state} for t in transitions]
+
 	# Cek permission penugasan
 	can_assign_self = is_writer
 	can_assign_other = _is_manager()
 	can_worklog = is_writer
 
 	return {
-		"actions": transitions,
+		"actions": actions,
 		"can_assign_self": can_assign_self,
 		"can_assign_other": can_assign_other,
 		"can_worklog": can_worklog
@@ -427,6 +430,15 @@ def do_ticket_action(name, action, question=None):
 	if not action:
 		frappe.throw(_("Aksi tidak valid"), frappe.ValidationError)
 
+	# Khusus aksi "Tunggu User": validasi question SEBELUM apply_workflow
+	if action == "Tunggu User":
+		if not question or not question.strip():
+			frappe.throw(_("Pertanyaan wajib diisi untuk aksi Tunggu User"), frappe.ValidationError)
+		if len(question) > 500:
+			frappe.throw(_("Pertanyaan maksimal 500 karakter"), frappe.ValidationError)
+		# Sanitasi question
+		question = sanitize_html(question)
+
 	# Get doc dengan permission check
 	doc = frappe.get_doc("NextHD Ticket", name)
 	doc.check_permission("write")
@@ -444,21 +456,14 @@ def do_ticket_action(name, action, question=None):
 
 	# Khusus aksi "Tunggu User": update question di waiting_log
 	if action == "Tunggu User":
-		if not question or not question.strip():
-			frappe.throw(_("Pertanyaan wajib diisi untuk aksi Tunggu User"), frappe.ValidationError)
-		if len(question) > 500:
-			frappe.throw(_("Pertanyaan maksimal 500 karakter"), frappe.ValidationError)
-
-		# Sanitasi question
-		question = sanitize_html(question)
-
 		# Cari baris waiting_log terbuka dengan idx terbesar
-		waiting_log = frappe.db.get_list(
+		waiting_log = frappe.get_all(
 			"NextHD Ticket Waiting Log",
 			filters={"parent": name, "replied_on": ["is", "not set"]},
 			fields=["name", "idx"],
 			order_by="idx desc",
-			limit=1
+			limit_page_length=1,
+			parent_doctype="NextHD Ticket"
 		)
 
 		if not waiting_log:
@@ -472,8 +477,7 @@ def do_ticket_action(name, action, question=None):
 
 	# Kembalikan ringkasan tiket
 	return {
-		"status": doc.status,
-		"ticket": get_ticket(name)
+		"status": doc.status
 	}
 
 
@@ -493,6 +497,12 @@ def add_worklog(name, aktivitas, hasil=None, durasi_menit=None):
 		frappe.throw(_("Aktivitas wajib diisi"), frappe.ValidationError)
 	if len(aktivitas) > 1000:
 		frappe.throw(_("Aktivitas maksimal 1000 karakter"), frappe.ValidationError)
+
+	# Treat "null" and empty string as None
+	if hasil == "null" or hasil == "":
+		hasil = None
+	if durasi_menit == "null" or durasi_menit == "":
+		durasi_menit = None
 
 	# Whitelist hasil
 	HASIL_OPTIONS = ["Berhasil", "Belum Berhasil", "Perlu Eskalasi", "Menunggu Sparepart"]
@@ -541,6 +551,10 @@ def assign_ticket(name, user=None):
 	# Validasi parameter
 	if not name or len(name) > 140:
 		frappe.throw(_("Nama tiket tidak valid"), frappe.ValidationError)
+
+	# Treat "null" and empty string as None
+	if user == "null" or user == "":
+		user = None
 
 	# Get doc dengan permission check
 	doc = frappe.get_doc("NextHD Ticket", name)
@@ -620,7 +634,10 @@ def search_assets(query):
 
 	assets = frappe.get_list(
 		"NextHD Asset",
-		filters={"name": ["like", "%" + query + "%"]},
+		or_filters=[
+			{"name": ["like", "%" + query + "%"]},
+			{"asset_name": ["like", "%" + query + "%"]}
+		],
 		fields=["name", "asset_name"],
 		limit=20
 	)
@@ -641,10 +658,11 @@ def search_users(query):
 
 	users = frappe.get_all(
 		"User",
-		filters={
-			"enabled": 1,
-			"name": ["like", "%" + query + "%"]
-		},
+		filters={"enabled": 1},
+		or_filters=[
+			{"name": ["like", "%" + query + "%"]},
+			{"full_name": ["like", "%" + query + "%"]}
+		],
 		fields=["name", "full_name"],
 		limit=20
 	)

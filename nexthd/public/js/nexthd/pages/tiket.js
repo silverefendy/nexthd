@@ -447,7 +447,11 @@
 	}
 
 	function assignTicket(user) {
-		var data = { name: ticketId, user: user };
+		var data = { name: ticketId };
+		if (user) {
+			data.user = user;
+		}
+
 		NX.api.post("nexthd.next_helpdesk.api.portal.assign_ticket", data).then(function (result) {
 			NX.ui.toast("Penugasan berhasil", "green");
 			loadTicket();
@@ -460,10 +464,18 @@
 		var formData = new FormData(form);
 		var data = {
 			name: ticketId,
-			aktivitas: formData.get("aktivitas"),
-			hasil: formData.get("hasil") || null,
-			durasi_menit: formData.get("durasi_menit") ? parseInt(formData.get("durasi_menit")) : null
+			aktivitas: formData.get("aktivitas")
 		};
+
+		var hasil = formData.get("hasil");
+		if (hasil && hasil.trim()) {
+			data.hasil = hasil;
+		}
+
+		var durasi = formData.get("durasi_menit");
+		if (durasi && durasi.trim()) {
+			data.durasi_menit = parseInt(durasi);
+		}
 
 		if (!data.aktivitas || !data.aktivitas.trim()) {
 			NX.ui.toast("Aktivitas wajib diisi", "red");
