@@ -20,7 +20,7 @@
 1. Efendy: commit dan push patch `ui.js` (`nx-nav`), konfirmasi tampilan setelah hard refresh.
 2. Perbaiki 2 bug `api.js` (lihat `PRASYARAT_PR2.md`), lalu PR 2 untuk Devin.
 
-## 10 Jan 2026 (Devin - PR 2 Tahap 2)
+## 1 Okt 2026 (Devin - PR 2 Tahap 2)
 
 - Dibuat branch `feat/web-tahap-2`
 - Commit 1: Perbaiki 3 bug di `api.js`:
