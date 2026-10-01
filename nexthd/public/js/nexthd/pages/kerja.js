@@ -97,12 +97,19 @@
 
 		// Filter dropdowns
 		if (options) {
+			var fieldLabels = {
+				"status": "Status",
+				"priority": "Prioritas",
+				"ticket_type": "Jenis Tiket",
+				"category": "Kategori"
+			};
+
 			["status", "priority", "ticket_type", "category"].forEach(function (field) {
 				var select = document.createElement("select");
 				select.className = "nx-field";
 				var defaultOpt = document.createElement("option");
 				defaultOpt.value = "";
-				defaultOpt.textContent = field.charAt(0).toUpperCase() + field.slice(1);
+				defaultOpt.textContent = fieldLabels[field] || field;
 				select.appendChild(defaultOpt);
 
 				var opts = field === "category" ? options.categories : options[field];
@@ -169,14 +176,17 @@
 				var statusBadge = NX.ui.badge(ticket.status, getStatusColor(ticket.status));
 				var priorityBadge = NX.ui.badge(ticket.priority, getPriorityColor(ticket.priority));
 
-				var slaText = ticket.sla_resolution_by ? NX.ui.fmtDateTime(ticket.sla_resolution_by) : "-";
-				var isOverdue = ticket.sla_resolution_by && ticket.sla_resolution_by < result.server_now && ticket.status !== "Selesai" && ticket.status !== "Ditutup";
-				if (isOverdue) {
-					var slaSpan = document.createElement("span");
-					slaSpan.textContent = slaText;
-					slaSpan.style.color = "red";
-					slaSpan.style.fontWeight = "bold";
-					slaText = slaSpan;
+				var slaText = "-";
+				if (ticket.sla_resolution_by && ticket.status !== "Selesai" && ticket.status !== "Ditutup") {
+					slaText = fmtDateTimeShort(ticket.sla_resolution_by);
+					var isOverdue = ticket.sla_resolution_by < result.server_now;
+					if (isOverdue) {
+						var slaSpan = document.createElement("span");
+						slaSpan.textContent = slaText;
+						slaSpan.style.color = "red";
+						slaSpan.style.fontWeight = "bold";
+						slaText = slaSpan;
+					}
 				}
 
 				return [
@@ -187,7 +197,7 @@
 					ticket.category || "-",
 					ticket.assigned_to || "-",
 					slaText,
-					NX.ui.fmtDateTime(ticket.modified)
+					fmtDateTimeShort(ticket.modified)
 				];
 			});
 
@@ -224,6 +234,26 @@
 			case "Rendah": return "grey";
 			default: return "";
 		}
+	}
+
+	function fmtDateTimeShort(str) {
+		if (!str) return "";
+		var parts = str.split(" ");
+		if (parts.length < 2) return str;
+		var dateParts = parts[0].split("-");
+		if (dateParts.length < 3) return str;
+		var year = dateParts[0];
+		var month = dateParts[1];
+		var day = dateParts[2];
+		var timeParts = parts[1].split(":");
+		if (timeParts.length < 2) return str;
+		var hour = timeParts[0];
+		var minute = timeParts[1];
+
+		var months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+		var monthName = months[parseInt(month, 10) - 1] || month;
+
+		return day + " " + monthName + " " + year + ", " + hour + ":" + minute;
 	}
 
 	// Load options dan session
