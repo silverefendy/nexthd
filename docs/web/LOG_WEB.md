@@ -4,6 +4,7 @@
 
 | Tanggal | Ringkasan |
 |---|---|
+| 2 Okt 2026 (uji Tahap 3 di server `erpnext`, waktu server ±17:00-17:25) | `main` di `14de747` (merge PR #15, 08:54 UTC). Perubahan lanjutan Tahap 3 (B4, `teams`, tes, polesan) sebelumnya hanya ada di working tree laptop Efendy dan baru di-commit 2 Okt (`fd045cf`); asalnya tidak dipastikan. Review kode dari `main`: B1, B2, B3, B4, C2 terverifikasi. **Uji browser lolos:** buat tiket (CSRF terbukti bekerja), Mulai Kerjakan, Tunggu User (tepat satu baris `waiting_log` berisi pertanyaan pengguna, hook terbukti), Lanjut Kerjakan, Selesaikan, catatan setelah Selesai (sesuai keputusan: hanya Ditutup yang ditolak), penugasan oleh manajer, Buka Kembali. **XSS lulus:** subjek tampil literal, `onerror` terbuang di deskripsi, tanpa popup. **Temuan tampilan:** tabel log meluber karena aturan `nth-child` + `nowrap` untuk tabel antrian bocor ke semua `.nx-table`, ditambah tabel tidak dibungkus `.nx-table-wrap`; diperbaiki lewat skrip patch (kelas `nx-table--log`, pembungkus, mikrodetik dibuang di `fmtDateTime`, jarak panel Aksi, header dan kolom email tidak patah). **Belum teruji:** akun Agent biasa (diasumsikan beres atas keputusan Efendy). **Temuan SLA** (Desk, bukan portal): lihat `docs/TEMUAN_SLA_2026-10-02.md`. Catatan: baris CSRF di bawah bertanggal 3 Okt padahal dikerjakan 1-2 Okt, dan penjelasan akar penyebabnya adalah dugaan Devin yang belum dikonfirmasi dari source Frappe. |
 | 3 Okt 2026 (tahap 3b - CSRF) | Investigasi CSRF: meta tag `{{ csrf_token }}` di halaman `www/` tidak terisi oleh Frappe v16. Kemungkinan penyebab: Frappe v16 hanya merender `csrf_token` di template yang melalui Jinja context dari Frappe app (seperti `/desk` atau halaman DocType), sedangkan halaman `www/` statis tidak mendapatkan context ini. Fallback diimplementasikan: `getCsrfToken()` di `api.js` mengambil dari meta tag jika valid, jika tidak memanggil `get_session_info` sekali dan meng-cache. Fallback ini tetap dipertahankan. Catatan: investigasi sumber Frappe v16 (`frappe/website`, `frappe/templates`, `frappe/sessions.py`) diperlukan untuk konfirmasi akar penyebab. |
 | 1 Okt 2026 (spesifikasi tahap 3) | Dibuat `TUGAS_TAHAP_3.md`. Temuan dari `nexthd_ticket.py`: hook `on_update` sudah menyisipkan baris `waiting_log` (pertanyaan tetap) saat `Sedang Dikerjakan -> Menunggu User`, jadi portal hanya mengubah `question`, tidak menyisipkan baris baru. Aturan peran: "IT Auditor hanya baca" ditentukan dari ketiadaan peran penulis (Agent, Agent Manager, IT Manager, System Manager), bukan dari adanya peran IT Auditor, karena akun Efendy memegang semua peran. Struktur worklog dan waiting log dikonfirmasi lewat `bench console`. DocType penugasan banyak orang (`NextHD Ticket Assignee`, dll.) ada, tetapi belum dipakai di Ticket. |
 | 1 Okt 2026 (deploy tahap 2) | PR #14 di-merge. Review lima putaran: BOM dan indentasi hilang di beberapa file (termasuk `tiket-baru.py`, diperbaiki `dbd323c`). Setelah deploy, antrian gagal dengan galat `SQL functions are not allowed as strings in SELECT: count(name)` (Frappe v16), test Devin tidak menangkapnya karena tidak menyentuh database. Patch di `list_tickets` (`len(get_list(pluck="name"))`), commit `63a01a4`, antrian tampil. Catatan skala: `pluck` memuat semua nama tiket yang cocok, ganti ke hitung SQL jika tiket mencapai puluhan ribu. Temuan tampilan: label filter masih Inggris, SLA bermikrodetik, kolom Kategori kosong, SLA tampil pada tiket selesai. Dijadwalkan di Tahap 2b. Uji browser sisanya belum dilaporkan. |
@@ -17,14 +18,18 @@
 
 - Lisensi/distribusi ke pihak lain: kontrol teknis hilang setelah kode ada di server mereka; andalkan kontrak, repo privat, dan hosting di server sendiri. Belum ada tindakan.
 - Tidak dipublikasikan ke LinkedIn atau publik selama aplikasi belum selesai.
+- 2 Okt 2026: Efendy memutuskan akun Agent biasa dianggap sudah beres untuk sementara, dicek ulang nanti.
 
 ## Aturan yang dipelajari (berlaku untuk semua PR Devin berikutnya)
 
 - Klaim "selesai" dari Devin hanya diterima bersama output git mentah dan hasil menjalankan endpoint terhadap site nyata. Tiga putaran berturut-turut ringkasan tidak cocok dengan repo.
 - Perbaikan `.py` kecil boleh ditulis Claude sebagai skrip patch untuk dijalankan Efendy, selalu dengan backup dan `py_compile`. Pastikan nama host (`erpnext`, bukan `cmlerp`) sebelum menjalankan.
+- Review dari kode saja tidak menangkap CSRF dan layout tabel; setiap tahap harus diuji dengan satu POST nyata dan dilihat di browser.
+- Aturan CSS yang ditulis untuk satu tabel (`nth-child`) jangan berlaku global; beri kelas khusus per jenis tabel.
 
 ## Berikutnya
 
-1. Efendy: selesaikan uji browser Tahap 2 (buat tiket, detail, XSS, Keluar, field Link) dan kabari hasilnya.
-2. Kirim `TUGAS_TAHAP_3.md` ke Devin.
-3. Claude: review PR Tahap 3 dari output mentah, lalu perbarui dokumen ini.
+1. Efendy: jalankan skrip commit, push branch `fix/web-tampilan-log`, Claude review diff, merge.
+2. Keputusan SLA (lihat `docs/TEMUAN_SLA_2026-10-02.md`): arti "7 hari kerja".
+3. Tahap 3c (`TUGAS_TAHAP_3C.md`): pesan galat bersih, tombol "Ambil untuk saya".
+4. Claude: spesifikasi Tahap 5 (Tiket -> Problem -> Known Error / Change Request) setelah membaca `SPEC_PORTAL.md` dan Client Script Desk.
