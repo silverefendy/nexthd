@@ -90,6 +90,29 @@
 	border-bottom: 1px solid var(--line);
 }
 
+.nx-table th:nth-child(2),
+.nx-table td:nth-child(2) {
+	min-width: 300px;
+	max-width: 400px;
+}
+
+.nx-table th:nth-child(1),
+.nx-table td:nth-child(1),
+.nx-table th:nth-child(3),
+.nx-table td:nth-child(3),
+.nx-table th:nth-child(4),
+.nx-table td:nth-child(4),
+.nx-table th:nth-child(5),
+.nx-table td:nth-child(5),
+.nx-table th:nth-child(6),
+.nx-table td:nth-child(6),
+.nx-table th:nth-child(7),
+.nx-table td:nth-child(7),
+.nx-table th:nth-child(8),
+.nx-table td:nth-child(8) {
+	white-space: nowrap;
+}
+
 .nx-table th {
 	font-weight: 600;
 	text-transform: uppercase;

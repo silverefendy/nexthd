@@ -69,8 +69,8 @@
 		var assetField = createSearchField("Aset Terkait", "affected_asset", "", false, "asset");
 		form.appendChild(assetField);
 
-		// Tim - use select for now (teams from get_ticket_options if available)
-		var teamField = createLinkField("Tim", "team", "", false, "NextHD Team");
+		// Tim - use select from get_ticket_options
+		var teamField = createSelectField("Tim", "team", options.teams, false);
 		form.appendChild(teamField);
 
 		// Ditugaskan ke

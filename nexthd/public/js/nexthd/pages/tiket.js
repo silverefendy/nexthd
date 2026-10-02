@@ -47,16 +47,19 @@
 		NX.api.get("nexthd.next_helpdesk.api.portal.get_ticket_actions", { name: ticketId }).then(function (result) {
 			actions = result;
 			if (result.can_assign_other) {
-				loadItUsers();
+				loadItUsers().then(function () {
+					renderActions();
+				});
+			} else {
+				renderActions();
 			}
-			renderActions();
 		}).catch(function (err) {
 			console.error("Gagal memuat aksi:", err);
 		});
 	}
 
 	function loadItUsers() {
-		NX.api.get("nexthd.next_helpdesk.api.portal.list_it_users").then(function (result) {
+		return NX.api.get("nexthd.next_helpdesk.api.portal.list_it_users").then(function (result) {
 			itUsers = result.users;
 		}).catch(function (err) {
 			console.error("Gagal memuat user IT:", err);
@@ -415,21 +418,100 @@
 
 	function doAction(action) {
 		if (action === "Tunggu User") {
-			var question = prompt("Masukkan pertanyaan untuk user:");
-			if (!question || !question.trim()) {
-				NX.ui.toast("Pertanyaan wajib diisi", "red");
-				return;
-			}
-			if (question.length > 500) {
-				NX.ui.toast("Pertanyaan maksimal 500 karakter", "red");
-				return;
-			}
-			executeAction(action, question);
+			showQuestionDialog(action);
 		} else {
 			if (confirm("Apakah Anda yakin ingin melakukan aksi: " + action + "?")) {
 				executeAction(action);
 			}
 		}
+	}
+
+	function showQuestionDialog(action) {
+		var actionsContainer = document.getElementById("nx-actions");
+		if (!actionsContainer) return;
+
+		// Create dialog overlay
+		var overlay = document.createElement("div");
+		overlay.style.position = "fixed";
+		overlay.style.top = "0";
+		overlay.style.left = "0";
+		overlay.style.right = "0";
+		overlay.style.bottom = "0";
+		overlay.style.background = "rgba(0,0,0,0.5)";
+		overlay.style.zIndex = "2000";
+		overlay.style.display = "flex";
+		overlay.style.alignItems = "center";
+		overlay.style.justifyContent = "center";
+
+		// Create dialog
+		var dialog = document.createElement("div");
+		dialog.className = "nx-card";
+		dialog.style.maxWidth = "500px";
+		dialog.style.width = "90%";
+		dialog.style.padding = "1.5rem";
+
+		var title = document.createElement("h3");
+		title.textContent = "Pertanyaan untuk User";
+		dialog.appendChild(title);
+
+		var label = document.createElement("label");
+		label.textContent = "Pertanyaan *";
+		label.style.display = "block";
+		label.style.marginBottom = "0.5rem";
+		dialog.appendChild(label);
+
+		var textarea = document.createElement("textarea");
+		textarea.rows = 4;
+		textarea.maxLength = 500;
+		textarea.style.width = "100%";
+		textarea.style.marginBottom = "1rem";
+		dialog.appendChild(textarea);
+
+		var charCount = document.createElement("small");
+		charCount.textContent = "0/500";
+		charCount.style.display = "block";
+		charCount.style.marginBottom = "1rem";
+		dialog.appendChild(charCount);
+
+		textarea.addEventListener("input", function () {
+			charCount.textContent = textarea.value.length + "/500";
+		});
+
+		var buttonRow = document.createElement("div");
+		buttonRow.style.display = "flex";
+		buttonRow.style.gap = "0.5rem";
+
+		var cancelBtn = document.createElement("button");
+		cancelBtn.className = "nx-btn";
+		cancelBtn.textContent = "Batal";
+		cancelBtn.addEventListener("click", function () {
+			document.body.removeChild(overlay);
+		});
+
+		var submitBtn = document.createElement("button");
+		submitBtn.className = "nx-btn";
+		submitBtn.textContent = "Kirim";
+		submitBtn.addEventListener("click", function () {
+			var question = textarea.value.trim();
+			if (!question) {
+				NX.ui.toast("Pertanyaan wajib diisi", "red");
+				return;
+			}
+			document.body.removeChild(overlay);
+			executeAction(action, question);
+		});
+
+		buttonRow.appendChild(cancelBtn);
+		buttonRow.appendChild(submitBtn);
+		dialog.appendChild(buttonRow);
+
+		overlay.appendChild(dialog);
+		document.body.appendChild(overlay);
+
+		// Focus textarea
+		setTimeout(function () {
+			textarea.focus();
+		}, 100);
 	}
 
 	function executeAction(action, question) {
@@ -438,11 +520,22 @@
 			data.question = question;
 		}
 
+		// Disable all action buttons
+		var actionsContainer = document.getElementById("nx-actions");
+		var buttons = actionsContainer ? actionsContainer.querySelectorAll("button") : [];
+		buttons.forEach(function (btn) {
+			btn.disabled = true;
+		});
+
 		NX.api.post("nexthd.next_helpdesk.api.portal.do_ticket_action", data).then(function (result) {
 			NX.ui.toast("Aksi berhasil", "green");
 			loadTicket();
 		}).catch(function (err) {
 			NX.ui.toast("Gagal: " + err.message, "red");
+			// Re-enable buttons on error
+			buttons.forEach(function (btn) {
+				btn.disabled = false;
+			});
 		});
 	}
 
@@ -452,11 +545,24 @@
 			data.user = user;
 		}
 
+		// Disable assign buttons
+		var actionsContainer = document.getElementById("nx-actions");
+		var assignBtns = actionsContainer ? actionsContainer.querySelectorAll("button") : [];
+		assignBtns.forEach(function (btn) {
+			if (btn.textContent === "Ambil untuk saya" || btn.textContent === "Tugaskan") {
+				btn.disabled = true;
+			}
+		});
+
 		NX.api.post("nexthd.next_helpdesk.api.portal.assign_ticket", data).then(function (result) {
 			NX.ui.toast("Penugasan berhasil", "green");
 			loadTicket();
 		}).catch(function (err) {
 			NX.ui.toast("Gagal: " + err.message, "red");
+			// Re-enable buttons on error
+			assignBtns.forEach(function (btn) {
+				btn.disabled = false;
+			});
 		});
 	}
 

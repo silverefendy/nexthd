@@ -14,6 +14,7 @@ from urllib.parse import quote
 IT_ROLES = ("Agent", "Agent Manager", "IT Manager", "IT Auditor", "System Manager")
 WRITER_ROLES = ("Agent", "Agent Manager", "IT Manager", "System Manager")
 MANAGER_ROLES = ("Agent Manager", "IT Manager", "System Manager")
+WORKLOG_BLOCKED_STATUSES = ("Ditutup",)
 
 
 def _user_roles():
@@ -101,6 +102,11 @@ def get_ticket_options():
 	# Kategori dari DocType NextHD Category
 	categories = frappe.get_list("NextHD Category", pluck="name")
 
+	# Tim dari DocType NextHD Team (cek permission baca)
+	teams = []
+	if frappe.has_permission("NextHD Team", "read"):
+		teams = frappe.get_list("NextHD Team", pluck="name")
+
 	# Field wajib dari meta yang termasuk form buat tiket
 	form_fields = ["ticket_type", "subject", "description", "category", "impact", "urgency", "requested_by"]
 	required = []
@@ -116,6 +122,7 @@ def get_ticket_options():
 		"impact": impact_options,
 		"urgency": urgency_options,
 		"categories": categories,
+		"teams": teams,
 		"required": required
 	}
 
@@ -523,9 +530,9 @@ def add_worklog(name, aktivitas, hasil=None, durasi_menit=None):
 	doc = frappe.get_doc("NextHD Ticket", name)
 	doc.check_permission("write")
 
-	# Tolak jika tiket sudah ditutup
-	if doc.status in ["Selesai", "Ditutup"]:
-		frappe.throw(_("Tidak dapat menambah worklog pada tiket yang sudah selesai/ditutup"), frappe.ValidationError)
+	# Tolak jika tiket sudah ditutup (sesuai keputusan Efendy: hanya Ditutup)
+	if doc.status in WORKLOG_BLOCKED_STATUSES:
+		frappe.throw(_("Tidak dapat menambah worklog pada tiket yang sudah ditutup"), frappe.ValidationError)
 
 	# Tambah worklog
 	doc.append("worklog", {
