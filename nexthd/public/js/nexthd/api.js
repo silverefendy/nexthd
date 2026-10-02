@@ -3,6 +3,27 @@
 
 	var NX = window.NX || {};
 
+	var csrfPromise = null;
+
+	function getCsrfToken() {
+		var meta = document.querySelector('meta[name="csrf-token"]');
+		var t = meta ? meta.getAttribute("content") : "";
+		if (t && t.indexOf("{{") === -1) {
+			return Promise.resolve(t);
+		}
+		if (!csrfPromise) {
+			csrfPromise = fetch("/api/method/nexthd.next_helpdesk.api.portal.get_session_info", {
+				method: "GET",
+				credentials: "same-origin"
+			}).then(function (response) {
+				return response.json();
+			}).then(function (data) {
+				return (data.message && data.message.csrf_token) || "";
+			});
+		}
+		return csrfPromise;
+	}
+
 	NX.api = {
 		get: function (method, params) {
 			var url = "/api/method/" + method;
@@ -77,14 +98,16 @@
 
 		post: function (method, data) {
 			var url = "/api/method/" + method;
-			return fetch(url, {
-				method: "POST",
-				credentials: "same-origin",
-				headers: {
-					"Content-Type": "application/json",
-					"X-Frappe-CSRF-Token": document.querySelector('meta[name="csrf-token"]').getAttribute("content")
-				},
-				body: JSON.stringify(data)
+			return getCsrfToken().then(function (token) {
+				return fetch(url, {
+					method: "POST",
+					credentials: "same-origin",
+					headers: {
+						"Content-Type": "application/json",
+						"X-Frappe-CSRF-Token": token
+					},
+					body: JSON.stringify(data)
+				});
 			}).then(function (response) {
 				if (response.status === 401) {
 					var currentPath = window.location.pathname;
