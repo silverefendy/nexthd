@@ -243,3 +243,41 @@
 	opacity: 0.5;
 	cursor: not-allowed;
 }
+
+/* Tabel log di halaman detail tiket */
+.nx-table.nx-table--log th:nth-child(n),
+.nx-table.nx-table--log td:nth-child(n) {
+	white-space: normal;
+	min-width: 0;
+	max-width: none;
+	overflow-wrap: anywhere;
+	vertical-align: top;
+}
+
+.nx-table.nx-table--log th:first-child,
+.nx-table.nx-table--log td:first-child {
+	white-space: nowrap;
+}
+
+/* Panel Aksi: jarak antar tombol dan dropdown */
+#nx-actions .nx-card {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	align-items: center;
+}
+
+#nx-actions h3 {
+	flex-basis: 100%;
+	margin: 0 0 4px;
+}
+
+#nx-actions .nx-field {
+	margin-bottom: 0;
+	width: auto;
+	padding: 10px 12px;
+	border: 2px solid var(--line);
+	background: var(--bg);
+	color: var(--ink);
+	font: 15px ui-monospace, "Courier New", monospace;
+}

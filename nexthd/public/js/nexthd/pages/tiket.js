@@ -184,7 +184,7 @@
 			worklogCard.innerHTML = "<h3>Riwayat Progress</h3>";
 
 			var worklogTable = document.createElement("table");
-			worklogTable.className = "nx-table";
+			worklogTable.className = "nx-table nx-table--log";
 			var worklogThead = document.createElement("thead");
 			var worklogHeaderRow = document.createElement("tr");
 			["Waktu", "Teknisi", "Aktivitas", "Hasil", "Durasi (menit)"].forEach(function (col) {
@@ -198,7 +198,7 @@
 			var worklogTbody = document.createElement("tbody");
 			ticket.worklog.forEach(function (row) {
 				var tr = document.createElement("tr");
-				[row.waktu, row.teknisi, row.aktivitas, row.hasil, row.durasi_menit].forEach(function (cell) {
+				[NX.ui.fmtDateTime(row.waktu), row.teknisi, row.aktivitas, row.hasil, row.durasi_menit].forEach(function (cell) {
 					var td = document.createElement("td");
 					td.textContent = cell || "-";
 					tr.appendChild(td);
@@ -206,7 +206,10 @@
 				worklogTbody.appendChild(tr);
 			});
 			worklogTable.appendChild(worklogTbody);
-			worklogCard.appendChild(worklogTable);
+			var worklogWrap = document.createElement("div");
+			worklogWrap.className = "nx-table-wrap";
+			worklogWrap.appendChild(worklogTable);
+			worklogCard.appendChild(worklogWrap);
 			wrap.appendChild(worklogCard);
 		}
 
@@ -217,7 +220,7 @@
 			waitingCard.innerHTML = "<h3>Riwayat Menunggu User</h3>";
 
 			var waitingTable = document.createElement("table");
-			waitingTable.className = "nx-table";
+			waitingTable.className = "nx-table nx-table--log";
 			var waitingThead = document.createElement("thead");
 			var waitingHeaderRow = document.createElement("tr");
 			["Ditanyakan Pada", "Ditanyakan Oleh", "Alasan", "Dibalas Pada", "Balasan"].forEach(function (col) {
@@ -231,7 +234,7 @@
 			var waitingTbody = document.createElement("tbody");
 			ticket.waiting_log.forEach(function (row) {
 				var tr = document.createElement("tr");
-				[row.asked_on, row.asked_by, row.question, row.replied_on, row.reply].forEach(function (cell) {
+				[NX.ui.fmtDateTime(row.asked_on), row.asked_by, row.question, NX.ui.fmtDateTime(row.replied_on), row.reply].forEach(function (cell) {
 					var td = document.createElement("td");
 					td.textContent = cell || "-";
 					tr.appendChild(td);
@@ -239,7 +242,10 @@
 				waitingTbody.appendChild(tr);
 			});
 			waitingTable.appendChild(waitingTbody);
-			waitingCard.appendChild(waitingTable);
+			var waitingWrap = document.createElement("div");
+			waitingWrap.className = "nx-table-wrap";
+			waitingWrap.appendChild(waitingTable);
+			waitingCard.appendChild(waitingWrap);
 			wrap.appendChild(waitingCard);
 		}
 
