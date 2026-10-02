@@ -281,3 +281,12 @@
 	color: var(--ink);
 	font: 15px ui-monospace, "Courier New", monospace;
 }
+
+/* Header tidak patah, kolom email tidak patah */
+.nx-table.nx-table--log th {
+	white-space: nowrap;
+}
+
+.nx-table.nx-table--log td:nth-child(2) {
+	white-space: nowrap;
+}
