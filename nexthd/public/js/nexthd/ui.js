@@ -73,7 +73,7 @@
 			var year = dateParts[0];
 			var month = dateParts[1];
 			var day = dateParts[2];
-			var time = parts[1];
+			var time = parts[1].split(".")[0];
 
 			var months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 			var monthName = months[parseInt(month, 10) - 1] || month;
