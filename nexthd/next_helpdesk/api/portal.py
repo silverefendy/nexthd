@@ -7,10 +7,14 @@ Path panggil: nexthd.next_helpdesk.api.portal.<fungsi>
 
 import frappe
 from frappe import _
-from frappe.utils import now, get_fullname
+from frappe.utils import now, get_fullname, now_datetime
 from frappe.utils.html_utils import sanitize_html
+from urllib.parse import quote
 
 IT_ROLES = ("Agent", "Agent Manager", "IT Manager", "IT Auditor", "System Manager")
+WRITER_ROLES = ("Agent", "Agent Manager", "IT Manager", "System Manager")
+MANAGER_ROLES = ("Agent Manager", "IT Manager", "System Manager")
+WORKLOG_BLOCKED_STATUSES = ("Ditutup",)
 
 
 def _user_roles():
@@ -44,7 +48,8 @@ def page_guard(context):
 	3. Set no_cache dan csrf_token
 	"""
 	if frappe.session.user == "Guest":
-		frappe.local.flags.redirect_location = "/login?redirect-to=" + frappe.request.path
+		redirect_to = quote(frappe.request.full_path)
+		frappe.local.flags.redirect_location = "/login?redirect-to=" + redirect_to
 		raise frappe.Redirect
 
 	require_it_role()
@@ -97,6 +102,11 @@ def get_ticket_options():
 	# Kategori dari DocType NextHD Category
 	categories = frappe.get_list("NextHD Category", pluck="name")
 
+	# Tim dari DocType NextHD Team (cek permission baca)
+	teams = []
+	if frappe.has_permission("NextHD Team", "read"):
+		teams = frappe.get_list("NextHD Team", pluck="name")
+
 	# Field wajib dari meta yang termasuk form buat tiket
 	form_fields = ["ticket_type", "subject", "description", "category", "impact", "urgency", "requested_by"]
 	required = []
@@ -112,6 +122,7 @@ def get_ticket_options():
 		"impact": impact_options,
 		"urgency": urgency_options,
 		"categories": categories,
+		"teams": teams,
 		"required": required
 	}
 
@@ -358,3 +369,320 @@ def create_ticket(data):
 	doc.insert()
 
 	return {"name": doc.name}
+
+
+def _is_writer():
+	"""Cek apakah user adalah penulis (punya minimal satu WRITER_ROLES)."""
+	roles = _user_roles()
+	return bool(roles.intersection(WRITER_ROLES))
+
+
+def _is_manager():
+	"""Cek apakah user adalah manajer (punya minimal satu MANAGER_ROLES)."""
+	roles = _user_roles()
+	return bool(roles.intersection(MANAGER_ROLES))
+
+
+@frappe.whitelist(methods=["GET"])
+def get_ticket_actions(name):
+	"""Mengembalikan aksi workflow yang tersedia untuk tiket."""
+	require_it_role()
+
+	# Validasi parameter
+	if not name or len(name) > 140:
+		frappe.throw(_("Nama tiket tidak valid"), frappe.ValidationError)
+
+	# Get doc dengan permission check
+	doc = frappe.get_doc("NextHD Ticket", name)
+	doc.check_permission("read")
+
+	# Cek apakah user adalah penulis
+	is_writer = _is_writer()
+
+	# Get transitions dari workflow
+	from frappe.model.workflow import get_transitions
+	transitions = get_transitions(doc)
+
+	# Filter actions hanya untuk penulis
+	if not is_writer:
+		transitions = []
+
+	# Return only action and next_state
+	actions = [{"action": t.action, "next_state": t.next_state} for t in transitions]
+
+	# Cek permission penugasan
+	can_assign_self = is_writer
+	can_assign_other = _is_manager()
+	can_worklog = is_writer
+
+	return {
+		"actions": actions,
+		"can_assign_self": can_assign_self,
+		"can_assign_other": can_assign_other,
+		"can_worklog": can_worklog
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def do_ticket_action(name, action, question=None):
+	"""Menjalankan aksi workflow pada tiket."""
+	require_it_role()
+
+	# Tolak jika bukan penulis
+	if not _is_writer():
+		frappe.throw(_("Anda tidak memiliki izin untuk melakukan aksi ini"), frappe.PermissionError)
+
+	# Validasi parameter
+	if not name or len(name) > 140:
+		frappe.throw(_("Nama tiket tidak valid"), frappe.ValidationError)
+	if not action:
+		frappe.throw(_("Aksi tidak valid"), frappe.ValidationError)
+
+	# Khusus aksi "Tunggu User": validasi question SEBELUM apply_workflow
+	if action == "Tunggu User":
+		if not question or not question.strip():
+			frappe.throw(_("Pertanyaan wajib diisi untuk aksi Tunggu User"), frappe.ValidationError)
+		if len(question) > 500:
+			frappe.throw(_("Pertanyaan maksimal 500 karakter"), frappe.ValidationError)
+		# Sanitasi question
+		question = sanitize_html(question)
+
+	# Get doc dengan permission check
+	doc = frappe.get_doc("NextHD Ticket", name)
+	doc.check_permission("write")
+
+	# Validasi action ada di transitions
+	from frappe.model.workflow import get_transitions
+	transitions = get_transitions(doc)
+	valid_actions = [t.action for t in transitions]
+	if action not in valid_actions:
+		frappe.throw(_("Aksi tidak tersedia untuk status tiket ini"), frappe.ValidationError)
+
+	# Jalankan workflow
+	from frappe.model.workflow import apply_workflow
+	apply_workflow(doc, action)
+
+	# Khusus aksi "Tunggu User": update question di waiting_log
+	if action == "Tunggu User":
+		# Cari baris waiting_log terbuka dengan idx terbesar
+		waiting_log = frappe.get_all(
+			"NextHD Ticket Waiting Log",
+			filters={"parent": name, "replied_on": ["is", "not set"]},
+			fields=["name", "idx"],
+			order_by="idx desc",
+			limit_page_length=1,
+			parent_doctype="NextHD Ticket"
+		)
+
+		if not waiting_log:
+			frappe.throw(_("Baris waiting_log tidak ditemukan setelah aksi Tunggu User"), frappe.ValidationError)
+
+		# Update hanya kolom question
+		frappe.db.set_value("NextHD Ticket Waiting Log", waiting_log[0].name, "question", question)
+
+	# Reload doc untuk mendapatkan status baru
+	doc.reload()
+
+	# Kembalikan ringkasan tiket
+	return {
+		"status": doc.status
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def add_worklog(name, aktivitas, hasil=None, durasi_menit=None):
+	"""Menambahkan catatan worklog ke tiket."""
+	require_it_role()
+
+	# Tolak jika bukan penulis
+	if not _is_writer():
+		frappe.throw(_("Anda tidak memiliki izin untuk menambah worklog"), frappe.PermissionError)
+
+	# Validasi parameter
+	if not name or len(name) > 140:
+		frappe.throw(_("Nama tiket tidak valid"), frappe.ValidationError)
+	if not aktivitas or not aktivitas.strip():
+		frappe.throw(_("Aktivitas wajib diisi"), frappe.ValidationError)
+	if len(aktivitas) > 1000:
+		frappe.throw(_("Aktivitas maksimal 1000 karakter"), frappe.ValidationError)
+
+	# Treat "null" and empty string as None
+	if hasil == "null" or hasil == "":
+		hasil = None
+	if durasi_menit == "null" or durasi_menit == "":
+		durasi_menit = None
+
+	# Whitelist hasil
+	HASIL_OPTIONS = ["Berhasil", "Belum Berhasil", "Perlu Eskalasi", "Menunggu Sparepart"]
+	if hasil and hasil not in HASIL_OPTIONS:
+		frappe.throw(_("Hasil tidak valid"), frappe.ValidationError)
+
+	# Validasi durasi
+	if durasi_menit is not None:
+		try:
+			durasi_menit = int(durasi_menit)
+		except (ValueError, TypeError):
+			frappe.throw(_("Durasi harus berupa angka"), frappe.ValidationError)
+		if durasi_menit < 0 or durasi_menit > 1440:
+			frappe.throw(_("Durasi harus antara 0 dan 1440 menit"), frappe.ValidationError)
+
+	# Get doc dengan permission check
+	doc = frappe.get_doc("NextHD Ticket", name)
+	doc.check_permission("write")
+
+	# Tolak jika tiket sudah ditutup (sesuai keputusan Efendy: hanya Ditutup)
+	if doc.status in WORKLOG_BLOCKED_STATUSES:
+		frappe.throw(_("Tidak dapat menambah worklog pada tiket yang sudah ditutup"), frappe.ValidationError)
+
+	# Tambah worklog
+	doc.append("worklog", {
+		"waktu": now_datetime(),
+		"teknisi": frappe.session.user,
+		"aktivitas": aktivitas,
+		"hasil": hasil,
+		"durasi_menit": durasi_menit or 0
+	})
+	doc.save()
+
+	return {"success": True}
+
+
+@frappe.whitelist(methods=["POST"])
+def assign_ticket(name, user=None):
+	"""Menugaskan tiket ke user."""
+	require_it_role()
+
+	# Tolak jika bukan penulis
+	if not _is_writer():
+		frappe.throw(_("Anda tidak memiliki izin untuk menugaskan tiket"), frappe.PermissionError)
+
+	# Validasi parameter
+	if not name or len(name) > 140:
+		frappe.throw(_("Nama tiket tidak valid"), frappe.ValidationError)
+
+	# Treat "null" and empty string as None
+	if user == "null" or user == "":
+		user = None
+
+	# Get doc dengan permission check
+	doc = frappe.get_doc("NextHD Ticket", name)
+	doc.check_permission("write")
+
+	if user:
+		# Dengan user: hanya manajer
+		if not _is_manager():
+			frappe.throw(_("Hanya manajer yang dapat menugaskan ke user lain"), frappe.PermissionError)
+
+		# Validasi user ada
+		if not frappe.db.exists("User", user):
+			frappe.throw(_("User tidak ditemukan"), frappe.ValidationError)
+
+		# Validasi user punya peran IT
+		user_roles = frappe.get_roles(user)
+		if not set(user_roles).intersection(IT_ROLES):
+			frappe.throw(_("User tidak memiliki peran IT"), frappe.ValidationError)
+
+		doc.assigned_to = user
+	else:
+		# Tanpa user: "Ambil untuk saya"
+		# Hanya jika belum ditugaskan atau user adalah manajer
+		if doc.assigned_to and doc.assigned_to != frappe.session.user and not _is_manager():
+			frappe.throw(_("Tiket sudah ditugaskan ke user lain"), frappe.ValidationError)
+
+		doc.assigned_to = frappe.session.user
+
+	doc.save()
+
+	return {"assigned_to": doc.assigned_to}
+
+
+@frappe.whitelist(methods=["GET"])
+def list_it_users():
+	"""Mengembalikan daftar user dengan peran IT (hanya untuk manajer)."""
+	require_it_role()
+
+	# Hanya manajer
+	if not _is_manager():
+		frappe.throw(_("Hanya manajer yang dapat melihat daftar user IT"), frappe.PermissionError)
+
+	# Ambil user dengan peran IT
+	users = frappe.get_all(
+		"User",
+		filters={"enabled": 1},
+		fields=["name", "full_name"]
+	)
+
+	# Filter user yang punya peran IT
+	it_users = []
+	for user in users:
+		user_roles = frappe.get_roles(user.name)
+		if set(user_roles).intersection(IT_ROLES):
+			it_users.append({
+				"name": user.name,
+				"full_name": user.full_name or user.name
+			})
+
+	return {"users": it_users}
+
+
+@frappe.whitelist(methods=["GET"])
+def search_assets(query):
+	"""Mencari aset untuk dropdown (batas 20 hasil)."""
+	require_it_role()
+
+	if not query or len(query) < 2:
+		return {"assets": []}
+
+	if len(query) > 100:
+		query = query[:100]
+
+	# Cek permission baca NextHD Asset
+	if not frappe.has_permission("NextHD Asset", "read"):
+		return {"assets": []}
+
+	assets = frappe.get_list(
+		"NextHD Asset",
+		or_filters=[
+			{"name": ["like", "%" + query + "%"]},
+			{"asset_name": ["like", "%" + query + "%"]}
+		],
+		fields=["name", "asset_name"],
+		limit=20
+	)
+
+	return {"assets": assets}
+
+
+@frappe.whitelist(methods=["GET"])
+def search_users(query):
+	"""Mencari user untuk dropdown (batas 20 hasil)."""
+	require_it_role()
+
+	if not query or len(query) < 2:
+		return {"users": []}
+
+	if len(query) > 100:
+		query = query[:100]
+
+	users = frappe.get_all(
+		"User",
+		filters={"enabled": 1},
+		or_filters=[
+			{"name": ["like", "%" + query + "%"]},
+			{"full_name": ["like", "%" + query + "%"]}
+		],
+		fields=["name", "full_name"],
+		limit=20
+	)
+
+	# Filter user yang punya peran IT
+	it_users = []
+	for user in users:
+		user_roles = frappe.get_roles(user.name)
+		if set(user_roles).intersection(IT_ROLES):
+			it_users.append({
+				"name": user.name,
+				"full_name": user.full_name or user.name
+			})
+
+	return {"users": it_users}

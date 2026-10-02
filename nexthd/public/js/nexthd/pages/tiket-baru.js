@@ -66,15 +66,15 @@
 		form.appendChild(requestedByField);
 
 		// Aset Terkait
-		var assetField = createLinkField("Aset Terkait", "affected_asset", "", false, "NextHD Asset");
+		var assetField = createSearchField("Aset Terkait", "affected_asset", "", false, "asset");
 		form.appendChild(assetField);
 
-		// Tim
-		var teamField = createLinkField("Tim", "team", "", false, "NextHD Team");
+		// Tim - use select from get_ticket_options
+		var teamField = createSelectField("Tim", "team", options.teams, false);
 		form.appendChild(teamField);
 
 		// Ditugaskan ke
-		var assignedToField = createLinkField("Ditugaskan ke", "assigned_to", "", false, "User");
+		var assignedToField = createSearchField("Ditugaskan ke", "assigned_to", "", false, "user");
 		form.appendChild(assignedToField);
 
 		// Note about priority
@@ -194,6 +194,82 @@
 		input.required = required;
 		input.placeholder = "Cari " + doctype + "...";
 		div.appendChild(input);
+
+		return div;
+	}
+
+	function createSearchField(label, name, defaultValue, required, type) {
+		var div = document.createElement("div");
+		div.className = "nx-field";
+
+		var labelEl = document.createElement("label");
+		labelEl.textContent = label + (required ? " *" : "");
+		div.appendChild(labelEl);
+
+		var input = document.createElement("input");
+		input.type = "text";
+		input.name = name;
+		input.value = defaultValue;
+		input.required = required;
+		input.placeholder = "Cari...";
+		input.autocomplete = "off";
+
+		var resultsDiv = document.createElement("div");
+		resultsDiv.className = "nx-search-results";
+		resultsDiv.style.display = "none";
+		resultsDiv.style.position = "absolute";
+		resultsDiv.style.zIndex = "1000";
+		resultsDiv.style.background = "#fff";
+		resultsDiv.style.border = "1px solid #ccc";
+		resultsDiv.style.maxHeight = "200px";
+		resultsDiv.style.overflowY = "auto";
+
+		var debounceTimer = null;
+
+		input.addEventListener("input", function () {
+			var query = input.value;
+			if (query.length < 2) {
+				resultsDiv.style.display = "none";
+				return;
+			}
+
+			clearTimeout(debounceTimer);
+			debounceTimer = setTimeout(function () {
+				var endpoint = type === "asset" ? "nexthd.next_helpdesk.api.portal.search_assets" : "nexthd.next_helpdesk.api.portal.search_users";
+				NX.api.get(endpoint, { query: query }).then(function (result) {
+					resultsDiv.innerHTML = "";
+					var items = type === "asset" ? result.assets : result.users;
+
+					if (items && items.length > 0) {
+						items.forEach(function (item) {
+							var option = document.createElement("div");
+							option.style.padding = "0.5rem";
+							option.style.cursor = "pointer";
+							option.textContent = type === "asset" ? (item.asset_name || item.name) : (item.full_name || item.name);
+							option.addEventListener("click", function () {
+								input.value = item.name;
+								resultsDiv.style.display = "none";
+							});
+							resultsDiv.appendChild(option);
+						});
+						resultsDiv.style.display = "block";
+					} else {
+						resultsDiv.style.display = "none";
+					}
+				}).catch(function (err) {
+					console.error("Search error:", err);
+				});
+			}, 300);
+		});
+
+		input.addEventListener("blur", function () {
+			setTimeout(function () {
+				resultsDiv.style.display = "none";
+			}, 200);
+		});
+
+		div.appendChild(input);
+		div.appendChild(resultsDiv);
 
 		return div;
 	}
