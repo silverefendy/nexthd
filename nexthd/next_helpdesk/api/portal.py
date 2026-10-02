@@ -73,6 +73,7 @@ def get_session_info():
 		"roles": it_roles_list,
 		"home": "/nexthd/kerja",
 		"can_create": frappe.has_permission("NextHD Ticket", "create"),
+		"csrf_token": frappe.sessions.get_csrf_token(),
 		"server_now": now()
 	}
 
