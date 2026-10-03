@@ -686,3 +686,280 @@ def search_users(query):
 			})
 
 	return {"users": it_users}
+
+
+def _copy_photos(source_doctype, source_name, target_doc):
+	"""Helper fungsi untuk menyalin foto dari source doc ke target doc."""
+	# Get photos dari source
+	source_photos = frappe.get_all(
+		"NextHD Photo Link",
+		filters={"parenttype": source_doctype, "parent": source_name},
+		fields=["photo", "caption"],
+		parent_doctype=source_doctype
+	)
+
+	# Copy ke target
+	for photo in source_photos:
+		target_doc.append("photos", {
+			"photo": photo.photo,
+			"caption": photo.caption
+		})
+
+
+@frappe.whitelist(methods=["GET"])
+def list_problems(status=None, priority=None, page=1, page_size=20):
+	"""Mengembalikan daftar Problem dengan filter dan pagination."""
+	require_it_role()
+
+	# Validasi page dan page_size
+	try:
+		page = int(page)
+		page_size = int(page_size)
+	except (ValueError, TypeError):
+		frappe.throw(_("Page dan page_size harus angka"), frappe.ValidationError)
+
+	if page < 1:
+		frappe.throw(_("Page harus >= 1"), frappe.ValidationError)
+	if page_size < 1 or page_size > 50:
+		page_size = 50
+
+	# Build filters
+	filters = {}
+
+	# Status filter
+	if status:
+		meta = frappe.get_meta("NextHD Problem")
+		status_field = meta.get_field("status")
+		if status_field and status in (status_field.options or "").split("\n"):
+			filters["status"] = status
+
+	# Priority filter
+	if priority:
+		meta = frappe.get_meta("NextHD Problem")
+		priority_field = meta.get_field("priority")
+		if priority_field and priority in (priority_field.options or "").split("\n"):
+			filters["priority"] = priority
+
+	# Query fields
+	fields = [
+		"name", "title", "status", "priority", "category",
+		"related_asset", "creation", "modified"
+	]
+
+	# Get total count
+	total = len(frappe.get_list(
+		"NextHD Problem",
+		pluck="name",
+		filters=filters,
+		limit_page_length=0
+	))
+
+	# Get rows
+	limit_start = (page - 1) * page_size
+	rows = frappe.get_list(
+		"NextHD Problem",
+		fields=fields,
+		filters=filters,
+		order_by="modified desc",
+		limit_start=limit_start,
+		limit_page_length=page_size
+	)
+
+	return {
+		"rows": rows,
+		"total": total,
+		"page": page,
+		"page_size": page_size,
+		"server_now": now()
+	}
+
+
+@frappe.whitelist(methods=["GET"])
+def get_problem(name):
+	"""Mengembalikan detail Problem beserta related_tickets dan photos."""
+	require_it_role()
+
+	# Validasi parameter
+	if not name or len(name) > 140:
+		frappe.throw(_("Nama Problem tidak valid"), frappe.ValidationError)
+
+	# Get doc dengan permission check
+	doc = frappe.get_doc("NextHD Problem", name)
+	doc.check_permission("read")
+
+	# Sanitasi root_cause dan workaround
+	root_cause = sanitize_html(doc.root_cause) if doc.root_cause else ""
+	workaround = sanitize_html(doc.workaround) if doc.workaround else ""
+
+	# Build related_tickets rows
+	related_tickets_rows = []
+	for row in doc.related_tickets:
+		ticket_doc = frappe.get_doc("NextHD Ticket", row.ticket)
+		related_tickets_rows.append({
+			"ticket": row.ticket,
+			"subject": ticket_doc.subject or "",
+			"status": ticket_doc.status or ""
+		})
+
+	# Build photos rows
+	photos_rows = []
+	for row in doc.photos:
+		photos_rows.append({
+			"photo": row.photo or "",
+			"photo_preview": row.photo_preview or "",
+			"caption": row.caption or ""
+		})
+
+	return {
+		"name": doc.name,
+		"title": doc.title,
+		"status": doc.status,
+		"priority": doc.priority,
+		"category": doc.category,
+		"related_asset": doc.related_asset,
+		"root_cause": root_cause,
+		"workaround": workaround,
+		"known_error": doc.known_error,
+		"change_request": doc.change_request,
+		"related_tickets": related_tickets_rows,
+		"photos": photos_rows,
+		"creation": str(doc.creation),
+		"modified": str(doc.modified),
+		"server_now": now()
+	}
+
+
+@frappe.whitelist(methods=["GET"])
+def get_problem_actions(name):
+	"""Mengembalikan aksi workflow yang tersedia untuk Problem."""
+	require_it_role()
+
+	# Validasi parameter
+	if not name or len(name) > 140:
+		frappe.throw(_("Nama Problem tidak valid"), frappe.ValidationError)
+
+	# Get doc dengan permission check
+	doc = frappe.get_doc("NextHD Problem", name)
+	doc.check_permission("read")
+
+	# Cek apakah user adalah penulis
+	is_writer = _is_writer()
+
+	# Get transitions dari workflow
+	from frappe.model.workflow import get_transitions
+	transitions = get_transitions(doc)
+
+	# Filter actions hanya untuk penulis
+	if not is_writer:
+		transitions = []
+
+	# Return only action and next_state
+	actions = [{"action": t.action, "next_state": t.next_state} for t in transitions]
+
+	return {
+		"actions": actions
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def do_problem_action(name, action):
+	"""Menjalankan aksi workflow pada Problem."""
+	require_it_role()
+
+	# Tolak jika bukan penulis
+	if not _is_writer():
+		frappe.throw(_("Anda tidak memiliki izin untuk melakukan aksi ini"), frappe.PermissionError)
+
+	# Validasi parameter
+	if not name or len(name) > 140:
+		frappe.throw(_("Nama Problem tidak valid"), frappe.ValidationError)
+	if not action:
+		frappe.throw(_("Aksi tidak valid"), frappe.ValidationError)
+
+	# Get doc dengan permission check
+	doc = frappe.get_doc("NextHD Problem", name)
+	doc.check_permission("write")
+
+	# Validasi action ada di transitions
+	from frappe.model.workflow import get_transitions
+	transitions = get_transitions(doc)
+	valid_actions = [t.action for t in transitions]
+	if action not in valid_actions:
+		frappe.throw(_("Aksi tidak tersedia untuk status Problem ini"), frappe.ValidationError)
+
+	# Jalankan workflow
+	from frappe.model.workflow import apply_workflow
+	apply_workflow(doc, action)
+
+	# Reload doc untuk mendapatkan status baru
+	doc.reload()
+
+	# Kembalikan ringkasan Problem
+	return {
+		"status": doc.status
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def buat_problem_dari_tiket(ticket, title, priority):
+	"""Membuat Problem dari Tiket dalam satu transaksi atomik."""
+	require_it_role()
+
+	# Tolak jika bukan penulis
+	if not _is_writer():
+		frappe.throw(_("Anda tidak memiliki izin untuk membuat Problem"), frappe.PermissionError)
+
+	# Validasi parameter
+	if not ticket or len(ticket) > 140:
+		frappe.throw(_("Nama tiket tidak valid"), frappe.ValidationError)
+	if not title or not title.strip():
+		frappe.throw(_("Title wajib diisi"), frappe.ValidationError)
+	if len(title) > 140:
+		frappe.throw(_("Title maksimal 140 karakter"), frappe.ValidationError)
+
+	# Whitelist priority
+	PRIORITY_OPTIONS = ["Kritis", "Tinggi", "Sedang", "Rendah"]
+	if priority and priority not in PRIORITY_OPTIONS:
+		frappe.throw(_("Priority tidak valid"), frappe.ValidationError)
+
+	# Get ticket doc
+	ticket_doc = frappe.get_doc("NextHD Ticket", ticket)
+	ticket_doc.check_permission("read")
+
+	# Tolak jika tiket sudah punya related_problem
+	if ticket_doc.related_problem:
+		frappe.throw(_("Tiket ini sudah memiliki Problem terkait"), frappe.ValidationError)
+
+	# Buat Problem dalam satu transaksi
+	problem_doc = frappe.get_doc({
+		"doctype": "NextHD Problem",
+		"title": title,
+		"priority": priority or ticket_doc.priority,
+		"category": ticket_doc.category,
+		"status": "Terbuka",
+		"related_asset": ticket_doc.affected_asset
+	})
+
+	# Salin foto dari tiket ke problem
+	_copy_photos("NextHD Ticket", ticket, problem_doc)
+
+	# Insert problem
+	problem_doc.insert()
+
+	# Update ticket.related_problem
+	ticket_doc.related_problem = problem_doc.name
+	ticket_doc.save()
+
+	# Tambah baris NextHD Problem Ticket
+	problem_doc.append("related_tickets", {
+		"ticket": ticket
+	})
+	problem_doc.save()
+
+	# Log lintas dokumen
+	from nexthd.next_helpdesk.utils.activity_log import log_cross_document_link
+	log_cross_document_link("NextHD Ticket", ticket, "NextHD Problem", problem_doc.name)
+
+	return {
+		"problem_name": problem_doc.name
+	}

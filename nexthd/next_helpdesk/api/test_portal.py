@@ -3,7 +3,8 @@ from frappe.tests.utils import IntegrationTestCase
 from nexthd.next_helpdesk.api.portal import (
 	resolve_home, require_it_role, IT_ROLES,
 	get_ticket_options, list_tickets, get_ticket, create_ticket,
-	get_session_info, do_ticket_action, add_worklog, assign_ticket
+	get_session_info, do_ticket_action, add_worklog, assign_ticket,
+	list_problems, get_problem, get_problem_actions, do_problem_action, buat_problem_dari_tiket
 )
 
 

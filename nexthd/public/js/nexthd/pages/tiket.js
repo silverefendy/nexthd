@@ -53,6 +53,7 @@
 			} else {
 				renderActions();
 			}
+			renderProblemSection();
 		}).catch(function (err) {
 			console.error("Gagal memuat aksi:", err);
 		});
@@ -116,8 +117,7 @@
 			{ label: "Kategori", value: ticket.category || "-" },
 			{ label: "Impact", value: ticket.impact || "-" },
 			{ label: "Urgency", value: ticket.urgency || "-" },
-			{ label: "Aset Terkait", value: ticket.affected_asset || "-" },
-			{ label: "Problem Terkait", value: ticket.related_problem || "-" }
+			{ label: "Aset Terkait", value: ticket.affected_asset || "-" }
 		];
 
 		infoFields.forEach(function (field) {
@@ -133,6 +133,13 @@
 
 		infoCard.appendChild(infoTable);
 		wrap.appendChild(infoCard);
+
+		// Problem Terkait section
+		var problemCard = document.createElement("div");
+		problemCard.className = "nx-card";
+		problemCard.innerHTML = "<h3>Problem Terkait</h3>";
+		problemCard.id = "nx-problem-section";
+		wrap.appendChild(problemCard);
 
 		// SLA block
 		var slaCard = document.createElement("div");
@@ -343,6 +350,34 @@
 		// Worklog form
 		if (actions.can_worklog) {
 			renderWorklogForm();
+		}
+	}
+
+	function renderProblemSection() {
+		if (!currentTicket) return;
+
+		var problemSection = document.getElementById("nx-problem-section");
+		if (!problemSection) return;
+
+		problemSection.innerHTML = "<h3>Problem Terkait</h3>";
+
+		if (currentTicket.related_problem) {
+			// Show link to existing problem
+			var problemLink = document.createElement("a");
+			problemLink.href = "/nexthd/problem?id=" + currentTicket.related_problem;
+			problemLink.textContent = currentTicket.related_problem;
+			problemSection.appendChild(problemLink);
+		} else {
+			// Show "Buat Problem dari Tiket" button for writers
+			if (actions && actions.can_worklog) {
+				var createProblemBtn = document.createElement("button");
+				createProblemBtn.className = "nx-btn";
+				createProblemBtn.textContent = "Buat Problem dari Tiket";
+				createProblemBtn.addEventListener("click", function () {
+					showCreateProblemDialog();
+				});
+				problemSection.appendChild(createProblemBtn);
+			}
 		}
 	}
 
@@ -629,6 +664,126 @@
 			case "Rendah": return "grey";
 			default: return "";
 		}
+	}
+
+	function showCreateProblemDialog() {
+		var actionsContainer = document.getElementById("nx-actions");
+		if (!actionsContainer) return;
+
+		// Create dialog overlay
+		var overlay = document.createElement("div");
+		overlay.style.position = "fixed";
+		overlay.style.top = "0";
+		overlay.style.left = "0";
+		overlay.style.right = "0";
+		overlay.style.bottom = "0";
+		overlay.style.background = "rgba(0,0,0,0.5)";
+		overlay.style.zIndex = "2000";
+		overlay.style.display = "flex";
+		overlay.style.alignItems = "center";
+		overlay.style.justifyContent = "center";
+
+		// Create dialog
+		var dialog = document.createElement("div");
+		dialog.className = "nx-card";
+		dialog.style.maxWidth = "500px";
+		dialog.style.width = "90%";
+		dialog.style.padding = "1.5rem";
+
+		var title = document.createElement("h3");
+		title.textContent = "Buat Problem dari Tiket";
+		dialog.appendChild(title);
+
+		// Title field
+		var titleLabel = document.createElement("label");
+		titleLabel.textContent = "Judul Problem *";
+		titleLabel.style.display = "block";
+		titleLabel.style.marginBottom = "0.5rem";
+		dialog.appendChild(titleLabel);
+
+		var titleInput = document.createElement("input");
+		titleInput.type = "text";
+		titleInput.maxLength = 140;
+		titleInput.style.width = "100%";
+		titleInput.style.marginBottom = "1rem";
+		titleInput.placeholder = "Masukkan judul problem";
+		dialog.appendChild(titleInput);
+
+		// Priority field
+		var priorityLabel = document.createElement("label");
+		priorityLabel.textContent = "Prioritas";
+		priorityLabel.style.display = "block";
+		priorityLabel.style.marginBottom = "0.5rem";
+		dialog.appendChild(priorityLabel);
+
+		var prioritySelect = document.createElement("select");
+		prioritySelect.style.width = "100%";
+		prioritySelect.style.marginBottom = "1rem";
+		var priorityDefault = document.createElement("option");
+		priorityDefault.value = "";
+		priorityDefault.textContent = "-- Gunakan prioritas tiket --";
+		prioritySelect.appendChild(priorityDefault);
+		["Kritis", "Tinggi", "Sedang", "Rendah"].forEach(function (opt) {
+			var option = document.createElement("option");
+			option.value = opt;
+			option.textContent = opt;
+			prioritySelect.appendChild(option);
+		});
+		dialog.appendChild(prioritySelect);
+
+		var buttonRow = document.createElement("div");
+		buttonRow.style.display = "flex";
+		buttonRow.style.gap = "0.5rem";
+
+		var cancelBtn = document.createElement("button");
+		cancelBtn.className = "nx-btn";
+		cancelBtn.textContent = "Batal";
+		cancelBtn.addEventListener("click", function () {
+			document.body.removeChild(overlay);
+		});
+
+		var submitBtn = document.createElement("button");
+		submitBtn.className = "nx-btn";
+		submitBtn.textContent = "Buat";
+		submitBtn.addEventListener("click", function () {
+			var title = titleInput.value.trim();
+			var priority = prioritySelect.value;
+			if (!title) {
+				NX.ui.toast("Judul wajib diisi", "red");
+				return;
+			}
+			document.body.removeChild(overlay);
+			createProblem(title, priority);
+		});
+
+		buttonRow.appendChild(cancelBtn);
+		buttonRow.appendChild(submitBtn);
+		dialog.appendChild(buttonRow);
+
+		overlay.appendChild(dialog);
+		document.body.appendChild(overlay);
+
+		// Focus title input
+		setTimeout(function () {
+			titleInput.focus();
+		}, 100);
+	}
+
+	function createProblem(title, priority) {
+		var data = {
+			ticket: ticketId,
+			title: title
+		};
+		if (priority) {
+			data.priority = priority;
+		}
+
+		NX.api.post("nexthd.next_helpdesk.api.portal.buat_problem_dari_tiket", data).then(function (result) {
+			NX.ui.toast("Problem berhasil dibuat: " + result.problem_name, "green");
+			loadTicket();
+		}).catch(function (err) {
+			NX.ui.toast("Gagal: " + err.message, "red");
+		});
 	}
 
 	// Load session first

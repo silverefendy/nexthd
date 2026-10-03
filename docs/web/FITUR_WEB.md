@@ -2,7 +2,7 @@
 
 > Status: ✅ Selesai | 🟧 Dikerjakan | ⬜ Rencana
 >
-> **Last updated:** 2026-10-02
+> **Last updated:** 2026-10-03
 
 ## Yang Sudah Ada
 
@@ -28,7 +28,8 @@ Cakupan awal: hanya tim IT. Requester di tahap 7.
 | 2 | Antrian agent, detail tiket (baca), buat tiket | ✅ |
 | 2b | Perbaikan tampilan (label ID, format SLA, lebar kolom, field Link) | 🟧 (mikrodetik SLA dan tabel log sudah; label filter ID dan kolom Kategori di antrian belum dicek) |
 | 3 | Aksi workflow, worklog, penugasan | ✅ (kecuali uji Agent biasa) |
-| 3c | Polesan: pesan galat bersih, tombol "Ambil untuk saya" | ⬜ (spesifikasi siap: `TUGAS_TAHAP_3C.md`) |
+| 3c | Polesan: pesan galat bersih, tombol "Ambil untuk saya" | ✅ (PR feat/web-tahap-3c) |
+| 5a | Problem: halaman daftar/detail, tombol "Buat Problem dari Tiket", endpoint atomik | ✅ (PR feat/web-tahap-5a) |
 | 4 | Dashboard manajer | ⬜ |
 | 5 | Problem, Known Error, Change Request, Asset (EAV). Di Desk alurnya: Tiket -> Problem -> Known Error / Change Request | ⬜ (spesifikasi belum ditulis) |
 | 6 | Laporan/grafik, lampiran & foto | ⬜ |
