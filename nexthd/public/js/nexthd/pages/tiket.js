@@ -17,6 +17,7 @@
 	var currentTicket = null;
 	var actions = null;
 	var itUsers = [];
+	var session = null;
 
 	function loadTicket() {
 		NX.ui.setLoading(content, true);
@@ -307,7 +308,7 @@
 		}
 
 		// Assign buttons
-		if (actions.can_assign_self) {
+		if (actions.can_assign_self && (!currentTicket.assigned_to || (currentTicket.assigned_to !== session.user && actions.can_assign_other))) {
 			var assignSelfBtn = document.createElement("button");
 			assignSelfBtn.className = "nx-btn";
 			assignSelfBtn.textContent = "Ambil untuk saya";
@@ -787,7 +788,8 @@
 	}
 
 	// Load session first
-	NX.api.get("nexthd.next_helpdesk.api.portal.get_session_info").then(function (session) {
+	NX.api.get("nexthd.next_helpdesk.api.portal.get_session_info").then(function (sessionData) {
+		session = sessionData;
 		NX.ui.renderNav(session);
 		loadTicket();
 	}).catch(function (err) {
