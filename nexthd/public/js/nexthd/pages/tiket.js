@@ -364,12 +364,12 @@
 		if (currentTicket.related_problem) {
 			// Show link to existing problem
 			var problemLink = document.createElement("a");
-			problemLink.href = "/nexthd/problem?id=" + currentTicket.related_problem;
+			problemLink.href = "/nexthd/problem?id=" + encodeURIComponent(currentTicket.related_problem);
 			problemLink.textContent = currentTicket.related_problem;
 			problemSection.appendChild(problemLink);
 		} else {
-			// Show "Buat Problem dari Tiket" button for writers
-			if (actions && actions.can_worklog) {
+			// Show "Buat Problem dari Tiket" button for writers, only if not closed
+			if (actions && actions.can_worklog && currentTicket.status !== "Ditutup") {
 				var createProblemBtn = document.createElement("button");
 				createProblemBtn.className = "nx-btn";
 				createProblemBtn.textContent = "Buat Problem dari Tiket";

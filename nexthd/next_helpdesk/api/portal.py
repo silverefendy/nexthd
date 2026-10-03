@@ -794,12 +794,20 @@ def get_problem(name):
 	# Build related_tickets rows
 	related_tickets_rows = []
 	for row in doc.related_tickets:
-		ticket_doc = frappe.get_doc("NextHD Ticket", row.ticket)
-		related_tickets_rows.append({
-			"ticket": row.ticket,
-			"subject": ticket_doc.subject or "",
-			"status": ticket_doc.status or ""
-		})
+		try:
+			ticket_doc = frappe.get_doc("NextHD Ticket", row.ticket)
+			related_tickets_rows.append({
+				"ticket": row.ticket,
+				"subject": ticket_doc.subject or "",
+				"status": ticket_doc.status or ""
+			})
+		except frappe.DoesNotExistError:
+			# Tiket sudah dihapus, skip
+			related_tickets_rows.append({
+				"ticket": row.ticket,
+				"subject": "(tiket terhapus)",
+				"status": ""
+			})
 
 	# Build photos rows
 	photos_rows = []
@@ -901,7 +909,7 @@ def do_problem_action(name, action):
 
 
 @frappe.whitelist(methods=["POST"])
-def buat_problem_dari_tiket(ticket, title, priority):
+def buat_problem_dari_tiket(ticket, title, priority=None):
 	"""Membuat Problem dari Tiket dalam satu transaksi atomik."""
 	require_it_role()
 

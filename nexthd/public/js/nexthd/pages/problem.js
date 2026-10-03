@@ -137,7 +137,7 @@
 				var tr = document.createElement("tr");
 				var tdId = document.createElement("td");
 				var link = document.createElement("a");
-				link.href = "/nexthd/problem?id=" + row.name;
+				link.href = "/nexthd/problem?id=" + encodeURIComponent(row.name);
 				link.textContent = row.name;
 				tdId.appendChild(link);
 				tr.appendChild(tdId);
@@ -313,7 +313,7 @@
 				var tr = document.createElement("tr");
 				var tdId = document.createElement("td");
 				var link = document.createElement("a");
-				link.href = "/nexthd/tiket?id=" + ticket.ticket;
+				link.href = "/nexthd/tiket?id=" + encodeURIComponent(ticket.ticket);
 				link.textContent = ticket.ticket;
 				tdId.appendChild(link);
 				tr.appendChild(tdId);
