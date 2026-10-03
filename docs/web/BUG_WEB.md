@@ -3,7 +3,7 @@
 > Khusus bug portal web (`www/nexthd`, `public/*/nexthd*`, `api/portal.py`).
 > Bug Desk/DocType/workflow ada di `docs/BUG_HISTORY.md` dan file terkait.
 >
-> **Last updated:** 2026-10-02
+> **Last updated:** 2026-10-03
 
 ## Format Entri
 
@@ -34,10 +34,10 @@
 - Root cause: Frappe v16 menolak fungsi SQL sebagai string di `fields`; tes Devin tidak menyentuh database.
 - Fix: `len(frappe.get_list(pluck="name", limit_page_length=0))` (commit `63a01a4`). Catatan skala: memuat semua nama yang cocok; ganti hitung SQL bila tiket puluhan ribu.
 
-### 2026-10-02 — Pesan galat memuat tag HTML (BELUM DIPERBAIKI, kosmetik)
+### 2026-10-02 — Pesan galat memuat tag HTML (SELESAI)
 - Gejala: toast menampilkan `Error: <strong>NextHD Ticket Worklog</strong> Row #1: Value missing for: Aktivitas` saat catatan hanya berisi satu tag HTML (isi dibuang sanitasi sehingga kosong).
 - Dugaan: Frappe membuang tag dari kolom teks lalu validasi wajib gagal; perilaku aman, hanya pesannya kurang rapi. Belum diverifikasi.
-- Rencana: Tahap 3c, bersihkan tag dari pesan di `api.js`.
+- Fix: Tahap 3c, bersihkan tag dari pesan di `api.js` memakai `DOMParser.parseFromString().body.textContent` (commit feat/web-tahap-3c).
 
 ### 2026-10-02 — Buka Kembali meninggalkan cap waktu lama (TEMUAN, Desk, belum diputuskan)
 - Gejala (terlihat): setelah Buka Kembali, status Baru tetapi "Selesai Pada" dan "Direspon Pada" masih terisi.

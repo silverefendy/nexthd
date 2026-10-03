@@ -71,6 +71,10 @@
 						if (messages && messages.length > 0) {
 							var msgObj = JSON.parse(messages[0]);
 							var errorMsg = msgObj.message || "Terjadi kesalahan";
+							// Clean HTML tags from error message
+							var parser = new DOMParser();
+							var doc = parser.parseFromString(errorMsg, "text/html");
+							errorMsg = doc.body.textContent || errorMsg;
 							// For ValidationError, show business message to user
 							if (data.exc_type === "ValidationError") {
 								return Promise.reject(new Error(errorMsg));
@@ -129,6 +133,10 @@
 						if (messages && messages.length > 0) {
 							var msgObj = JSON.parse(messages[0]);
 							var errorMsg = msgObj.message || "Terjadi kesalahan";
+							// Clean HTML tags from error message
+							var parser = new DOMParser();
+							var doc = parser.parseFromString(errorMsg, "text/html");
+							errorMsg = doc.body.textContent || errorMsg;
 							// For ValidationError, show business message to user
 							if (data.exc_type === "ValidationError") {
 								return Promise.reject(new Error(errorMsg));
