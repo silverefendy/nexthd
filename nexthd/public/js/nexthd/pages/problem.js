@@ -9,6 +9,14 @@
 	var urlParams = new URLSearchParams(window.location.search);
 	var problemId = urlParams.get("id");
 
+	var listState = { status: "", priority: "", page: 1 };
+	function listParams() {
+		var p = { page: listState.page };
+		if (listState.status) { p.status = listState.status; }
+		if (listState.priority) { p.priority = listState.priority; }
+		return p;
+	}
+
 	if (!problemId) {
 		// Show list of problems
 		loadProblemList();
@@ -20,7 +28,7 @@
 	function loadProblemList() {
 		NX.ui.setLoading(content, true);
 
-		NX.api.get("nexthd.next_helpdesk.api.portal.list_problems").then(function (result) {
+		NX.api.get("nexthd.next_helpdesk.api.portal.list_problems", listParams()).then(function (result) {
 			content.textContent = "";
 			renderProblemList(result);
 		}).catch(function (err) {
@@ -92,6 +100,8 @@
 		});
 		priorityDiv.appendChild(prioritySelect);
 		filterForm.appendChild(priorityDiv);
+		statusSelect.value = listState.status;
+		prioritySelect.value = listState.priority;
 
 		// Submit button
 		var submitBtn = document.createElement("button");
@@ -104,7 +114,10 @@
 			e.preventDefault();
 			var status = statusSelect.value;
 			var priority = prioritySelect.value;
-			applyFilter(status, priority);
+			listState.status = status;
+			listState.priority = priority;
+			listState.page = 1;
+			loadProblemList();
 		});
 
 		filterCard.appendChild(filterForm);
@@ -154,11 +167,35 @@
 			var td = document.createElement("td");
 			td.colSpan = 6;
 			td.textContent = "Tidak ada data";
+			tr.appendChild(td);
 			tbody.appendChild(tr);
 		}
 		table.appendChild(tbody);
 		tableWrap.appendChild(table);
 		tableCard.appendChild(tableWrap);
+
+		var totalPages = Math.max(1, Math.ceil((data.total || 0) / (data.page_size || 20)));
+		var pager = document.createElement("div");
+		pager.style.marginTop = "0.75rem";
+		var pagerInfo = document.createElement("span");
+		pagerInfo.textContent = "Halaman " + listState.page + " dari " + totalPages + " (" + (data.total || 0) + " problem) ";
+		pager.appendChild(pagerInfo);
+		var prevBtn = document.createElement("button");
+		prevBtn.type = "button";
+		prevBtn.className = "nx-btn";
+		prevBtn.textContent = "Sebelumnya";
+		prevBtn.disabled = listState.page <= 1;
+		prevBtn.addEventListener("click", function () { listState.page -= 1; loadProblemList(); });
+		pager.appendChild(prevBtn);
+		pager.appendChild(document.createTextNode(" "));
+		var nextBtn = document.createElement("button");
+		nextBtn.type = "button";
+		nextBtn.className = "nx-btn";
+		nextBtn.textContent = "Berikutnya";
+		nextBtn.disabled = listState.page >= totalPages;
+		nextBtn.addEventListener("click", function () { listState.page += 1; loadProblemList(); });
+		pager.appendChild(nextBtn);
+		tableCard.appendChild(pager);
 		wrap.appendChild(tableCard);
 
 		content.appendChild(wrap);

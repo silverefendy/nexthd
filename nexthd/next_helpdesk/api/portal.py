@@ -934,6 +934,10 @@ def buat_problem_dari_tiket(ticket, title, priority=None):
 	ticket_doc = frappe.get_doc("NextHD Ticket", ticket)
 	ticket_doc.check_permission("read")
 
+	# Tolak jika tiket sudah ditutup
+	if ticket_doc.status == "Ditutup":
+		frappe.throw(_("Tidak dapat membuat Problem dari tiket yang sudah ditutup"), frappe.ValidationError)
+
 	# Tolak jika tiket sudah punya related_problem
 	if ticket_doc.related_problem:
 		frappe.throw(_("Tiket ini sudah memiliki Problem terkait"), frappe.ValidationError)
