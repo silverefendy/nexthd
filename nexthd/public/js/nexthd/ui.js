@@ -105,7 +105,8 @@
 			var menu = document.createElement("div");
 			var links = [
 				{ href: "/nexthd", text: "Beranda" },
-				{ href: "/nexthd/kerja", text: "Kerja" }
+				{ href: "/nexthd/kerja", text: "Kerja" },
+				{ href: "/nexthd/problem", text: "Problem" }
 			];
 
 			if (session.can_create && NX.ui.FEATURES.newTicket) {
