@@ -1084,6 +1084,9 @@ def buat_problem(data):
 	if not filtered_data.get("title") or not filtered_data["title"].strip():
 		frappe.throw(_("Title wajib diisi"), frappe.ValidationError)
 
+	if not filtered_data.get("priority") or not filtered_data["priority"].strip():
+		frappe.throw(_("Priority wajib diisi"), frappe.ValidationError)
+
 	# Validasi panjang
 	if filtered_data.get("title") and len(filtered_data["title"]) > 140:
 		frappe.throw(_("Title maksimal 140 karakter"), frappe.ValidationError)
