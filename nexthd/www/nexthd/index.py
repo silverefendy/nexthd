@@ -1,26 +1,22 @@
 import frappe
-from nexthd.next_helpdesk.api.portal import resolve_home
-
-# True = hanya user yang login. Ubah ke False saat siap dipublikasikan.
-PRIVATE_MODE = True
-
+from urllib.parse import quote
+from nexthd.next_helpdesk.api.portal import IT_ROLES
 
 def get_context(context):
-    if PRIVATE_MODE and frappe.session.user == "Guest":
-        frappe.local.flags.redirect_location = "/login?redirect-to=/nexthd"
+    # Guest redirect ke login
+    if frappe.session.user == "Guest":
+        redirect_to = quote("/nexthd")
+        frappe.local.flags.redirect_location = "/login?redirect-to=" + redirect_to
         raise frappe.Redirect
+
+    # Cek peran IT
+    roles = set(frappe.get_roles())
+    if not roles.intersection(IT_ROLES):
+        # Redirect ke halaman tentang untuk non-IT
+        frappe.local.flags.redirect_location = "/nexthd/tentang"
+        raise frappe.Redirect
+
+    # Peran IT: tampilkan dashboard
     context.no_cache = 1
-    context.title = "NextHD"
-    context.home_url = resolve_home(set(frappe.get_roles()))
-    stats = {}
-    for key, dt in (
-        ("tiket", "NextHD Ticket"),
-        ("problem", "NextHD Problem"),
-        ("known_error", "NextHD Known Error"),
-        ("aset", "NextHD Asset"),
-    ):
-        try:
-            stats[key] = frappe.db.count(dt)
-        except Exception:
-            stats[key] = 0
-    context.stats = stats
+    context.csrf_token = frappe.sessions.get_csrf_token()
+    context.title = "Beranda"

@@ -1,0 +1,90 @@
+/* Dashboard Cards */
+.nx-dashboard-section {
+	margin-bottom: 32px;
+}
+
+.nx-dashboard-section h2 {
+	font: 600 14px ui-monospace, "Courier New", monospace;
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+	color: var(--a);
+	margin: 0 0 18px;
+}
+
+.nx-dashboard-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 16px;
+}
+
+.nx-dashboard-card {
+	display: block;
+	border: 2px solid var(--line);
+	background: var(--card);
+	padding: 20px 24px;
+	text-decoration: none;
+	color: var(--ink);
+	transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.nx-dashboard-card:hover {
+	transform: translate(-2px, -2px);
+	box-shadow: 4px 4px 0 var(--a);
+}
+
+.nx-dashboard-card--alert {
+	border-color: var(--a);
+}
+
+.nx-dashboard-card--summary {
+	cursor: default;
+}
+
+.nx-dashboard-card--summary:hover {
+	transform: none;
+	box-shadow: none;
+}
+
+.nx-dashboard-card__number {
+	display: block;
+	font: 700 48px/1 ui-monospace, "Courier New", monospace;
+	color: var(--b);
+	margin-bottom: 8px;
+}
+
+.nx-dashboard-card--alert .nx-dashboard-card__number {
+	color: var(--a);
+}
+
+.nx-dashboard-card__label {
+	font: 15px ui-monospace, "Courier New", monospace;
+	color: var(--mute);
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+}
+
+/* Footer link */
+footer {
+	border-top: 2px solid var(--line);
+	padding: 20px 0 32px;
+	margin-top: 40px;
+}
+
+footer a {
+	color: var(--mute);
+	font: 13px ui-monospace, "Courier New", monospace;
+	text-decoration: none;
+	border-bottom: 1px dotted var(--mute);
+}
+
+footer a:hover {
+	color: var(--a);
+	border-bottom: 1px solid var(--a);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+	.nx-dashboard-grid {
+		grid-template-columns: 1fr;
+	}
+}
