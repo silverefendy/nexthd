@@ -195,7 +195,7 @@
 					statusBadge,
 					priorityBadge,
 					ticket.category || "-",
-					ticket.assigned_to || "-",
+					ticket.assigned_to ? ticket.assigned_to.split("@")[0] : "-",
 					slaText,
 					fmtDateTimeShort(ticket.modified)
 				];

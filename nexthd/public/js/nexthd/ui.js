@@ -105,21 +105,50 @@
 			var menu = document.createElement("div");
 			var links = [
 				{ href: "/nexthd", text: "Beranda" },
-				{ href: "/nexthd/kerja", text: "Tiket" },
+				{ href: "/nexthd/kerja", text: "Tiket", children: [{ href: "/nexthd/kerja", text: "Antrian Tiket" }, { href: "/nexthd/tiket-baru", text: "Tiket Baru", needCreate: true }] },
 				{ href: "/nexthd/problem", text: "Problem" }
 			];
 
-			if (session.can_create && NX.ui.FEATURES.newTicket) {
-				links.push({ href: "/nexthd/tiket-baru", text: "Tiket Baru" });
-			}
 
 			links.push({ href: "/desk/nexthd", text: "Desk" });
 
 			links.forEach(function (link) {
-				var a = document.createElement("a");
-				a.href = link.href;
-				a.textContent = link.text;
-				menu.appendChild(a);
+				var children = (link.children || []).filter(function (c) {
+					return !c.needCreate || (session.can_create && NX.ui.FEATURES.newTicket);
+				});
+				if (children.length < 2) {
+					var a = document.createElement("a");
+					a.href = link.href;
+					a.textContent = link.text;
+					menu.appendChild(a);
+					return;
+				}
+				var dd = document.createElement("span");
+				dd.className = "nx-dd";
+				var trigger = document.createElement("a");
+				trigger.href = link.href;
+				trigger.textContent = link.text + " \u25be";
+				trigger.setAttribute("aria-haspopup", "true");
+				dd.appendChild(trigger);
+				var panel = document.createElement("div");
+				panel.className = "nx-dd-panel";
+				children.forEach(function (c) {
+					var ca = document.createElement("a");
+					ca.href = c.href;
+					ca.textContent = c.text;
+					panel.appendChild(ca);
+				});
+				dd.appendChild(panel);
+				trigger.addEventListener("click", function (e) {
+					if (window.matchMedia("(hover: none)").matches) {
+						e.preventDefault();
+						dd.classList.toggle("nx-dd--open");
+					}
+				});
+				document.addEventListener("click", function (e) {
+					if (!dd.contains(e.target)) { dd.classList.remove("nx-dd--open"); }
+				});
+				menu.appendChild(dd);
 			});
 
 			var roleOrder = ["IT Manager", "Agent Manager", "Agent", "IT Auditor", "System Manager"];
@@ -134,7 +163,8 @@
 			userInfo.title = (session.user || "") + " | " + userRoles.join(", ");
 			userInfo.style.marginLeft = "1rem";
 			userInfo.style.opacity = "0.75";
-			userInfo.style.fontSize = "0.85em";
+			userInfo.style.fontSize = "13px";
+			userInfo.style.fontFamily = 'ui-monospace, "Courier New", monospace';
 			menu.appendChild(userInfo);
 
 			var logoutBtn = document.createElement("a");

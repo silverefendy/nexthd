@@ -131,13 +131,15 @@
 		filterForm.appendChild(priorityDiv);
 		statusSelect.value = listState.status;
 		prioritySelect.value = listState.priority;
+		statusSelect.addEventListener("change", function () { listState.status = statusSelect.value; listState.page = 1; loadProblemList(); });
+		prioritySelect.addEventListener("change", function () { listState.priority = prioritySelect.value; listState.page = 1; loadProblemList(); });
 
 		// Submit button
 		var submitBtn = document.createElement("button");
 		submitBtn.type = "submit";
 		submitBtn.className = "nx-btn";
 		submitBtn.textContent = "Terapkan Filter";
-		filterForm.appendChild(submitBtn);
+		// Filter langsung diterapkan saat dropdown berubah (sama seperti halaman Tiket)
 
 		filterForm.addEventListener("submit", function (e) {
 			e.preventDefault();
