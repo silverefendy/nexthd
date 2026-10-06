@@ -105,7 +105,7 @@
 			var menu = document.createElement("div");
 			var links = [
 				{ href: "/nexthd", text: "Beranda" },
-				{ href: "/nexthd/kerja", text: "Kerja" },
+				{ href: "/nexthd/kerja", text: "Tiket" },
 				{ href: "/nexthd/problem", text: "Problem" }
 			];
 
@@ -121,6 +121,21 @@
 				a.textContent = link.text;
 				menu.appendChild(a);
 			});
+
+			var roleOrder = ["IT Manager", "Agent Manager", "Agent", "IT Auditor", "System Manager"];
+			var userRoles = session.roles || [];
+			var topRole = "";
+			for (var ri = 0; ri < roleOrder.length; ri++) {
+				if (userRoles.indexOf(roleOrder[ri]) !== -1) { topRole = roleOrder[ri]; break; }
+			}
+			var userInfo = document.createElement("span");
+			userInfo.className = "nx-nav-user";
+			userInfo.textContent = (session.full_name || session.user || "") + (topRole ? " (" + topRole + ")" : "");
+			userInfo.title = (session.user || "") + " | " + userRoles.join(", ");
+			userInfo.style.marginLeft = "1rem";
+			userInfo.style.opacity = "0.75";
+			userInfo.style.fontSize = "0.85em";
+			menu.appendChild(userInfo);
 
 			var logoutBtn = document.createElement("a");
 			logoutBtn.href = "#";

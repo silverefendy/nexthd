@@ -46,7 +46,7 @@
 		header.className = "nx-page-head";
 		var h1 = document.createElement("h1");
 		h1.textContent = "Daftar Problem";
-		header.appendChild(h1);
+		// Judul halaman sudah ada di template (problem.html)
 		wrap.appendChild(header);
 
 		// Filter form
