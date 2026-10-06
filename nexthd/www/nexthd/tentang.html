@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NextHD — Helpdesk ITIL untuk Tim IT</title>
+<link rel="stylesheet" href="/assets/nexthd/css/nexthd_landing.css?v=1">
+<script src="/assets/nexthd/js/nexthd_landing.js?v=1" defer></script>
+</head>
+<body>
+<nav><div class="wrap"><b>NEXTHD//</b>
+<div><a href="#statistik">statistik</a><a href="#fitur">fitur</a><a href="#alur">alur</a><a href="#teknologi">teknologi</a><a href="/desk/nexthd">masuk desk</a></div></div></nav>
+
+<header class="hero"><div class="wrap">
+<span class="tag">Frappe v16 · ITIL-lite</span>
+<h1>Next<span>HD</span></h1>
+<p class="lead">Sistem helpdesk untuk tim IT: tiket, SLA sadar jam kerja, Problem, Known Error, Change Request, dan aset dalam satu tempat. Notifikasi langsung ke Telegram.</p>
+<a class="btn" href="/desk/nexthd">Buka Dashboard</a>{% if home_url %}<a class="btn alt" href="{{ home_url }}">Ruang Kerja</a>{% endif %}<a class="btn alt" href="/tiket-saya">Buat Tiket</a>
+</div></header>
+
+<section id="statistik"><div class="wrap reveal">
+<h2>// Angka saat ini</h2>
+<div class="stats">
+<div class="stat"><b>{{ stats.tiket }}</b><small>Tiket</small></div>
+<div class="stat"><b>{{ stats.problem }}</b><small>Problem</small></div>
+<div class="stat"><b>{{ stats.known_error }}</b><small>Known Error</small></div>
+<div class="stat"><b>{{ stats.aset }}</b><small>Aset</small></div>
+</div></div></section>
+
+<section id="fitur"><div class="wrap reveal">
+<h2>// Fitur</h2>
+<div class="grid">
+<div class="card"><i>01</i><h3>SLA jam kerja</h3><p>Hitungan mengikuti jam kerja dan hari libur, dengan jeda otomatis saat tiket menunggu user.</p></div>
+<div class="card"><i>02</i><h3>Prioritas otomatis</h3><p>Matriks Impact × Urgency menentukan prioritas, dengan override untuk manajer.</p></div>
+<div class="card"><i>03</i><h3>Rantai ITIL</h3><p>Tiket berlanjut ke Problem, Known Error, dan Change Request, lengkap dengan riwayat aktivitas.</p></div>
+<div class="card"><i>04</i><h3>Aset fleksibel</h3><p>Satu struktur untuk PC, jaringan, printer, dan kategori lain lewat kategori dan atribut.</p></div>
+<div class="card"><i>05</i><h3>Notifikasi Telegram</h3><p>Tiket baru, penugasan, peringatan SLA, dan laporan mingguan masuk ke bot.</p></div>
+<div class="card"><i>06</i><h3>Laporan &amp; portal</h3><p>Report per bulan, agent, kategori, kepatuhan SLA, plus form mandiri untuk requester.</p></div>
+</div></div></section>
+
+<section id="alur"><div class="wrap reveal">
+<h2>// Alur tiket</h2>
+<pre class="mono">Baru ──▶ Sedang Dikerjakan ──▶ Selesai ──▶ Ditutup
+              │  ▲                 │
+              ▼  │                 └──▶ Buka Kembali
+        Menunggu User
+        (SLA dijeda)
+
+Tiket ─▶ Problem ─▶ Known Error ─▶ Change Request</pre>
+</div></section>
+
+<section id="teknologi"><div class="wrap reveal">
+<h2>// Teknologi</h2>
+<div class="chips"><span>Frappe v16</span><span>Python</span><span>MariaDB</span><span>Telegram Bot API</span><span>Workflow</span><span>Bahasa Indonesia</span></div>
+</div></section>
+
+<footer><div class="wrap">NEXTHD // dalam pengembangan aktif · dibangun untuk tim IT internal</div></footer>
+</body>
+</html>

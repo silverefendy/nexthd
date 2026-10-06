@@ -22,6 +22,25 @@ def _user_roles():
 	return set(frappe.get_roles())
 
 
+def _view_filters(view):
+	"""Mengembalikan dict filter berdasarkan view."""
+	if view == "all":
+		return {}
+	elif view == "mine":
+		return {"assigned_to": frappe.session.user}
+	elif view == "unassigned":
+		return {
+			"assigned_to": ["is", "not set"],
+			"status": ["not in", ["Selesai", "Ditutup"]]
+		}
+	elif view == "overdue":
+		return {
+			"sla_resolution_by": ["<", now()],
+			"status": ["not in", ["Selesai", "Ditutup"]]
+		}
+	return {}
+
+
 def require_it_role():
 	"""Menolak Guest dan user tanpa peran IT dengan PermissionError."""
 	if frappe.session.user == "Guest":
@@ -158,14 +177,8 @@ def list_tickets(view="all", status=None, priority=None, ticket_type=None, categ
 	# Build filters
 	filters = {}
 
-	# View filter
-	if view == "mine":
-		filters["assigned_to"] = frappe.session.user
-	elif view == "unassigned":
-		filters["assigned_to"] = ["is", "not set"]
-	elif view == "overdue":
-		filters["sla_resolution_by"] = ["<", now()]
-		filters["status"] = ["not in", ["Selesai", "Ditutup"]]
+	# View filter (gunakan helper)
+	filters.update(_view_filters(view))
 
 	# Additional filters (hanya jika nilai non-kosong dan ada di opsi meta)
 	# Note: status parameter tidak boleh menggantikan filter status dari view
@@ -686,6 +699,106 @@ def search_users(query):
 			})
 
 	return {"users": it_users}
+
+
+@frappe.whitelist(methods=["GET"])
+def get_dashboard_counts():
+	"""Mengembalikan angka untuk dashboard beranda."""
+	require_it_role()
+
+	result = {
+		"tiket": {},
+		"problem": {},
+		"known_error_total": None,
+		"aset_total": None,
+		"server_now": now()
+	}
+
+	# Tiket counts
+	ticket_filters = {
+		"baru": {"status": "Baru"},
+		"sedang_dikerjakan": {"status": "Sedang Dikerjakan"},
+		"menunggu_user": {"status": "Menunggu User"},
+		"lewat_sla": _view_filters("overdue"),
+		"belum_ditugaskan": _view_filters("unassigned")
+	}
+
+	ticket_total_filters = {}
+	for key, filters in ticket_filters.items():
+		try:
+			count = len(frappe.get_list(
+				"NextHD Ticket",
+				pluck="name",
+				filters=filters,
+				limit_page_length=0
+			))
+			result["tiket"][key] = count
+		except Exception:
+			result["tiket"][key] = None
+
+	# Total tiket
+	try:
+		result["tiket"]["total"] = len(frappe.get_list(
+			"NextHD Ticket",
+			pluck="name",
+			filters=ticket_total_filters,
+			limit_page_length=0
+		))
+	except Exception:
+		result["tiket"]["total"] = None
+
+	# Problem counts
+	problem_filters = {
+		"terbuka": {"status": "Terbuka"},
+		"investigasi": {"status": "Investigasi"},
+		"known_error": {"status": "Known Error"}
+	}
+
+	problem_total_filters = {}
+	for key, filters in problem_filters.items():
+		try:
+			count = len(frappe.get_list(
+				"NextHD Problem",
+				pluck="name",
+				filters=filters,
+				limit_page_length=0
+			))
+			result["problem"][key] = count
+		except Exception:
+			result["problem"][key] = None
+
+	# Total problem
+	try:
+		result["problem"]["total"] = len(frappe.get_list(
+			"NextHD Problem",
+			pluck="name",
+			filters=problem_total_filters,
+			limit_page_length=0
+		))
+	except Exception:
+		result["problem"]["total"] = None
+
+	# Known Error total
+	try:
+		result["known_error_total"] = len(frappe.get_list(
+			"NextHD Known Error",
+			pluck="name",
+			limit_page_length=0
+		))
+	except Exception:
+		result["known_error_total"] = None
+
+	# Aset total
+	try:
+		result["aset_total"] = len(frappe.get_list(
+			"NextHD Asset",
+			pluck="name",
+			limit_page_length=0
+		))
+	except Exception:
+		result["aset_total"] = None
+
+	return result
 
 
 def _copy_photos(source_doctype, source_name, target_doc):
