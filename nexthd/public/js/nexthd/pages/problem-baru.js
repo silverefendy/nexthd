@@ -42,11 +42,11 @@
 		form.appendChild(titleField);
 
 		// Priority
-		var priorityField = createSelectField("Priority", "priority", options.priority, false);
+		var priorityField = createSelectField("Priority", "priority", options.priority, true, "Pilih prioritas...");
 		form.appendChild(priorityField);
 
 		// Category
-		var categoryField = createSelectField("Kategori", "category", options.categories, false);
+		var categoryField = createSelectField("Kategori", "category", options.categories, false, "-- Pilih --");
 		form.appendChild(categoryField);
 
 		// Related Asset
@@ -125,7 +125,7 @@
 		return div;
 	}
 
-	function createSelectField(label, name, options, required) {
+	function createSelectField(label, name, options, required, defaultText) {
 		var div = document.createElement("div");
 		div.className = "nx-field";
 
@@ -139,7 +139,7 @@
 
 		var defaultOpt = document.createElement("option");
 		defaultOpt.value = "";
-		defaultOpt.textContent = "-- Pilih --";
+		defaultOpt.textContent = defaultText || "-- Pilih --";
 		select.appendChild(defaultOpt);
 
 		if (options) {
@@ -243,6 +243,11 @@
 		// Client-side validation
 		if (!data.title || !data.title.trim()) {
 			showError(errorDiv, "Title wajib diisi");
+			return;
+		}
+
+		if (!data.priority || !data.priority.trim()) {
+			showError(errorDiv, "Priority wajib diisi");
 			return;
 		}
 
