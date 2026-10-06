@@ -93,6 +93,7 @@ def get_session_info():
 		"roles": it_roles_list,
 		"home": "/nexthd/kerja",
 		"can_create": frappe.has_permission("NextHD Ticket", "create"),
+		"can_create_problem": frappe.has_permission("NextHD Problem", "create"),
 		"csrf_token": frappe.sessions.get_csrf_token(),
 		"server_now": now()
 	}
@@ -1019,6 +1020,89 @@ def do_problem_action(name, action):
 	return {
 		"status": doc.status
 	}
+
+
+@frappe.whitelist(methods=["GET"])
+def get_problem_options():
+	"""Mengembalikan opsi dinamis untuk form Problem."""
+	require_it_role()
+
+	meta = frappe.get_meta("NextHD Problem")
+
+	# Ambil opsi dari field Select
+	def get_field_options(fieldname):
+		field = meta.get_field(fieldname)
+		if field and field.fieldtype == "Select" and field.options:
+			return [opt for opt in field.options.split("\n") if opt.strip()]
+		return []
+
+	priority_options = get_field_options("priority")
+
+	# Kategori dari DocType NextHD Category
+	categories = frappe.get_list("NextHD Category", pluck="name")
+
+	return {
+		"priority": priority_options,
+		"categories": categories
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def buat_problem(data):
+	"""Membuat Problem baru mandiri."""
+	require_it_role()
+
+	# Tolak jika bukan penulis
+	if not _is_writer():
+		frappe.throw(_("Anda tidak memiliki izin untuk membuat Problem"), frappe.PermissionError)
+
+	# Parse data jika berupa string
+	if isinstance(data, str):
+		data = frappe.parse_json(data)
+
+	if not isinstance(data, dict):
+		frappe.throw(_("Data harus berupa object"), frappe.ValidationError)
+
+	# Whitelist kunci yang diizinkan
+	ALLOWED_KEYS = {
+		"title", "priority", "category", "related_asset", "root_cause", "workaround"
+	}
+
+	# Filter data - abaikan kunci terlarang
+	filtered_data = {}
+	for key, value in data.items():
+		if key in ALLOWED_KEYS:
+			filtered_data[key] = value
+
+	# Sanitasi root_cause dan workaround
+	if filtered_data.get("root_cause"):
+		filtered_data["root_cause"] = sanitize_html(filtered_data["root_cause"])
+	if filtered_data.get("workaround"):
+		filtered_data["workaround"] = sanitize_html(filtered_data["workaround"])
+
+	# Validasi field wajib
+	if not filtered_data.get("title") or not filtered_data["title"].strip():
+		frappe.throw(_("Title wajib diisi"), frappe.ValidationError)
+
+	# Validasi panjang
+	if filtered_data.get("title") and len(filtered_data["title"]) > 140:
+		frappe.throw(_("Title maksimal 140 karakter"), frappe.ValidationError)
+
+	# Validasi priority jika diberikan
+	if filtered_data.get("priority"):
+		meta = frappe.get_meta("NextHD Problem")
+		priority_field = meta.get_field("priority")
+		if priority_field and filtered_data["priority"] not in (priority_field.options or "").split("\n"):
+			frappe.throw(_("Priority tidak valid"), frappe.ValidationError)
+
+	# Set status default
+	filtered_data["status"] = "Terbuka"
+
+	# Buat dokumen tanpa ignore_permissions
+	doc = frappe.get_doc({"doctype": "NextHD Problem", **filtered_data})
+	doc.insert()
+
+	return {"problem_name": doc.name}
 
 
 @frappe.whitelist(methods=["POST"])
