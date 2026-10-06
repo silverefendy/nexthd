@@ -17,8 +17,37 @@
 		return p;
 	}
 
+	// Read URL parameters for list mode
+	function readUrlParams() {
+		var urlParams = new URLSearchParams(window.location.search);
+
+		// Read status parameter (only allowed values)
+		var statusParam = urlParams.get("status");
+		var allowedStatuses = ["Terbuka", "Investigasi", "Known Error", "Selesai", "Ditutup"];
+		if (statusParam && allowedStatuses.indexOf(statusParam) !== -1) {
+			listState.status = statusParam;
+		}
+
+		// Read priority parameter (only allowed values)
+		var priorityParam = urlParams.get("priority");
+		var allowedPriorities = ["Kritis", "Tinggi", "Sedang", "Rendah"];
+		if (priorityParam && allowedPriorities.indexOf(priorityParam) !== -1) {
+			listState.priority = priorityParam;
+		}
+
+		// Read page parameter (must be integer >= 1)
+		var pageParam = urlParams.get("page");
+		if (pageParam) {
+			var pageNum = parseInt(pageParam, 10);
+			if (!isNaN(pageNum) && pageNum >= 1) {
+				listState.page = pageNum;
+			}
+		}
+	}
+
 	if (!problemId) {
 		// Show list of problems
+		readUrlParams();
 		loadProblemList();
 	} else {
 		// Show problem detail
