@@ -3,7 +3,7 @@
 > Untuk Devin. Baca `docs/FAQ_DEVELOPER.md` dan `docs/web/SPEC_PORTAL.md` dulu.
 > Ikuti scope ketat; jangan merapikan hal di luar scope. Satu sub-tahap = satu PR.
 >
-> **Status:** diperbarui 2026-10-06. Keputusan Efendy ada di bagian 1. Bagian 6 (B1) dikerjakan lebih dulu.
+> **Status:** diperbarui 2026-10-06. Keputusan Efendy ada di bagian 1. Bagian 6 (B1) sudah selesai (PR #19, teruji 6 Okt). Urutan berikutnya: Tahap 4, lalu 5a-2 dan seterusnya.
 
 ## 1. Keputusan (Efendy)
 
@@ -15,8 +15,8 @@
 | 4 | SLA "7 hari kerja" | Pilihan A: 1 hari = 1440 menit jam kerja. Tidak ada perubahan kode/data |
 | 5 | Impact/Urgency | Tetap 2 level (Tinggi/Rendah). Tidak menambah "Sedang" |
 | 6 | "Baru" untuk semua jenis (2026-10-06) | **Opsional**: Problem, Known Error, Change Request, dan Aset masing-masing bisa dibuat **mandiri** (formulir "Baru") **maupun** dari objek asalnya (tombol "Buat ... dari ..."). Tidak wajib dari tiket |
-| 7 | Menu navigasi (2026-10-06) | Dikerjakan **Claude** di `ui.js` (menu dropdown per kelompok: Daftar + Baru). **Devin tidak mengubah `ui.js` / `renderNav`.** Sebutkan halaman baru di deskripsi PR agar Claude menambahkannya ke menu |
-| 8 | Problem dari Tiket berstatus Selesai | Saat ini **boleh** (hanya status Ditutup yang ditolak). Menunggu keputusan Efendy apakah Selesai juga ditolak. Jangan diubah sebelum ada keputusan |
+| 7 | Menu navigasi (2026-10-06) | Dikerjakan **Claude** di `ui.js` (menu dropdown per kelompok: Daftar + Baru; dropdown Tiket sudah jadi). **Devin tidak mengubah `ui.js` / `renderNav`.** Sebutkan halaman baru di deskripsi PR agar Claude menambahkannya ke menu |
+| 8 | Problem dari Tiket berstatus Selesai (diputuskan Efendy 2026-10-06) | **Tetap boleh.** Hanya status Ditutup yang ditolak. Jangan diubah |
 
 ## 2. Aturan Umum (semua sub-tahap)
 
@@ -34,6 +34,7 @@
 12. **Git (wajib, agar tidak macet):** selalu `git --no-pager ...`; commit dengan `git commit -m "..."` (jangan membuka editor); tanpa rebase interaktif; jangan `git rebase` atau `git push --force`. Jika branch tertinggal dari `main`, jangan di-rebase: buat commit baru atau minta bantuan.
 13. **Laporan akhir** wajib menyertakan output mentah `git --no-pager log --stat -3` dan `git --no-pager diff --stat main`, serta daftar eksplisit apa yang **tidak** diuji. Klaim "selesai" tanpa ini tidak diterima.
 14. Pembagian PR: tiap jenis dipecah **dua PR kecil**: (-1) daftar + detail + aksi + tombol "Buat dari ..."; (-2) formulir "Baru" mandiri.
+15. **Versi aset:** halaman baru memakai versi yang sama dengan halaman yang ada (css `?v=3`, `api.js`/`ui.js` `?v=4`, per 6 Okt 2026). Jika sebuah PR mengubah `.js`/`.css` yang sudah dipakai halaman lain, sebutkan di deskripsi PR agar Claude menaikkan `?v=`.
 
 ## 3. Sub-tahap
 
@@ -97,32 +98,16 @@ Catatan untuk pengujian: pada skrip uji server jangan mengandalkan `frappe.db.ro
 - `frappe.get_list(..., fields=["count(name)"])` tidak diizinkan di Frappe v16; hitung dengan `len(get_list(pluck="name"))`.
 - Menu navigasi bersama ada di `ui.js` (`renderNav`); jangan diubah (keputusan 7).
 
-## 6. B1 - Filter dari URL (kerjakan PERTAMA, sebelum 5a-2 dan seterusnya)
+## 6. B1 - Filter dari URL (SELESAI: PR #19, teruji 6 Okt 2026)
 
-Tujuan: dashboard di Beranda nanti memakai tautan seperti `/nexthd/kerja?view=overdue` dan `/nexthd/problem?status=Terbuka`. Halaman harus membaca filter dari query string saat dibuka.
+Bagian ini dipertahankan sebagai acuan perilaku; jangan dikerjakan ulang.
 
-**File yang boleh diubah (hanya dua):** `nexthd/public/js/nexthd/pages/kerja.js` dan `nexthd/public/js/nexthd/pages/problem.js`. Tidak ada perubahan Python, tidak ada perubahan `ui.js`, tidak ada perubahan dokumentasi.
+Tujuan: dashboard di Beranda memakai tautan seperti `/nexthd/kerja?view=overdue` dan `/nexthd/problem?status=Terbuka`. Halaman membaca filter dari query string saat dibuka.
 
-**Halaman Tiket (`kerja.js`)**
-- Parameter yang dibaca saat halaman dimuat: `view` (`all`, `mine`, `unassigned`, `overdue`), `status`, `priority`, `ticket_type`, `category`, `search`.
-- Nilai harus diperiksa sebelum dipakai: `view` hanya dari empat nilai di atas; `status`/`priority`/`ticket_type`/`category` hanya jika ada di opsi hasil `get_ticket_options` (jika tidak ada, abaikan, jangan error). `search` dipotong maksimal 100 karakter.
-- Nilai tersebut mengisi state awal (`currentView`, `currentFilters`, `currentSearch`) **sebelum** pemuatan pertama, sehingga tab dan dropdown filter tampil terpilih sesuai URL.
-- Opsi `get_ticket_options` dimuat lebih dulu daripada daftar (sudah begitu di kode sekarang); pembacaan URL dilakukan setelah opsi tersedia.
-- Tanpa parameter, perilaku sama persis seperti sekarang.
+**Halaman Tiket (`kerja.js`)**: parameter `view` (`all`, `mine`, `unassigned`, `overdue`), `status`, `priority`, `ticket_type`, `category`, `search` (maks 100 karakter). Nilai diperiksa terhadap daftar yang diizinkan/opsi `get_ticket_options`; nilai tidak valid diabaikan. Tanpa parameter, perilaku seperti sebelumnya.
 
-**Halaman Problem (`problem.js`), hanya mode daftar (tanpa `?id=`)**
-- Parameter: `status` (salah satu dari `Terbuka`, `Investigasi`, `Known Error`, `Selesai`, `Ditutup`), `priority` (`Kritis`, `Tinggi`, `Sedang`, `Rendah`), `page` (bilangan bulat >= 1).
-- Nilai di luar daftar diabaikan. Mengisi `listState` sebelum pemuatan pertama.
-- Mode detail (`?id=`) tidak berubah.
+**Halaman Problem (`problem.js`), mode daftar saja**: parameter `status`, `priority`, `page` (bilangan bulat >= 1). Nilai di luar daftar diabaikan. Mode detail (`?id=`) tidak berubah.
 
-**Keamanan:** jangan memasukkan nilai query string ke `innerHTML`; nilai hanya dipakai sebagai parameter API atau `.value` elemen form.
+**Keamanan:** nilai query string tidak dimasukkan ke `innerHTML`.
 
-**Contoh yang harus berfungsi** (Efendy akan menguji manual):
-- `/nexthd/kerja?view=overdue` -> tab "Lewat SLA" aktif
-- `/nexthd/kerja?view=mine&priority=Kritis` -> tab "Ditugaskan ke saya" aktif dan filter Prioritas = Kritis
-- `/nexthd/kerja?status=Baru` -> filter Status = Baru
-- `/nexthd/kerja?view=ngawur&status=ngawur` -> diabaikan, tampil seperti tanpa parameter
-- `/nexthd/problem?status=Terbuka` -> filter Status = Terbuka
-- `/nexthd/problem?status=ngawur&page=abc` -> diabaikan
-
-**Urutan pengerjaan setelah B1:** Tahap 4 (dashboard Beranda; spesifikasinya ditulis Claude di `TUGAS_TAHAP_4.md`), lalu 5a-2, 5b-1, 5b-2, 5c-1, 5c-2, 5d. Satu per satu, tanpa diselingi pekerjaan lain.
+**Urutan pengerjaan berikutnya:** Tahap 4 (dashboard Beranda, `TUGAS_TAHAP_4.md`), lalu 5a-2, 5b-1, 5b-2, 5c-1, 5c-2, 5d. Satu per satu, tanpa diselingi pekerjaan lain.

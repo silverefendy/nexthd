@@ -3,7 +3,7 @@
 > Untuk Devin. Baca `docs/FAQ_DEVELOPER.md`, `docs/web/SPEC_PORTAL.md`, dan `docs/web/TUGAS_TAHAP_5.md` (bagian 2 "Aturan Umum") dulu.
 > Ikuti scope ketat; jangan merapikan hal di luar scope. Satu PR.
 >
-> **Status:** ditulis 2026-10-06. Prasyarat B1 (filter dari URL, PR #19) sudah di `main` dan teruji.
+> **Status:** ditulis 2026-10-06, semua keputusan sudah final (Efendy, 2026-10-06). Prasyarat selesai: B1 (filter dari URL, PR #19) dan penaikan `?v=` aset (`a8b8bba`) sudah di `main`.
 
 ## 1. Tujuan
 
@@ -17,14 +17,14 @@ Beranda `/nexthd` untuk tim IT menjadi **dashboard**: kartu angka yang bisa dikl
 | 2 | Konten landing lama (hero, fitur, alur, teknologi) | Turunan dari keputusan 1: dipindah **utuh** ke `/nexthd/tentang` (halaman baru, tanpa perubahan tampilan). Dashboard punya tautan kecil "Tentang NextHD" di bagian bawah |
 | 3 | User login tetapi bukan peran IT | Dialihkan ke `/nexthd/tentang` (landing lama, tombol "Buat Tiket" ke `/tiket-saya` tetap ada). Guest tetap dialihkan ke `/login?redirect-to=/nexthd` |
 | 4 | Angka di kartu | **Harus sama persis** dengan total di halaman tujuan klik. Angka dihitung dengan filter yang sama dengan `list_tickets` (lihat bagian 4) |
-| 5 | Kartu "Belum ditugaskan" | Menghitung hanya tiket aktif (status bukan Selesai/Ditutup). **Saran Claude, konfirmasi Efendy sebelum prompt dikirim** (lihat bagian 8) |
+| 5 | Kartu "Belum ditugaskan" | **Diputuskan Efendy 2026-10-06 (mengikuti saran Claude):** hanya tiket aktif (status bukan Selesai/Ditutup). Ikut memperbaiki tab "Belum ditugaskan" di antrian |
 | 6 | Yang tidak dibangun di tahap ini | Daftar tiket di dashboard, grafik, kartu "Ditugaskan ke saya", kartu Prioritas Kritis (filter `list_tickets` belum bisa mengecualikan tiket Selesai/Ditutup saat dikombinasi prioritas), dashboard khusus manajer `/nexthd/manajer` |
 
 ## 3. File yang boleh diubah/dibuat
 
 | File | Aksi |
 |---|---|
-| `nexthd/next_helpdesk/api/portal.py` | Tambah helper `_view_filters` dan endpoint `get_dashboard_counts`; ubah `list_tickets` **hanya** agar memakai helper (perilaku identik, kecuali keputusan 5) |
+| `nexthd/next_helpdesk/api/portal.py` | Tambah helper `_view_filters` dan endpoint `get_dashboard_counts`; ubah `list_tickets` **hanya** agar memakai helper (perilaku identik, kecuali `unassigned` sesuai keputusan 5) |
 | `nexthd/www/nexthd/tentang.html`, `tentang.py` | Baru: salinan `index.html` dan `index.py` yang sekarang, tanpa perubahan isi |
 | `nexthd/www/nexthd/index.html`, `index.py` | Tulis ulang menjadi dashboard |
 | `nexthd/public/js/nexthd/pages/beranda.js` | Baru |
@@ -109,7 +109,7 @@ Aturan: nilai dari server hanya lewat `textContent`; `href` berupa konstanta di 
 - Guest ke `/nexthd` dialihkan ke login.
 - Akun non-IT login: `/nexthd` mengarah ke `/nexthd/tentang` dan halaman itu tampil seperti landing lama.
 - Akun IT: menu bersama tampil (Beranda, Tiket ▾, Problem, Desk, nama user, Keluar), kartu terisi.
-- Setiap kartu: angka sama dengan "dari ... " total di halaman tujuan (Claude memeriksa dengan skrip server: bandingkan `get_dashboard_counts` dengan `list_tickets(...).total` dan `list_problems(...).total`).
+- Setiap kartu: angka sama dengan total di halaman tujuan (Claude memeriksa dengan skrip server: bandingkan `get_dashboard_counts` dengan `list_tickets(...).total` dan `list_problems(...).total`).
 - Klik tiap kartu membuka daftar dengan filter/tab yang benar (memakai B1).
 - Akun Auditor (hanya baca) tetap bisa melihat dashboard.
 - Tampilan HP: kartu satu kolom, menu dropdown tetap berfungsi.
@@ -119,10 +119,8 @@ Aturan: nilai dari server hanya lewat `textContent`; `href` berupa konstanta di 
 
 Sesuai `TUGAS_TAHAP_5.md` bagian 2 butir 11-13: output mentah `git --no-pager log --stat -3` dan `git --no-pager diff --stat main`, daftar file, dan daftar eksplisit hal yang **tidak** diuji. Jangan mengedit `docs/`.
 
-**Prompt/branch:** `feat/web-tahap-4`, nama PR "Tahap 4 - Dashboard Beranda".
+**Branch:** `feat/web-tahap-4`, nama PR "Tahap 4 - Dashboard Beranda".
 
-## 8. Keputusan menunggu Efendy
+## 8. Keputusan menunggu
 
-| # | Pertanyaan | Saran Claude |
-|---|---|---|
-| 9 | Kartu "Belum ditugaskan": hitung hanya tiket aktif? Saat ini `view=unassigned` di `list_tickets` ikut menghitung tiket Selesai/Ditutup yang tidak punya penanggung jawab, sehingga angka dan daftar menyesatkan | Ya, hanya tiket aktif (perubahan kecil di `_view_filters`, ikut memperbaiki tab "Belum ditugaskan" di antrian) |
+Tidak ada. Keputusan #9 (kartu "Belum ditugaskan" hanya tiket aktif) sudah final, lihat bagian 2 butir 5.
