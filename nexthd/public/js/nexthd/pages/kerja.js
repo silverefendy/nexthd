@@ -256,9 +256,40 @@
 		return day + " " + monthName + " " + year + ", " + hour + ":" + minute;
 	}
 
+	// Read URL parameters after options are loaded
+	function readUrlParams() {
+		var urlParams = new URLSearchParams(window.location.search);
+
+		// Read view parameter (only allowed values)
+		var viewParam = urlParams.get("view");
+		var allowedViews = ["all", "mine", "unassigned", "overdue"];
+		if (viewParam && allowedViews.indexOf(viewParam) !== -1) {
+			currentView = viewParam;
+		}
+
+		// Read filter parameters (only if they exist in options)
+		var filterFields = ["status", "priority", "ticket_type", "category"];
+		filterFields.forEach(function (field) {
+			var paramValue = urlParams.get(field);
+			if (paramValue) {
+				var opts = field === "category" ? options.categories : options[field];
+				if (opts && opts.indexOf(paramValue) !== -1) {
+					currentFilters[field] = paramValue;
+				}
+			}
+		});
+
+		// Read search parameter (max 100 characters)
+		var searchParam = urlParams.get("search");
+		if (searchParam) {
+			currentSearch = searchParam.substring(0, 100);
+		}
+	}
+
 	// Load options dan session
 	NX.api.get("nexthd.next_helpdesk.api.portal.get_ticket_options").then(function (opts) {
 		options = opts;
+		readUrlParams();
 		return NX.api.get("nexthd.next_helpdesk.api.portal.get_session_info");
 	}).then(function (session) {
 		NX.ui.renderNav(session);
