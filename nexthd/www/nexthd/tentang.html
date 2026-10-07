@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NextHD — Helpdesk ITIL untuk Tim IT</title>
-{% if is_it %}
-<meta name="csrf-token" content="{{ csrf_token }}">
 <link rel="stylesheet" href="/assets/nexthd/css/nexthd/base.css?v=3">
 <link rel="stylesheet" href="/assets/nexthd/css/nexthd/layout.css?v=3">
 <link rel="stylesheet" href="/assets/nexthd/css/nexthd/components.css?v=3">
+{% if is_it %}
+<meta name="csrf-token" content="{{ csrf_token }}">
 <script src="/assets/nexthd/js/nexthd/api.js?v=4" defer></script>
 <script src="/assets/nexthd/js/nexthd/ui.js?v=5" defer></script>
 {% endif %}
@@ -19,14 +19,14 @@
 {% if is_it %}
 <nav id="nx-nav"></nav>
 <script>
-(function() {
+document.addEventListener("DOMContentLoaded", function() {
 	"use strict";
 	NX.api.get("nexthd.next_helpdesk.api.portal.get_session_info").then(function(session) {
 		NX.ui.renderNav(session);
 	}).catch(function(err) {
 		console.error("Gagal memuat session:", err);
 	});
-})();
+});
 </script>
 {% else %}
 <nav class="nx-nav"><div class="nx-wrap"><b>NEXTHD//</b>
@@ -34,7 +34,7 @@
 {% if frappe.session.user == "Guest" %}
 <a href="/login?redirect-to=/nexthd/tentang">Masuk</a>
 {% else %}
-<a href="/tiket-saya">Tiket Saya</a>
+<!-- tautan Tiket Saya disembunyikan sampai /tiket-saya diperbaiki -->
 {% endif %}
 </div></div></nav>
 {% endif %}
@@ -44,7 +44,7 @@
 <span class="tag">Frappe v16 · ITIL-lite</span>
 <h1>Next<span>HD</span></h1>
 <p class="lead">Sistem helpdesk untuk tim IT: tiket, SLA sadar jam kerja, Problem, Known Error, Change Request, dan aset dalam satu tempat. Notifikasi langsung ke Telegram.</p>
-<a class="btn" href="/desk/nexthd">Buka Dashboard</a>{% if home_url %}<a class="btn alt" href="{{ home_url }}">Ruang Kerja</a>{% endif %}<a class="btn alt" href="/tiket-saya">Buat Tiket</a>
+{% if is_it %}<a class="btn" href="/desk/nexthd">Buka Dashboard</a>{% if home_url %}<a class="btn alt" href="{{ home_url }}">Ruang Kerja</a>{% endif %}<a class="btn alt" href="/nexthd/tiket-baru">Buat Tiket</a>{% endif %}
 </div></header>
 
 <section id="statistik"><div class="wrap reveal">
