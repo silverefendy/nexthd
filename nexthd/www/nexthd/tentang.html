@@ -4,13 +4,42 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NextHD — Helpdesk ITIL untuk Tim IT</title>
-<link rel="stylesheet" href="/assets/nexthd/css/nexthd_landing.css?v=1">
+{% if is_it %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<link rel="stylesheet" href="/assets/nexthd/css/nexthd/base.css?v=3">
+<link rel="stylesheet" href="/assets/nexthd/css/nexthd/layout.css?v=3">
+<link rel="stylesheet" href="/assets/nexthd/css/nexthd/components.css?v=3">
+<script src="/assets/nexthd/js/nexthd/api.js?v=4" defer></script>
+<script src="/assets/nexthd/js/nexthd/ui.js?v=5" defer></script>
+{% endif %}
+<link rel="stylesheet" href="/assets/nexthd/css/nexthd/tentang.css?v=1">
 <script src="/assets/nexthd/js/nexthd_landing.js?v=1" defer></script>
 </head>
 <body>
-<nav><div class="wrap"><b>NEXTHD//</b>
-<div><a href="#statistik">statistik</a><a href="#fitur">fitur</a><a href="#alur">alur</a><a href="#teknologi">teknologi</a><a href="/desk/nexthd">masuk desk</a></div></div></nav>
+{% if is_it %}
+<nav id="nx-nav"></nav>
+<script>
+(function() {
+	"use strict";
+	NX.api.get("nexthd.next_helpdesk.api.portal.get_session_info").then(function(session) {
+		NX.ui.renderNav(session);
+	}).catch(function(err) {
+		console.error("Gagal memuat session:", err);
+	});
+})();
+</script>
+{% else %}
+<nav class="nx-nav"><div class="nx-wrap"><b>NEXTHD//</b>
+<div>
+{% if frappe.session.user == "Guest" %}
+<a href="/login?redirect-to=/nexthd/tentang">Masuk</a>
+{% else %}
+<a href="/tiket-saya">Tiket Saya</a>
+{% endif %}
+</div></div></nav>
+{% endif %}
 
+<div class="nx-tentang">
 <header class="hero"><div class="wrap">
 <span class="tag">Frappe v16 · ITIL-lite</span>
 <h1>Next<span>HD</span></h1>
@@ -54,6 +83,11 @@ Tiket ─▶ Problem ─▶ Known Error ─▶ Change Request</pre>
 <div class="chips"><span>Frappe v16</span><span>Python</span><span>MariaDB</span><span>Telegram Bot API</span><span>Workflow</span><span>Bahasa Indonesia</span></div>
 </div></section>
 
+<div class="wrap reveal" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border, #ddd);">
+<small><a href="#statistik">statistik</a> · <a href="#fitur">fitur</a> · <a href="#alur">alur</a> · <a href="#teknologi">teknologi</a></small>
+</div>
+
 <footer><div class="wrap">NEXTHD // dalam pengembangan aktif · dibangun untuk tim IT internal</div></footer>
+</div>
 </body>
 </html>
