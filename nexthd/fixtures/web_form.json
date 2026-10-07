@@ -25,7 +25,7 @@
   "key_required": 0,
   "list_columns": [],
   "list_title": "Tiket Saya",
-  "login_required": 0,
+  "login_required": 1,
   "max_attachment_size": 0,
   "meta_description": null,
   "meta_image": null,
