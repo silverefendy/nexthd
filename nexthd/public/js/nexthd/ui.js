@@ -105,8 +105,8 @@
 			var menu = document.createElement("div");
 			var links = [
 				{ href: "/nexthd", text: "Beranda" },
-				{ href: "/nexthd/kerja", text: "Tiket", children: [{ href: "/nexthd/kerja", text: "Antrian Tiket" }, { href: "/nexthd/tiket-baru", text: "Tiket Baru", needCreate: true }] },
-				{ href: "/nexthd/problem", text: "Problem" }
+				{ href: "/nexthd/kerja", text: "Tiket", children: [{ href: "/nexthd/kerja", text: "List Ticket" }, { href: "/nexthd/tiket-baru", text: "Tiket Baru", needCreate: true }] },
+				{ href: "/nexthd/problem", text: "Problem", children: [{ href: "/nexthd/problem", text: "List Problem" }, { href: "/nexthd/problem-baru", text: "Problem Baru", needCreateProblem: true }] }
 			];
 
 
@@ -114,7 +114,9 @@
 
 			links.forEach(function (link) {
 				var children = (link.children || []).filter(function (c) {
-					return !c.needCreate || (session.can_create && NX.ui.FEATURES.newTicket);
+					if (c.needCreate) { return !!(session.can_create && NX.ui.FEATURES.newTicket); }
+						if (c.needCreateProblem) { return !!session.can_create_problem; }
+						return true;
 				});
 				if (children.length < 2) {
 					var a = document.createElement("a");
