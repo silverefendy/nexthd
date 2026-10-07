@@ -108,7 +108,7 @@
     "idx": 3
    },
    {
-    "allow_read_on_all_link_options": 0,
+    "allow_read_on_all_link_options": 1,
     "default": null,
     "depends_on": null,
     "description": null,
@@ -129,7 +129,7 @@
     "idx": 4
    },
    {
-    "allow_read_on_all_link_options": 0,
+    "allow_read_on_all_link_options": 1,
     "default": null,
     "depends_on": null,
     "description": null,
@@ -150,7 +150,7 @@
     "idx": 5
    },
    {
-    "allow_read_on_all_link_options": 0,
+    "allow_read_on_all_link_options": 1,
     "default": null,
     "depends_on": "eval:doc.ticket_type == 'Permintaan Layanan'",
     "description": null,
