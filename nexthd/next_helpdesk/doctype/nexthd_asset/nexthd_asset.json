@@ -28,6 +28,8 @@
   "photos",
   "section_attributes",
   "asset_attributes",
+  "section_users",
+  "asset_users",
   "tanggal_dibuat",
   "tanggal_diedit"
  ],
@@ -47,8 +49,9 @@
   },
   {
    "fieldname": "location",
-   "fieldtype": "Data",
-   "label": "Location"
+   "fieldtype": "Link",
+   "label": "Location",
+   "options": "NextHD Location"
   },
   {
    "fieldname": "assigned_to",
@@ -153,6 +156,17 @@
    "fieldtype": "Table",
    "label": "Asset Attributes",
    "options": "NextHD Asset Attribute"
+  },
+  {
+   "fieldname": "section_users",
+   "fieldtype": "Section Break",
+   "label": "Pengguna Aset"
+  },
+  {
+   "fieldname": "asset_users",
+   "fieldtype": "Table",
+   "label": "Pengguna Aset",
+   "options": "NextHD Asset User"
   },
   {
    "fieldname": "tanggal_dibuat",

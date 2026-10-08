@@ -19,7 +19,16 @@ def get_permission_query_conditions(user=None):
     user = user or frappe.session.user
     if not _requester_murni(user):
         return ""
-    return "`tabNextHD Asset`.`assigned_to` = {0}".format(frappe.db.escape(user))
+    user_escaped = frappe.db.escape(user)
+    # requester murni melihat aset jika assigned_to = dirinya ATAU dirinya ada di tabel asset_users
+    return """(
+        `tabNextHD Asset`.`assigned_to` = {0}
+        OR EXISTS (
+            SELECT 1 FROM `tabNextHD Asset User`
+            WHERE parent = `tabNextHD Asset`.`name`
+            AND user = {0}
+        )
+    )""".format(user_escaped)
 
 
 def has_permission(doc, ptype=None, user=None, **kwargs):
@@ -27,4 +36,11 @@ def has_permission(doc, ptype=None, user=None, **kwargs):
     user = user or frappe.session.user
     if not _requester_murni(user):
         return True
-    return doc.get("assigned_to") == user
+    # requester murni boleh jika assigned_to = dirinya ATAU dirinya ada di tabel asset_users
+    if doc.get("assigned_to") == user:
+        return True
+    # cek tabel asset_users
+    asset_users = frappe.get_all("NextHD Asset User",
+        filters={"parent": doc.get("name"), "user": user},
+        fields=["name"])
+    return len(asset_users) > 0
