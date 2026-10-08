@@ -6,3 +6,4 @@
 # Patches added in this section will be executed after doctypes are migrated
 nexthd.patches.create_custom_roles
 nexthd.patches.remove_next_helpdesk_workspace
+nexthd.patches.migrate_asset_location
