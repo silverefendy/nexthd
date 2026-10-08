@@ -317,6 +317,10 @@ doctype_list_js = {
     "NextHD Asset": "public/js/nexthd_asset_list.js"
 }
 
+doctype_js = {
+    "NextHD Ticket": "public/js/nexthd_ticket_asset.js"
+}
+
 
 # Requester hanya melihat aset yang di-assign kepadanya (Okt 2026)
 permission_query_conditions = {
