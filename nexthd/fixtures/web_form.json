@@ -177,7 +177,7 @@
     "description": null,
     "fieldname": "affected_asset",
     "fieldtype": "Link",
-    "hidden": 0,
+    "hidden": 1,
     "label": "Affected Asset",
     "mandatory_depends_on": null,
     "max_length": 0,

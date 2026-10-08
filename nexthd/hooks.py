@@ -316,3 +316,13 @@ doctype_list_js = {
     "NextHD Photo": "public/js/nexthd_photo_list.js",
     "NextHD Asset": "public/js/nexthd_asset_list.js"
 }
+
+
+# Requester hanya melihat aset yang di-assign kepadanya (Okt 2026)
+permission_query_conditions = {
+    "NextHD Asset": "nexthd.next_helpdesk.utils.aset_izin.get_permission_query_conditions",
+}
+
+has_permission = {
+    "NextHD Asset": "nexthd.next_helpdesk.utils.aset_izin.has_permission",
+}
