@@ -42,3 +42,28 @@ def get_asset_list_for_ticket(doctype, txt, searchfield, start, page_len, filter
         page_length=page_len,
     )
     return [(a.name, "{0} ({1})".format(a.asset_name, a.name)) for a in assets]
+
+
+@frappe.whitelist()
+def get_my_assets():
+    """
+    Daftar aset milik user yang sedang login (assigned_to atau terdaftar di
+    Pengguna Aset). Dipakai dropdown Aset Terdampak di Web Form Tiket Saya.
+    Tunduk pada aturan izin (get_list), jadi tidak membocorkan aset orang lain.
+    """
+    user = frappe.session.user
+    if user == "Guest":
+        return []
+    assigned = frappe.get_all("NextHD Asset", filters={"assigned_to": user}, pluck="name")
+    shared = frappe.get_all("NextHD Asset User", filters={"user": user}, pluck="parent")
+    names = list(set(assigned + shared))
+    if not names:
+        return []
+    rows = frappe.get_list(
+        "NextHD Asset",
+        fields=["name", "asset_name"],
+        filters={"name": ["in", names]},
+        order_by="asset_name asc",
+        limit_page_length=0,
+    )
+    return [{"value": r.name, "label": "{0} ({1})".format(r.asset_name, r.name)} for r in rows]

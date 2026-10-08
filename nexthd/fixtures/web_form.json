@@ -12,7 +12,7 @@
   "banner_image": null,
   "breadcrumbs": null,
   "button_label": null,
-  "client_script": null,
+  "client_script": "(function () {\n    var percobaan = 0;\n    function isi() {\n        var f = frappe.web_form && frappe.web_form.get_field && frappe.web_form.get_field(\"affected_asset\");\n        if (!f) {\n            percobaan = percobaan + 1;\n            if (percobaan < 30) { setTimeout(isi, 300); }\n            return;\n        }\n        frappe.call({\n            method: \"nexthd.next_helpdesk.utils.aset_filter.get_my_assets\",\n            callback: function (r) {\n                var opts = (r.message || []).map(function (o) { return { value: o.value, label: o.label }; });\n                f.df.fieldtype = \"Autocomplete\";\n                f.df.options = opts;\n                if (f.set_data) { f.set_data(opts); }\n                if (f.awesomplete) { f.awesomplete.list = opts; }\n            }\n        });\n    }\n    isi();\n})();\n",
   "condition_json": null,
   "custom_css": null,
   "doc_type": "NextHD Ticket",
@@ -30,7 +30,7 @@
   "meta_description": null,
   "meta_image": null,
   "meta_title": null,
-  "modified": "2026-08-20 00:00:00",
+  "modified": "2026-10-08 23:36:46.323684",
   "module": "Next Helpdesk",
   "name": "Tiket Saya",
   "print_format": null,
@@ -62,8 +62,7 @@
     "read_only": 0,
     "read_only_depends_on": null,
     "reqd": 1,
-    "show_in_filter": 0,
-    "idx": 1
+    "show_in_filter": 0
    },
    {
     "allow_read_on_all_link_options": 0,
@@ -83,8 +82,7 @@
     "read_only": 0,
     "read_only_depends_on": null,
     "reqd": 1,
-    "show_in_filter": 0,
-    "idx": 2
+    "show_in_filter": 0
    },
    {
     "allow_read_on_all_link_options": 0,
@@ -104,8 +102,7 @@
     "read_only": 0,
     "read_only_depends_on": null,
     "reqd": 0,
-    "show_in_filter": 0,
-    "idx": 3
+    "show_in_filter": 0
    },
    {
     "allow_read_on_all_link_options": 1,
@@ -125,8 +122,7 @@
     "read_only": 0,
     "read_only_depends_on": null,
     "reqd": 0,
-    "show_in_filter": 0,
-    "idx": 4
+    "show_in_filter": 0
    },
    {
     "allow_read_on_all_link_options": 1,
@@ -146,8 +142,7 @@
     "read_only": 0,
     "read_only_depends_on": null,
     "reqd": 0,
-    "show_in_filter": 0,
-    "idx": 5
+    "show_in_filter": 0
    },
    {
     "allow_read_on_all_link_options": 1,
@@ -167,8 +162,7 @@
     "read_only": 0,
     "read_only_depends_on": null,
     "reqd": 0,
-    "show_in_filter": 0,
-    "idx": 6
+    "show_in_filter": 0
    },
    {
     "allow_read_on_all_link_options": 0,
@@ -177,8 +171,8 @@
     "description": null,
     "fieldname": "affected_asset",
     "fieldtype": "Link",
-    "hidden": 1,
-    "label": "Affected Asset",
+    "hidden": 0,
+    "label": "Aset Terdampak",
     "mandatory_depends_on": null,
     "max_length": 0,
     "max_value": 0,
@@ -188,8 +182,7 @@
     "read_only": 0,
     "read_only_depends_on": null,
     "reqd": 0,
-    "show_in_filter": 0,
-    "idx": 7
+    "show_in_filter": 0
    },
    {
     "allow_read_on_all_link_options": 0,
@@ -209,8 +202,7 @@
     "read_only": 0,
     "read_only_depends_on": null,
     "reqd": 0,
-    "show_in_filter": 0,
-    "idx": 8
+    "show_in_filter": 0
    }
   ],
   "website_sidebar": null
