@@ -5,7 +5,12 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "user"
+  "user",
+  "bagian",
+  "kontak",
+  "pengguna_utama",
+  "tanggal_mulai",
+  "keterangan"
  ],
  "fields": [
   {
@@ -15,12 +20,43 @@
    "label": "User",
    "options": "User",
    "reqd": 1
+  },
+  {
+   "fieldname": "bagian",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Bagian",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kontak",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Kontak",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pengguna_utama",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Pengguna Utama"
+  },
+  {
+   "fieldname": "tanggal_mulai",
+   "fieldtype": "Date",
+   "label": "Tanggal Mulai"
+  },
+  {
+   "fieldname": "keterangan",
+   "fieldtype": "Small Text",
+   "label": "Keterangan",
+   "in_list_view": 1
   }
  ],
  "idx_unique": [],
  "istable": 1,
  "links": [],
- "modified": "2026-10-08 00:00:00.000000",
+ "modified": "2026-10-09 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Next Helpdesk",
  "name": "NextHD Asset User",
