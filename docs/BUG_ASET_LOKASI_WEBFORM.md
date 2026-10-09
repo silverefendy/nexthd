@@ -1,7 +1,7 @@
 # NextHD — Lokasi & Pengguna Aset, Web Form Aset Terdampak (Sesi 8–9 Oktober 2026)
 
 > Catatan sesi 8–9 Oktober 2026 (WIB). Menyangkut PR #24, PR #25, perbaikan Web Form `/tiket-saya`, kolom Pengguna Aset, dan sinkron data dari User Frappe.
-> **Last updated:** 2026-10-09
+> **Last updated:** 2026-10-09 16:30 WIB (koreksi §4: urutan kontak `mobile_no` dulu; commit `80cfcc0`)
 
 ---
 
@@ -14,9 +14,9 @@
 | `utils/aset_izin.py` | Izin baca aset: assigned_to atau terdaftar di Pengguna Aset | ✅ Live |
 | `utils/aset_filter.py` | `get_asset_list_for_ticket` (dropdown Desk) + `get_my_assets` (Web Form) | ✅ Live |
 | Web Form `Tiket Saya` | Field `affected_asset` tampil (label "Aset Terdampak"), diisi lewat client script | ✅ Live, commit `d583cd4` |
-| Bagian dan Kontak otomatis dari User Frappe | Custom Field `department` di User + helper `pengguna_aset_sync.py` + hook `User.on_update` | ✅ Live, commit `766feaf` |
+| Bagian dan Kontak otomatis dari User Frappe | Custom Field `department` di User + helper `pengguna_aset_sync.py` + hook `User.on_update` | ✅ Live, commit `766feaf`; urutan kontak diubah di `80cfcc0` |
 
-Commit terkait: `c612248` (controller, id.csv, format dropdown), `d583cd4` (`get_my_assets` + fixture Web Form), `c2f29fc` (kolom Pengguna Aset), `766feaf` (sinkron dari User).
+Commit terkait: `c612248` (controller, id.csv, format dropdown), `d583cd4` (`get_my_assets` + fixture Web Form), `c2f29fc` (kolom Pengguna Aset), `766feaf` (sinkron dari User), `80cfcc0` (kontak: `mobile_no` dulu, `phone` cadangan).
 
 ## 2. Bug dan Perbaikan
 
@@ -44,7 +44,7 @@ Commit terkait: `c612248` (controller, id.csv, format dropdown), `d583cd4` (`get
 | Data | Sumber | Catatan |
 |---|---|---|
 | Bagian | `User.department` (Custom Field baru, label "Departemen", setelah `location`) | Fixture `custom_field.json`, filter `dt=User` dan `fieldname=department` di `hooks.py` |
-| Kontak | `User.phone`, cadangan `User.mobile_no` | Kode memakai `phone` dulu; `mobile_no` hanya dipakai kalau `phone` kosong |
+| Kontak | `User.mobile_no` dulu, cadangan `User.phone` | Keputusan Efendy 9 Oktober ("semua sudah pakai mobile"), commit `80cfcc0`. Kalau hanya salah satu yang diisi, itu yang tampil. (Versi awal commit `766feaf` memakai `phone` dulu — sudah tidak berlaku.) |
 
 Mekanisme:
 - `ambil_info_user(user)` di `utils/pengguna_aset_sync.py` mengembalikan `(bagian, kontak)`.
@@ -58,8 +58,9 @@ Mekanisme:
 - DocType baru wajib punya class controller, kalau tidak `migrate` gagal `ImportError`.
 - Query Link kustom harus mengembalikan list tuple, bukan dict.
 - Script JS yang dipasang lewat Python ditulis ke file `.js` terpisah lalu dibaca (`open().read()`), supaya tidak ada masalah escaping `\n`.
-- `validate` pada child table tidak dijamin terpanggil saat parent disimpan; isi data turunan child di controller parent.
+- `validate` pada child table tidak dijamin terpanggil saat parent disimpan; isi data turunan child di controller parent. (Belum dibuktikan apakah v16 memanggilnya otomatis; dihindari dengan mengisi dari controller parent.)
 - Sebelum `git push`, kalau ada commit dokumentasi dari sisi lain, `git pull` dulu (push ditolak `fetch first`).
+- Pesan `cleanup_old_syncs is not a valid method` saat migrate berasal dari Frappe, abaikan.
 
 ## 6. Hasil Uji (8–9 Oktober 2026)
 
@@ -69,15 +70,17 @@ Mekanisme:
 | Submit tiket dari Web Form, `affected_asset` tersimpan benar | ✅ `TKT-2610-0009` |
 | User tanpa aset (`maya.pltb@`) mendapat dropdown kosong | ✅ |
 | Ubah Departemen User maymunah, Bagian di aset ikut berubah tanpa menyimpan aset | ✅ |
-| Kontak diambil dari `phone` User | ✅ |
+| Kontak diambil dari User (`phone` pada uji awal; kini `mobile_no` dulu) | ✅ |
 | Isi data User rika, baris rika di aset ikut terisi | ✅ |
 | Dropdown Web Form masih berfungsi setelah perubahan | ✅ |
-| Urutan field Web Form setelah export fixture | ⬜ Belum dicek visual |
+| Urutan field Web Form setelah export fixture | ✅ Normal secara visual (screenshot). Belum dicek ulang setelah `migrate` berikutnya |
+| Aset bersama untuk rika.suhari di Web Form | ⬜ Belum diuji eksplisit (datanya sudah terisi di aset) |
 
 ## 7. Pending
 
 1. Tahap 6 (opsional, setelah stabil beberapa hari): hapus `department` dan `phone_internal` dari `NextHD User Profile`.
-2. Isi Departemen dan Telepon untuk user lain di User Frappe.
-3. 2 aset tanpa lokasi.
-4. Item lama: DD (`Link Type` kosong di Workspace Link "Reporting Data"), EE (rename Module "Next Helpdesk" menjadi "NextHD").
-5. Sinkronkan `SUMMARY.md`, `DAFTAR_FITUR.md`, dan `ARSITEKTUR.md` dengan fitur Lokasi/Pengguna Aset (belum dikerjakan).
+2. Isi Departemen dan HP/Telepon untuk user lain di User Frappe (Efendy).
+3. 2 aset tanpa lokasi (Efendy akan cek).
+4. Uji aset bersama untuk rika.suhari di Web Form.
+5. Item lama: DD (`Link Type` kosong di Workspace Link "Reporting Data" — di `SUMMARY.md` sudah tercatat selesai 29 Agustus, verifikasi ulang kalau perlu), EE (rename Module "Next Helpdesk" menjadi "NextHD").
+6. Sinkronisasi dokumen: `SUMMARY.md` dan `DAFTAR_FITUR.md` ✅ diperbarui 9 Oktober 16:30 WIB; `ARSITEKTUR.md` (§3 Asset, DocType baru, Custom Field `department`), `POLA_KERJA.md` dan `BUG_HISTORY.md` masih menyusul.
