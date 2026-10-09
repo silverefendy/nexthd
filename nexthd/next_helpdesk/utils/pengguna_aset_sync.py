@@ -8,7 +8,7 @@ def ambil_info_user(user):
 	info = frappe.db.get_value("User", user, ["department", "phone", "mobile_no"], as_dict=True)
 	if not info:
 		return None, None
-	return info.department or None, info.phone or info.mobile_no or None
+	return info.department or None, info.mobile_no or info.phone or None
 
 
 def sync_pengguna_aset(doc, method=None):
