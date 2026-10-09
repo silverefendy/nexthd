@@ -16,13 +16,10 @@ class NextHDAsset(Document):
 				frappe.throw("Warranty Until date cannot be before Purchase Date")
 
 	def isi_info_pengguna(self):
-		"""Isi bagian dan kontak tiap Pengguna Aset dari NextHD User Profile"""
+		"""Isi bagian dan kontak tiap Pengguna Aset dari User Frappe"""
+		from nexthd.next_helpdesk.utils.pengguna_aset_sync import ambil_info_user
 		for row in self.get("asset_users") or []:
-			prof = None
-			if row.user:
-				prof = frappe.db.get_value("NextHD User Profile", {"user": row.user}, ["department", "phone_internal"], as_dict=True)
-			row.bagian = prof.department if prof else None
-			row.kontak = prof.phone_internal if prof else None
+			row.bagian, row.kontak = ambil_info_user(row.user)
 
 	def on_update(self):
 		"""Handle updates to asset"""

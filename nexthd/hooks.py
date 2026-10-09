@@ -139,7 +139,8 @@ after_install = "nexthd.install.after_install"
 
 doc_events = {
 	"User": {
-		"before_insert": "nexthd.next_helpdesk.utils.email_helper.before_insert_user_hook"
+		"before_insert": "nexthd.next_helpdesk.utils.email_helper.before_insert_user_hook",
+            "on_update": "nexthd.next_helpdesk.utils.pengguna_aset_sync.sync_pengguna_aset"
 	},
 	"NextHD Ticket": {
 		"after_insert": "nexthd.next_helpdesk.utils.telegram.notify_ticket_created",
@@ -186,6 +187,7 @@ scheduler_events = {
 # menyebabkan "Removing orphan Workspaces" saat bench migrate — workspace jadi hilang.
 
 fixtures = [
+    {"dt": "Custom Field", "filters": [["dt", "=", "User"], ["fieldname", "=", "department"]]},
         {"dt": "Workflow", "filters": [["name", "in", [
                 "NextHD Ticket",
                 "NextHD Problem",
