@@ -144,7 +144,7 @@ function open_photo_viewer(frm, start_index) {
 	};
 }
 
-// Pengisian otomatis atribut dari template kategori (10 Okt 2026)
+// Pengisian otomatis atribut dari template kategori (v2: ganti template saat kategori berubah)
 frappe.ui.form.on("NextHD Asset", {
 asset_category(frm) {
 fill_attribute_template(frm);
@@ -155,21 +155,53 @@ function fill_attribute_template(frm) {
 if (!frm.doc.asset_category) {
 return;
 }
+var data_fields = ["attribute_value", "brand", "serial_number", "sumber", "catatan"];
+var copy_fields = ["attribute_name", "attribute_value", "unit", "brand", "serial_number", "sumber", "catatan"];
 frappe.db.get_doc("NextHD Asset Category", frm.doc.asset_category).then(function(cat) {
 var tpl = cat.attribute_template || [];
-var existing = (frm.doc.asset_attributes || []).map(function(r) {
-return r.attribute_name;
+var tpl_names = tpl.map(function(t) {
+return t.attribute_name;
+});
+var kept = [];
+var removed = 0;
+var leftover = 0;
+(frm.doc.asset_attributes || []).forEach(function(r) {
+var filled = data_fields.some(function(f) {
+return r[f];
+});
+var in_tpl = tpl_names.indexOf(r.attribute_name) !== -1;
+if (filled || in_tpl) {
+var copy = {};
+copy_fields.forEach(function(f) {
+copy[f] = r[f];
+});
+kept.push(copy);
+if (filled && !in_tpl) {
+leftover++;
+}
+} else {
+removed++;
+}
+});
+var kept_names = kept.map(function(k) {
+return k.attribute_name;
 });
 var added = 0;
 tpl.forEach(function(t) {
-if (existing.indexOf(t.attribute_name) === -1) {
-frm.add_child("asset_attributes", { attribute_name: t.attribute_name });
+if (kept_names.indexOf(t.attribute_name) === -1) {
+kept.push({ attribute_name: t.attribute_name, unit: t.unit || "" });
 added++;
 }
 });
-if (added) {
+frm.clear_table("asset_attributes");
+kept.forEach(function(k) {
+frm.add_child("asset_attributes", k);
+});
 frm.refresh_field("asset_attributes");
-frappe.show_alert({ message: added + " atribut ditambahkan dari template", indicator: "green" });
+var msg = added + " ditambahkan, " + removed + " kosong dibuang";
+if (leftover) {
+msg += ", " + leftover + " atribut lama berisi data dipertahankan (cek manual)";
 }
+frappe.show_alert({ message: msg, indicator: leftover ? "orange" : "green" });
 });
 }
