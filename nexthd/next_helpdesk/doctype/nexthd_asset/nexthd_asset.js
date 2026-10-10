@@ -143,3 +143,33 @@ function open_photo_viewer(frm, start_index) {
 		$(document).off('keydown.nexthd_photo_viewer');
 	};
 }
+
+// Pengisian otomatis atribut dari template kategori (10 Okt 2026)
+frappe.ui.form.on("NextHD Asset", {
+asset_category(frm) {
+fill_attribute_template(frm);
+}
+});
+
+function fill_attribute_template(frm) {
+if (!frm.doc.asset_category) {
+return;
+}
+frappe.db.get_doc("NextHD Asset Category", frm.doc.asset_category).then(function(cat) {
+var tpl = cat.attribute_template || [];
+var existing = (frm.doc.asset_attributes || []).map(function(r) {
+return r.attribute_name;
+});
+var added = 0;
+tpl.forEach(function(t) {
+if (existing.indexOf(t.attribute_name) === -1) {
+frm.add_child("asset_attributes", { attribute_name: t.attribute_name });
+added++;
+}
+});
+if (added) {
+frm.refresh_field("asset_attributes");
+frappe.show_alert({ message: added + " atribut ditambahkan dari template", indicator: "green" });
+}
+});
+}
