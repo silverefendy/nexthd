@@ -12,6 +12,7 @@
   "asset_name",
   "location",
   "assigned_to",
+  "kolom_kanan_info",
   "status",
   "asset_category",
   "purchase_date",
@@ -181,10 +182,14 @@
    "hidden": 1,
    "label": "Tanggal Diedit",
    "read_only": 1
+  },
+  {
+   "fieldname": "kolom_kanan_info",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2026-09-09 16:03:45.614144",
+ "modified": "2026-10-10 13:45:57.952323",
  "modified_by": "Administrator",
  "module": "Next Helpdesk",
  "name": "NextHD Asset",
