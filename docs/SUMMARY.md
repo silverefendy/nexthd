@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-10-09 16:30 WIB (item TT baru — fitur Lokasi (DocType), Pengguna Aset (child table), dropdown Aset Terdampak di Web Form Tiket Saya, Bagian/Kontak otomatis dari User Frappe; PR #24 dan #25 merged. Sebelumnya 2026-09-24: item RR selesai penuh — Standard Filter 6 DocType; item SS — Laporan Mingguan Telegram, commit `29eb5ad`. 2026-09-12: item QQ — root cause notifikasi Telegram `on_insert`→`after_insert`; fitur multi-assignee Tahap 1-2 dari 4)
+> **Last updated:** 2026-10-11 05:58 WIB (item UU baru — template atribut Asset, perapian data 11 aset, relasi aset. Sebelumnya 2026-10-09 16:30 WIB: item TT baru — fitur Lokasi (DocType), Pengguna Aset (child table), dropdown Aset Terdampak di Web Form Tiket Saya, Bagian/Kontak otomatis dari User Frappe; PR #24 dan #25 merged. Sebelumnya 2026-09-24: item RR selesai penuh — Standard Filter 6 DocType; item SS — Laporan Mingguan Telegram, commit `29eb5ad`. 2026-09-12: item QQ — root cause notifikasi Telegram `on_insert`→`after_insert`; fitur multi-assignee Tahap 1-2 dari 4)
 >
 > **⚠️ Celah sinkronisasi (dicatat 9 Oktober 2026):** dokumen ini belum memuat rinci pekerjaan portal web `/nexthd` (Tahap 3–5, 25 September–8 Oktober) — itu tercatat di `docs/web/` (LOG_WEB, FITUR_WEB, BUG_WEB, TUGAS_TAHAP_*), sebagian ditunda. Ringkasan dari catatan sesi: Tahap 4 (dashboard klik-able Beranda, PR #20) lulus tes browser 7 Okt; Tahap 5a-2 (Problem Baru, PR #21), PR #22 (priority wajib), menu Problem ▾ / "List Ticket", PR #23 + patch (menu bersama di `/nexthd/tentang`) lulus tes 7 Okt; Web Form Tiket Saya sempat rusak (`is_standard=1` tanpa berkas modul → `ModuleNotFoundError`), diperbaiki ke `is_standard 0`, `login_required 1`, dropdown Tim ditambahkan 8 Okt. **Klaim lama "Web Form live 22 Agustus" tidak sepenuhnya benar** — Web Form baru benar-benar berfungsi setelah perbaikan 7 Okt. Sinkronisasi penuh `docs/web/*` masih pending.
 
@@ -15,12 +15,13 @@
 | `docs/FAQ_DEVELOPER.md` | **Wajib dibaca Devin pertama kali** — kurasi masalah berulang (Workspace/Desktop Icon pasca-migrate) + pembagian kerja Claude/Devin/Efendy + hal yang tidak boleh diubah tanpa izin |
 | `docs/SUMMARY.md` | **File ini** — index + project overview + status item belum dikerjakan (operasional harian) |
 | `docs/DAFTAR_FITUR.md` | Checklist lengkap semua fitur (selesai/dikerjakan/rencana) dalam satu tabel, termasuk desain Generalisasi Non-IT & Wipe Data Tool (sebelumnya di `ARSITEKTUR.md §8/§9`) |
-| `docs/ARSITEKTUR.md` | Infrastruktur, struktur app, DocType/field lengkap, permissions, schema tabel, label ID. **⚠️ §3 Detail Field NextHD Asset belum disinkronkan ke struktur EAV (`asset_category` + `asset_attributes`)** — masih menggambarkan `asset_type` + field IT-spesifik yang sudah dihapus. **⚠️ Juga belum memuat DocType `NextHD Location`, `NextHD Asset User`, dan Custom Field `department` di User (item TT)** |
+| `docs/ARSITEKTUR.md` | Infrastruktur, struktur app, DocType/field lengkap, permissions, schema tabel, label ID. §3 Asset sudah EAV sejak 9 September; disinkronkan lagi 2026-10-11 05:58 WIB (Lokasi Link, Pengguna Aset, template atribut, relasi aset). **⚠️ Masih belum memuat Custom Field `department` di User (item TT) dan field rinci `NextHD Location`/`NextHD Asset Relationship`** |
 | `docs/WORKFLOW.md` | Notifikasi Telegram + semua state machine + riwayat bug workflow |
 | `docs/POLA_KERJA.md` | Aturan wajib saat coding/debug di server (pola console, fixtures, Frappe quirks Workspace/Desktop Icon/Dashboard Shortcut) — **tanpa** riwayat bug (lihat 2 file bug di bawah). Pecahan dari `POLA_KERJA_DAN_BUG.md` lama (dihapus 30 Agustus) |
 | `docs/BUG_WORKSPACE_SIDEBAR.md` | Riwayat bug khusus Workspace/Desktop Icon/Sidebar/Dashboard Shortcut (paling sering terjadi & paling tebal) — 13 sesi bug, 24 Agustus s/d 2 September, termasuk **root cause final regresi sidebar (item MM, 2 September)** |
 | `docs/BUG_HISTORY.md` | Riwayat bug lain di luar Workspace/Sidebar — SLA/Business Hours, Telegram, naming series, Asset EAV, navigasi relasi antar dokumen, dll. **Terbaru (24 September): Standard Filter list view + `search_fields` Asset usang (item RR) dan fitur Laporan Mingguan Telegram (item SS)**; sebelumnya root cause `on_insert` vs `after_insert` (item QQ, 10-12 September) |
 | `docs/BUG_ASET_LOKASI_WEBFORM.md` | **Baru (8–9 Oktober, item TT):** fitur Lokasi + Pengguna Aset, bug dropdown Aset Terdampak di Web Form v16 (Autocomplete, `get_link_options`), sumber data Bagian/Kontak dari User Frappe, hasil uji, pelajaran teknis |
+| `docs/ASET_ATRIBUT.md` | **Baru (10 Oktober, item UU):** template atribut per kategori Asset, keputusan isian bebas, RAM/Storage satu baris per item, perapian data 11 aset, pelajaran teknis, relasi aset (CMDB tahap 1) |
 | `docs/web/` | Dokumentasi portal web `/nexthd` (Tahap 1–5): `SPEC_PORTAL`, `TUGAS_TAHAP_*`, `LOG_WEB`, `FITUR_WEB`, `BUG_WEB`, review PR. **⚠️ Belum disinkronkan dengan sesi 7–8 Oktober** |
 | `docs/PANDUAN_INSTALASI.md` | Instalasi, setup Telegram/SLA, alur deploy, referensi |
 | `docs/AUDIT_SISTEM.md` | Script audit lengkap (schema drift, Workspace, Workflow master data, SLA, fixtures) + script verifikasi ringan pasca-perbaikan + script gabungan cek semua isu Workspace/Sidebar/Dashboard. Dipakai on-demand untuk cek kesehatan server atau sebelum install ke server baru |
@@ -74,6 +75,18 @@
 
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `docs/BUG_WORKSPACE_SIDEBAR.md` atau `docs/BUG_HISTORY.md` (sebelumnya `POLA_KERJA_DAN_BUG.md`, sudah dihapus 30 Agustus).
 > Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/DAFTAR_FITUR.md`.
+
+### ✅ Item UU — SELESAI (10 Oktober): Template Atribut Asset, Perapian Data 11 Aset, Relasi Aset
+
+> Detail lengkap, keputusan, dan pelajaran teknis: `docs/ASET_ATRIBUT.md`.
+
+| # | Item | Keterangan | PIC |
+|---|---|---|---|
+| UU-1 | Template atribut per kategori | Child DocType `NextHD Asset Category Attribute` + field `attribute_template` (commit `ba5dfc6`). 6 kategori terisi: PC/Server 9, Laptop 5, Monitor/Printer/Network Device 3. Semua nilai diisi bebas (teks), tanpa dropdown. **Template adalah data DB, bukan file repo** — server baru perlu seeding (belum ada) | Claude + Efendy |
+| UU-2 | Form Asset | Handler JS ganti atribut saat kategori berubah (commit `78f8b59`), kolom grid diperlebar dan `attribute_value` tidak wajib (`8726605`, `3b86321`), form dua kolom (`kolom_kanan_info`). Diuji berhasil 10 Oktober | Claude + Efendy |
+| UU-3 | Perapian data lama 11 aset | RAM dan Storage satu baris per keping/disk. Tiga skrip berurutan; 3 aset dua-disk sempat salah (urutan data lama bukan berpasangan) dan dikoreksi. Backup `20261010_162742-desk_ciptamebel_co_id-database.sql.gz` | Claude + Efendy |
+| UU-4 | Relasi aset (CMDB tahap 1) | DocType `NextHD Asset Relationship` (`711015f`), dashboard Relasi di form Asset (`9667175`), item sidebar (`d7570f7`), Reset Data Demo ikut menghapus relasi + prefix `REL-` (`5a2ff61`). Label sidebar masih `Nexthd Asset Relation` | Devin + Claude + Efendy |
+| UU-5 | Sisa | (a) seeding template untuk instalasi baru (spesifikasi Devin); (b) `test_nexthd_asset.py` usang (W2); (c) audit `naming_rule` DocType baru; (d) isi manual Socket CPU/Motherboard/Casing; (e) dokumentasi rinci field `NextHD Asset Relationship` | Efendy + Devin + Claude |
 
 ### ✅ Item TT — SELESAI (8–9 Oktober): Lokasi, Pengguna Aset, Dropdown Aset Terdampak di Web Form, Bagian/Kontak dari User Frappe
 
@@ -279,4 +292,4 @@ Ringkasan lengkap seluruh item historis (Agustus s/d awal September) tidak diula
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-10-09 16:30 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-10-11 05:58 WIB.*

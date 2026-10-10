@@ -3,7 +3,7 @@
 > Referensi statis: infrastruktur, struktur app, DocType/field, permissions, schema DB, label ID.
 > Jarang berubah kecuali ada penambahan DocType atau perubahan infrastruktur.
 >
-> **Last updated:** 2026-09-09 12:10 WIB
+> **Last updated:** 2026-10-11 05:58 WIB
 
 ---
 
@@ -136,6 +136,8 @@ nexthd/
 | NextHD Team Member | NextHD Team |
 | NextHD Problem Ticket | NextHD Problem |
 | NextHD Asset Attribute | NextHD Asset (EAV, ditambahkan 28 Agustus 2026) |
+| NextHD Asset Category Attribute | NextHD Asset Category (template atribut per kategori, commit `ba5dfc6`, 10 Oktober 2026) |
+| NextHD Asset User | NextHD Asset (Pengguna Aset, PR #24, 8 Oktober 2026) |
 | NextHD Ticket Worklog | NextHD Ticket (catatan progress teknisi, PR #11, live 31 Agustus 2026) |
 | NextHD Activity Log | NextHD Problem, NextHD Change Request, NextHD Known Error (shared, pola sama seperti `NextHD Photo Link` — riwayat aktivitas otomatis+manual, PR #12, live 7-8 September 2026, item OO) |
 
@@ -320,7 +322,7 @@ Workflow bawaan, bukan `formatters`) — lihat `docs/WORKFLOW.md`.
 ```
 naming_series         → AST-.YY.MM.-.####.
 asset_name            → Data (required)
-location              → Data
+location              → Link: NextHD Location (PR #24, 8 Oktober 2026; sebelumnya Data)
 assigned_to           → Link: User
 status                → Select: Aktif / Rusak / Diperbaiki / Dihapus
 asset_category        → Link: NextHD Asset Category (required — SATU-SATUNYA sumber
@@ -336,6 +338,7 @@ warranty_until        → Date
 
 photos                 → Table: NextHD Photo Link (foto reusable, PR #9)
 asset_attributes       → Table: NextHD Asset Attribute (EAV, semua spesifikasi terstruktur sekarang di sini)
+asset_users            → Table: NextHD Asset User (PR #24; Bagian/Kontak otomatis dari User Frappe, item TT)
 tanggal_dibuat         → Datetime (hidden, read_only — ditambahkan 5-6 September 2026)
 tanggal_diedit         → Datetime (hidden, read_only — idem)
 ```
@@ -395,6 +398,39 @@ catatan          → Text
 > **sudah dihapus total**, bukan cuma hidden) — akan gagal kalau dijalankan. Belum direvisi
 > (item W2 di `docs/SUMMARY.md`), cocok untuk task Devin terpisah, prioritas rendah karena
 > tidak mempengaruhi produksi live.
+
+### Detail Field: NextHD Asset Category & Template Atribut (10 Oktober 2026)
+
+category_name → Data (nama dokumen, autoname field:category_name)
+description → Text
+attribute_template → Table: NextHD Asset Category Attribute
+
+Child table NextHD Asset Category Attribute
+
+attribute_name → Data (required)
+field_type → Select: Teks / Angka / Pilihan (semua Teks sejak 10 Oktober)
+options → Small Text
+unit → Data
+is_required → Check
+
+
+> Saat `asset_category` di form Asset berubah, handler JS (`nexthd_asset.js`) mengganti baris
+> `asset_attributes` sesuai template: baris kosong milik kategori lama dibuang, baris berisi
+> dipertahankan, atribut template baru ditambahkan. Semua nilai diisi bebas. **Template adalah
+> data database, bukan file repo.** Detail dan pelajaran: `docs/ASET_ATRIBUT.md`.
+
+### Detail Field: NextHD Location & NextHD Asset User (PR #24, 8 Oktober 2026)
+
+`NextHD Location` adalah master lokasi (Link dari `NextHD Asset.location`). `NextHD Asset User`
+adalah child table Pengguna Aset dengan 6 kolom: pengguna, Bagian, Kontak, Pengguna Utama,
+Tanggal Mulai, Keterangan. Bagian dan Kontak diisi otomatis dari User Frappe (Custom Field
+`department`, `mobile_no`/`phone`). Field rinci: lihat `docs/BUG_ASET_LOKASI_WEBFORM.md`.
+
+### Detail Field: NextHD Asset Relationship (CMDB tahap 1)
+
+DocType relasi antar-aset (commit `711015f`). Form Asset menampilkan dashboard "Relasi" lewat
+`get_dashboard_data()` dengan `fieldname: source_asset`. Ikut dihapus oleh Reset Data Demo
+(prefix `REL-`). Rincian field belum ditulis di sini; sumbernya `nexthd_asset_relationship.json`.
 
 ### Detail Field: NextHD Change Request
 
@@ -705,7 +741,7 @@ tag, document_type, document_name
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-09-09 — item PP: `asset_type`
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-10-11 05:58 WIB — sinkronisasi Asset (Lokasi, Pengguna Aset, template atribut, relasi aset). Sebelumnya 2026-09-09 — item PP: `asset_type`
 dihapus total (metadata+kolom fisik, sebelumnya cuma hidden sejak item NN), fix `naming_rule`
 usang di 5 DocType, tabel `NextHD Activity Log` (item OO/PR #12) ditambahkan ke §3/§6, warna
 List View (`formatters`) didokumentasikan per DocType, struktur folder `public/js/`
