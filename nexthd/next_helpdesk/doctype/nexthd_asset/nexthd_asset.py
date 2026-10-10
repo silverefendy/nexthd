@@ -29,3 +29,8 @@ class NextHDAsset(Document):
 		if not self.tanggal_dibuat:
 			self.db_set("tanggal_dibuat", self.creation, update_modified=False)
 		self.db_set("tanggal_diedit", now_datetime(), update_modified=False)
+def get_dashboard_data(data=None):
+    return {
+        "fieldname": "source_asset",
+        "transactions": [{"label": "Relasi", "items": ["NextHD Asset Relationship"]}],
+    }
