@@ -8,11 +8,12 @@ TRANSACTIONAL_DOCTYPES = [
 	"NextHD Problem",
 	"NextHD Change Request",
 	"NextHD Known Error",
+	"NextHD Asset Relationship",
 	"NextHD Asset",
 	"NextHD Photo",
 ]
 
-NAMING_PREFIXES = ["TKT-", "PRB-", "CHG-", "AST-", "KE-", "IMG-"]
+NAMING_PREFIXES = ["TKT-", "PRB-", "CHG-", "AST-", "KE-", "IMG-", "REL-"]
 
 
 @frappe.whitelist()
