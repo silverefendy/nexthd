@@ -15,6 +15,19 @@ TRANSACTIONAL_DOCTYPES = [
 
 NAMING_PREFIXES = ["TKT-", "PRB-", "CHG-", "AST-", "KE-", "IMG-", "REL-"]
 
+CHILD_DOCTYPES = [
+	"NextHD Photo Link",
+	"NextHD Ticket Waiting Log",
+	"NextHD Problem Ticket",
+	"NextHD Ticket Worklog",
+	"NextHD Activity Log",
+	"NextHD Asset Attribute",
+	"NextHD Asset User",
+	"NextHD Ticket Assignee",
+	"NextHD Ticket Requester",
+	"NextHD Ticket Team Link",
+]
+
 
 @frappe.whitelist()
 def reset_demo_data(confirm_text=None):
@@ -35,8 +48,9 @@ def reset_demo_data(confirm_text=None):
 		frappe.db.delete(doctype)
 		deleted_summary[doctype] = count
 
-	for child_doctype in ["NextHD Photo Link", "NextHD Ticket Waiting Log", "NextHD Problem Ticket"]:
-		frappe.db.delete(child_doctype)
+	for child_doctype in CHILD_DOCTYPES:
+		if frappe.db.exists("DocType", child_doctype):
+			frappe.db.delete(child_doctype)
 
 	for prefix in NAMING_PREFIXES:
 		frappe.db.sql("DELETE FROM `tabSeries` WHERE name LIKE %s", (prefix + "%",))

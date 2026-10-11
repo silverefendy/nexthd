@@ -2,7 +2,7 @@
 
 > **Entry point.** Baca ini dulu — berisi overview dan pointer ke file detail.
 >
-> **Last updated:** 2026-10-11 05:58 WIB (item UU baru — template atribut Asset, perapian data 11 aset, relasi aset. Sebelumnya 2026-10-09 16:30 WIB: item TT baru — fitur Lokasi (DocType), Pengguna Aset (child table), dropdown Aset Terdampak di Web Form Tiket Saya, Bagian/Kontak otomatis dari User Frappe; PR #24 dan #25 merged. Sebelumnya 2026-09-24: item RR selesai penuh — Standard Filter 6 DocType; item SS — Laporan Mingguan Telegram, commit `29eb5ad`. 2026-09-12: item QQ — root cause notifikasi Telegram `on_insert`→`after_insert`; fitur multi-assignee Tahap 1-2 dari 4)
+> **Last updated:** 2026-10-11 08:09 WIB (audit 11 Oktober: item VV baru, koreksi RR-4/autentikasi/jumlah sidebar. Sebelumnya 2026-10-11 05:58 WIB: item UU baru — template atribut Asset, perapian data 11 aset, relasi aset. Sebelumnya 2026-10-09 16:30 WIB: item TT baru — fitur Lokasi (DocType), Pengguna Aset (child table), dropdown Aset Terdampak di Web Form Tiket Saya, Bagian/Kontak otomatis dari User Frappe; PR #24 dan #25 merged. Sebelumnya 2026-09-24: item RR selesai penuh — Standard Filter 6 DocType; item SS — Laporan Mingguan Telegram, commit `29eb5ad`. 2026-09-12: item QQ — root cause notifikasi Telegram `on_insert`→`after_insert`; fitur multi-assignee Tahap 1-2 dari 4)
 >
 > **⚠️ Celah sinkronisasi (dicatat 9 Oktober 2026):** dokumen ini belum memuat rinci pekerjaan portal web `/nexthd` (Tahap 3–5, 25 September–8 Oktober) — itu tercatat di `docs/web/` (LOG_WEB, FITUR_WEB, BUG_WEB, TUGAS_TAHAP_*), sebagian ditunda. Ringkasan dari catatan sesi: Tahap 4 (dashboard klik-able Beranda, PR #20) lulus tes browser 7 Okt; Tahap 5a-2 (Problem Baru, PR #21), PR #22 (priority wajib), menu Problem ▾ / "List Ticket", PR #23 + patch (menu bersama di `/nexthd/tentang`) lulus tes 7 Okt; Web Form Tiket Saya sempat rusak (`is_standard=1` tanpa berkas modul → `ModuleNotFoundError`), diperbaiki ke `is_standard 0`, `login_required 1`, dropdown Tim ditambahkan 8 Okt. **Klaim lama "Web Form live 22 Agustus" tidak sepenuhnya benar** — Web Form baru benar-benar berfungsi setelah perbaikan 7 Okt. Sinkronisasi penuh `docs/web/*` masih pending.
 
@@ -37,7 +37,7 @@
 | **Tujuan** | Sistem ITSM internal (Incident, Problem, Change, Asset, Known Error, Service Catalog) untuk tim IT CML |
 | **Basis** | Frappe Framework v16 murni (BUKAN ERPNext) |
 | **User** | Karyawan internal saja |
-| **Autentikasi** | Username-based login, TANPA email asli (email dummy `@noemail.internal`) |
+| **Autentikasi** | Username-based login, TANPA email asli (email dummy `@ciptamebel.co.id` sejak 20 Agustus; mailbox tidak ada) |
 | **Notifikasi** | Telegram Bot (utama, **terkonfirmasi live** 22 Agustus, **root cause bug assignment/team saat insert diperbaiki 10-12 September — lihat item QQ**) + In-app notification bawaan Frappe — TIDAK pakai email |
 | **Bahasa UI** | Bahasa Indonesia (default) |
 | **Cakupan ITIL** | Incident, Problem, Change, Known Error, Asset/CMDB, Service Catalog |
@@ -59,7 +59,7 @@
 - SLA monitoring otomatis berbasis jam kerja (warning 30 menit sebelum breach), termasuk **titik-mulai resolution saat "Mulai Kerjakan" + pause/resume saat "Menunggu User"** (PR #8, bugfix `76ce3e9`) — **✅ live + terverifikasi**
 - Priority otomatis dari matriks Impact × Urgency, dengan override manual untuk Agent Manager/IT Manager (PR #7) — **✅ live + terverifikasi**
 - Multi-tim dengan assignment agent. **Sedang dikembangkan (item QQ, Tahap 1-2/4 selesai):** dukungan multi-assignee, multi-requester, dan tim/bagian terdampak tambahan (lihat detail di §2)
-- Custom reports: Tiket per Bulan, Tiket per Agent, Tiket per Kategori, Tiket per Prioritas (breach SLA), SLA Compliance Bulanan, Aset Bermasalah, Detail Aset Lengkap, Riwayat Progress Tiket — **kartu shortcut dashboard "Laporan" sudah ditambah (26 Agustus, fix `report_ref_doctype`+cache, menunggu konfirmasi visual)**, sidebar kiri "NextHD" (17 item, termasuk Asset Category) dan sidebar Workspace "NextHD Report" (8 item) **✅ dikonfirmasi PERMANEN & stabil lintas migrate 2 September (item MM)**, sidebar "NextHD Reporting" (11 shortcut Detail Report Lengkap) sudah live sejak 27 Agustus. Report "Detail Aset Lengkap" **9 September:** kolom & filter `asset_type` dihapus total, filter diganti `asset_category` (item PP)
+- Custom reports: Tiket per Bulan, Tiket per Agent, Tiket per Kategori, Tiket per Prioritas (breach SLA), SLA Compliance Bulanan, Aset Bermasalah, Detail Aset Lengkap, Riwayat Progress Tiket — **kartu shortcut dashboard "Laporan" sudah ditambah (26 Agustus, fix `report_ref_doctype`+cache, menunggu konfirmasi visual)**, sidebar kiri "NextHD" (18 item per 10 Oktober, termasuk Asset Category dan Asset Relationship) dan sidebar Workspace "NextHD Report" (8 item) **✅ dikonfirmasi PERMANEN & stabil lintas migrate 2 September (item MM)**, sidebar "NextHD Reporting" (11 shortcut Detail Report Lengkap) sudah live sejak 27 Agustus. Report "Detail Aset Lengkap" **9 September:** kolom & filter `asset_type` dihapus total, filter diganti `asset_category` (item PP)
 - Field meta `Tanggal Dibuat`/`Tanggal Diedit` (tersinkron otomatis dari `creation`/`modified` via `sync_meta_dates()`) ditambahkan ke 5 DocType (Ticket, Problem, Known Error, Change Request, Asset) supaya bisa ditampilkan di List View biasa — **✅ live, item NN, 5-6 September**
 - Riwayat Aktivitas/Progress (`NextHD Activity Log`) untuk Problem, Change Request, Known Error — log otomatis saat status berubah + catatan manual Agent + link dua arah opsional ke dokumen lain saat konversi — **✅ live, item OO, 7-8 September** (lihat detail di §2)
 - **Warna List View (indicator pill)** ditambahkan ke Priority & Ticket Type (Ticket), Kategori (Photo, hash-color dinamis), Status & Asset Category (Asset, hash-color dinamis) — **✅ live, item PP, 9 September**
@@ -75,6 +75,18 @@
 
 > Bagian ini yang **paling sering diupdate tiap sesi**. Item selesai dipindah ke `docs/BUG_WORKSPACE_SIDEBAR.md` atau `docs/BUG_HISTORY.md` (sebelumnya `POLA_KERJA_DAN_BUG.md`, sudah dihapus 30 Agustus).
 > Untuk rencana fitur besar yang belum jadi task konkret, lihat `docs/DAFTAR_FITUR.md`.
+
+### 🔶 Item VV — Audit 11 Oktober: Temuan dan Tindak Lanjut
+
+| # | Item | Keterangan | PIC |
+|---|---|---|---|
+| VV-1 | Reset Data Demo meninggalkan data yatim | `api.py` hanya menghapus 3 child table (Photo Link, Waiting Log, Problem Ticket). Child table yang ditambahkan sesudahnya (Worklog, Activity Log, Asset Attribute, Asset User, Ticket Assignee/Requester/Team Link) tidak ikut terhapus. Perbaikan disiapkan 11 Oktober: konstanta `CHILD_DOCTYPES` berisi 10 tabel (`NextHD Asset Category Attribute` sengaja tidak termasuk karena data master) | Claude + Efendy |
+| VV-2 | `developer_mode = 1` aktif di produksi | Terkonfirmasi di `site_config.json` `desk.ciptamebel.co.id`. Akibatnya simpan DocType menulis file ke repo. Keputusan mematikan menunggu Efendy (butuh `bench restart`) | Efendy |
+| VV-3 | Sertifikat SSL | Tercatat valid sampai 5 November 2026; belum dicek apakah pembaruan otomatis certbot berjalan (`sudo certbot certificates` di CML-VPS) | Efendy |
+| VV-4 | Jam Laporan Mingguan | Lihat SS-4 | Efendy + Claude |
+| VV-5 | Seeding template atribut Asset | Spesifikasi untuk Devin: `docs/TUGAS_DEVIN_SEEDING_TEMPLATE.md` | Devin |
+| VV-6 | Belum diperiksa | `DAFTAR_FITUR.md`, `HANDOFF.md`, `WORKFLOW.md`, `FAQ_DEVELOPER.md`, `PANDUAN_INSTALASI.md` | Claude |
+
 
 ### ✅ Item UU — SELESAI (10 Oktober): Template Atribut Asset, Perapian Data 11 Aset, Relasi Aset
 
@@ -108,7 +120,7 @@
 | SS-1 | Fitur Laporan Mingguan ternyata sudah dikerjakan di sesi lain (sekitar 14-15 September) tapi tidak tercatat di dokumentasi mana pun | Ditemukan sebagai perubahan yang belum di-commit saat `git status` 24 September. Komponen: cron `0 8 * * 1` di `hooks.py`, `send_weekly_ticket_report()` di `telegram.py`, field `weekly_report_teams`/`weekly_report_users` (Table MultiSelect) di `NextHD Settings`, 2 DocType child `NextHD Report Recipient Team`/`User`, `nexthd_settings.js`, dan permissions `NextHD Settings` yang sebelumnya kosong. Detail di `docs/BUG_HISTORY.md` | Sesi lain + Claude (dokumentasi) |
 | SS-2 | Commit + push | ✅ Selesai, commit `29eb5ad`. Sempat hampir hilang karena `git stash -u` (lalu dikembalikan dengan `stash pop`) — lihat pelajaran di `docs/BUG_HISTORY.md` | Efendy |
 | SS-3 | Tes fungsional | ✅ `send_weekly_ticket_report()` dipanggil manual via `bench console` 24 September 13:08, tanpa error, dan **notifikasi masuk di Telegram** (dikonfirmasi Efendy) | Efendy |
-| SS-4 | **Cek jam kirim cron Senin (28 September)** | Cron `0 8 * * 1` mengikuti jam server, dan `date` server berselisih dari waktu Frappe (02:37 vs 08:33 pada pengecekan yang sama). Cek pesan Senin masuk jam berapa; kalau tidak jam 08:00 waktu Medan, sesuaikan cron | Efendy |
+| SS-4 | **Cek jam kirim cron Senin (28 September)** | Cron `0 8 * * 1` mengikuti jam server, dan `date` server berselisih dari waktu Frappe (02:37 vs 08:33 pada pengecekan yang sama). Cek pesan Senin masuk jam berapa; kalau tidak jam 08:00 waktu Medan, sesuaikan cron. **11 Oktober:** Efendy melaporkan laporan Senin masuk sekitar 09:52 (dari ingatan, belum dicek log); selisih 1 jam 52 menit bukan kelipatan jam penuh, jadi bukan masalah zona waktu saja — cek `Scheduled Job Log` | Efendy |
 | SS-5 | Penerima berbasis Tim belum pernah diuji | Data saat ini 1 penerima User, 0 Tim | Efendy |
 | SS-6 | Belum ada spesifikasi tertulis isi laporan | Isi laporan (kolom apa, periode berapa) belum direview terhadap kebutuhan; deskripsi dibaca dari diff kode | Claude + Efendy |
 
@@ -119,7 +131,7 @@
 | RR-1 | Baris filter cepat (Standard Filter) di atas List View untuk semua DocType utama | 21 Property Setter `in_standard_filter=1` — Ticket (status, priority, ticket_type, category, assigned_to, requested_by), Problem (status, priority, category, related_asset), Known Error (related_problem), Asset (asset_category, status, location, assigned_to), Change Request (status, change_type, risk_level), Photo (photo_title, category, location). **Terverifikasi tampil di UI oleh Efendy.** Jumlah filter Ticket (6) cukup padat — bisa dikurangi lewat Customize Form kalau terlalu penuh | Claude (script) + Efendy (eksekusi+verifikasi) |
 | RR-2 | **Bug:** `make_property_setter` gagal `Search field serial_number is not valid` di NextHD Asset; 11 Property Setter pertama ter-rollback karena belum commit | `make_property_setter` memvalidasi seluruh DocType, sehingga `search_fields` Asset yang masih menunjuk `serial_number` (sudah dihapus item JJ) ikut meledak. **Akar masalah kembalinya nilai lama (terjawab):** koreksi 29 Agustus hanya di database, sedangkan `fixtures/property_setter.json` masih memuat nilai lama, jadi tiap `bench migrate` mengembalikannya. **Fix:** `search_fields` → `asset_name,assigned_to,location` di database dan di fixture; script diulang dengan `try/except` per field + commit per DocType. Detail di `docs/BUG_HISTORY.md` | Claude + Efendy |
 | RR-3 | `export-fixtures --app nexthd` + commit `property_setter.json` | ✅ **Selesai.** Fixture 140 → 194 entri, 0 entri hilang, 1 nilai berubah (`search_fields` Asset), 54 baru (21 `in_standard_filter` + 33 `in_list_view` dari sesi lama). 2 Property Setter sisa `asset_type` dihapus. Commit `7a797de` (merge `45f3652`) dan `88cf12e` (`.gitignore *.bak_*`), dipush ke `main` | Efendy |
-| RR-4 | `docs/ARSITEKTUR.md §3` (Detail Field NextHD Asset) belum disinkronkan ke struktur EAV | **Masih pending.** Masih menggambarkan `asset_type` + field IT-spesifik yang sudah dihapus (item JJ/PP); menyebabkan rencana awal script salah nama field. Perlu update terpisah | Claude |
+| RR-4 | `docs/ARSITEKTUR.md §3` (Detail Field NextHD Asset) belum disinkronkan ke struktur EAV | **✅ Selesai.** `ARSITEKTUR.md §3` Asset sudah EAV sejak 9 September dan disinkronkan lagi 11 Oktober (Lokasi, Pengguna Aset, template atribut, relasi aset) | Claude |
 
 ### 🔶 Item QQ — SEDANG DIKERJAKAN (10-12 September): Fix Notifikasi Telegram + Fitur Multi-Assignee/Requester/Team Terdampak
 
@@ -189,7 +201,7 @@ SLA/permission/report), ditambah field baru (Table MultiSelect) untuk banyak nil
 
 | # | Item | Keterangan |
 |---|---|---|
-| 1 | **Lanjutkan sinkronisasi dokumentasi (9 Oktober)** | `docs/ARSITEKTUR.md` (§3 Asset ke EAV + `NextHD Location` + `NextHD Asset User` + Custom Field `department`), `docs/POLA_KERJA.md` + `docs/BUG_HISTORY.md` (pelajaran teknis item TT), dan `docs/web/*` (LOG_WEB, FITUR_WEB, BUG_WEB; koreksi klaim "Web Form live" — lihat catatan celah di atas). `SPEC_PORTAL.md` §3 dan §6 masih menyebut `/nexthd/manajer` untuk Tahap 4; keputusan SLA A (1 hari kerja = 1440 menit) belum masuk `docs/TEMUAN_SLA_2026-10-02.md` |
+| 1 | **Lanjutkan sinkronisasi dokumentasi (9 Oktober)** | `docs/ARSITEKTUR.md` (✅ disinkronkan 11 Oktober; sisa: Custom Field `department` di User), `docs/POLA_KERJA.md` + `docs/BUG_HISTORY.md` (pelajaran teknis item TT), dan `docs/web/*` (LOG_WEB, FITUR_WEB, BUG_WEB; koreksi klaim "Web Form live" — lihat catatan celah di atas). `SPEC_PORTAL.md` §3 dan §6 masih menyebut `/nexthd/manajer` untuk Tahap 4; keputusan SLA A (1 hari kerja = 1440 menit) belum masuk `docs/TEMUAN_SLA_2026-10-02.md` |
 | 2 | **Sisa item TT (Lokasi/Pengguna Aset)** | Efendy: isi Departemen + HP/Telepon user lain di User Frappe; cek 2 aset tanpa lokasi; uji aset bersama untuk rika.suhari di Web Form. Opsional (Tahap 6): hapus `department` + `phone_internal` dari `NextHD User Profile` setelah fitur stabil beberapa hari |
 | 3 | **Lanjutkan Tahap 3 & 4 item QQ (multi-assignee/requester/team)** | Tahap 3: tambah field `additional_assignees`/`additional_requesters`/`additional_teams` (Table MultiSelect) ke `NextHD Ticket` + filter dropdown field `team` lama (`link_filters` supaya cuma tampilkan `team_type = "Tim Internal IT"`) — **cek dulu `naming_rule` NextHD Ticket sebelum `doc.save()`, kemungkinan sudah benar dari fix 9 September tapi tetap verifikasi**. Tahap 4: update `telegram.py` supaya notif juga jalan ke field tambahan (bandingkan list child table lama vs baru sebelum-sesudah save, `has_value_changed()` tidak berlaku untuk Table MultiSelect) |
 | 4 | **Cek jam kirim Laporan Mingguan Senin (item SS-4)** | Pastikan pesan masuk jam 08:00 waktu Medan; kalau tidak, sesuaikan cron/zona waktu server. (Senin 28 September dan seterusnya — belum ada catatan hasilnya) |
@@ -292,4 +304,4 @@ Ringkasan lengkap seluruh item historis (Agustus s/d awal September) tidak diula
 
 ---
 
-*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-10-11 05:58 WIB.*
+*Dokumen ini dikelola oleh Claude. Update terakhir: 2026-10-11 08:09 WIB.*
